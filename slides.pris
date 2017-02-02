@@ -1,0 +1,47 @@
+namespace std
+{
+  fn big-text(text: string)
+  {
+    font-size = 2em
+    font-weight = semibold
+  }
+
+  fn center(content: box)
+  {
+
+  }
+
+  fn item(content: box)
+  {
+    parent.x = parent.x + 1
+  }
+
+  fn slide-title(title: string)
+  {
+    textbox = text title
+  }
+}
+
+import std
+
+font-size: 1/23w
+
+{
+    background-color = #fafafa
+    grid-center { big-text "Welcome" }
+}
+
+{
+    background-image = "http://img.co.uk"
+    grid-slide-title "Welcome"
+    bullets
+    {
+        item { text "Henk is een steen." }
+        item { text "Piet is ook een steen." }
+    }
+}
+
+slides.apply
+{
+
+}
