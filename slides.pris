@@ -1,50 +1,64 @@
 namespace std
 {
-  fn big-text(text: string)
+  namespace anchors
   {
-    font-size = 2em
-    font-weight = semibold
+    center: (0.5w, 0.5h)
+    top-left: (0.1w, 0.1w)
+    top-right: (0.9w, 0.1w)
+    bottom-left: (0.1w, 1.0h - 0.1w)
+    bottom-right: (0.9w, 1.0h - 0.1w)
   }
 
-  fn center(content: box)
+  fn three-times(x: str)
   {
-
-  }
-
-  fn item(content: box)
-  {
-    parent.x = parent.x + 1
-  }
-
-  fn slide-title(title: string)
-  {
-    textbox = text title
+    put x at (0, 0)
+    put x at (0, 1.2em)
+    put x at (0, 2.4em)
+    foobar: 32
   }
 }
 
 import std
 
-font-size: 1/23w
+// Set the em size to 1/23th of the slide width.
+em-size: 1/23w
+
+ax: std.anchors
 
 {
-    background-color = #fafafa
-    grid-center { big-text "Welcome" }
+  background-color: #fafafa
+
+  // Load 'logo.png', resize it (preserving aspect ratio) to fit in a
+  // 5em x 5em box, and put it (with the box center) 5em above ax.center.
+  // Would also have "topleft-image" with origin at top-left.
+  // Single quotes denote a string argument.
+  at (ax.center - (0, 5em)) put center-image('logo.png', 5em, 5em)
+
+  font-size: 2em
+  font-weight: bold
+  text-align: center
+
+  // Double quotes render a string.
+  at ax.center put "Welcome"
+
+  font-size: 1em
+
+  at (ax.center + (0, 1em)) put "To my talk"
+
+  // Could be flexible in put/at order.
+  put "To my talk" at (ax.center + (0, 2em))
 }
 
 {
-    background-image = "http://img.co.uk"
-    grid-slide-title "Welcome"
-    bullets
-    {
-        item { text "Henk is een steen." }
-        item { text "Piet is ook een steen." }
-    }
+  // All functions return boxes.
+  // A box can have variables, but it is also drawn.
+  put three-times("repeat") at ax.center
+
+  z: three-times("doesn't matter")
+  at (z.foobar, z.foobar) put "This is at (32, 32)"
 }
 
-slides.apply
-{
-
-}
+// Use Lua syntax?
 
 do
   local s = slides:add()
