@@ -45,3 +45,15 @@ slides.apply
 {
 
 }
+
+do
+  local s = slides:add()
+  local t = text("Hank is a stone.")
+  s:put(t, {x=2, y=3})
+end
+
+do
+  s = slides:add() -- This time s is a global?
+  put(anchors.center, text("Hank is a stone."), {2, 3})
+  put(anchors.topleft, text("Pete too."))
+done
