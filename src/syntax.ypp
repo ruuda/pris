@@ -9,17 +9,26 @@
 #include <stdio.h>
 #include <string.h>
 
-int yydebug=1;
- 
-void yyerror(const char *str)
+#include <string>
+#include <vector>
+
+#include "src/ast.h"
+
+extern "C"
 {
-  fprintf(stderr,"syntax error: %s\n",str);
+  void yyparse();
+  void yylex();
+
+  void yyerror(const char *str)
+  {
+    fprintf(stderr,"syntax error: %s\n",str);
+  }
+
+  int yywrap()
+  {
+    return 1;
+  }
 }
- 
-int yywrap()
-{
-  return 1;
-} 
   
 int main()
 {
@@ -29,6 +38,15 @@ int main()
 %}
 
 %token STRING NUMBER COLOR KW_AT KW_FIT KW_FUNCTION KW_IMPORT KW_NAMESPACE KW_PUT IDENT
+
+%union
+{
+  std::string string;
+  std::vector<std::string> vector_of_string;
+}
+
+%type <string> IDENT
+%type <vector_of_string> def_args
 
 %%
 
@@ -115,8 +133,8 @@ fn_def
   ;
 
 def_args
-  : IDENT
-  | def_args ',' IDENT
+  : IDENT               { $$ = std::vector<std::string>(); $$.push_back($1); }
+  | def_args ',' IDENT  { $1.push_back($3); $$ = $1; }
   ;
 
 fn_body: '{' statements '}';

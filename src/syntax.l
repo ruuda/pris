@@ -7,7 +7,8 @@
 // of the License is available in the root of the repository.
 
 #include <stdio.h>
-#include "syntax.tab.h"
+#include "syntax.tab.hpp"
+
 %}
 
 %%
