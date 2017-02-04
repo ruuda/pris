@@ -13,7 +13,6 @@ at                           return KW_AT;
 fit                          return KW_FIT;
 function                     return KW_FUNCTION;
 import                       return KW_IMPORT;
-namespace                    return KW_NAMESPACE;
 put                          return KW_PUT;
 [a-zA-Z][a-zA-Z0-9_]*        return IDENT;
 [.]                          return '.';

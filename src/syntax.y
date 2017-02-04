@@ -25,8 +25,36 @@ int main()
 
 %%
 
+toplevels
+  : /* empty */
+  | toplevels toplevel
+  ;
+
+toplevel
+  : KW_IMPORT idents   { printf("import\n"); }
+  | assignment         { printf("assignment\n"); }
+  | '{' statements '}' { printf("frame\n"); }
+  ;
+
+assignment: IDENT '=' expression;
+
+statements
+  : /* empty */
+  | statements statement
+  ;
+
+statement
+  : assignment
+  | put_at
+  ;
+
+put_at
+  : KW_PUT expression KW_AT expression
+  | KW_AT expression KW_PUT expression
+  ;
+
 expression
-  : term_sum { printf("expression "); }
+  : term_sum
   | term_sum KW_FIT term_sum
   ;
 
@@ -48,24 +76,25 @@ term_exp
   ;
 
 term
-  : STRING { printf("string term\n"); }
+  : STRING
   | NUMBER
   | COLOR
-  | var_ref
+  | idents
   | fn_call
   | fn_def
   | coord
+  | '{' statements '}'
   | '(' expression ')'
   ;
 
-var_ref
+idents
   : IDENT
-  | var_ref '.' IDENT
+  | idents '.' IDENT
   ;
 
 fn_call
-  : var_ref '(' ')'
-  | var_ref '(' call_args ')'
+  : idents '(' ')'
+  | idents '(' call_args ')'
   ;
 
 call_args
@@ -74,13 +103,15 @@ call_args
   ;
 
 fn_def
-  : KW_FUNCTION '(' ')'
-  | KW_FUNCTION '(' def_args ')'
-  ; /* TODO: Block. */
+  : KW_FUNCTION '(' ')' fn_body
+  | KW_FUNCTION '(' def_args ')' fn_body
+  ;
 
 def_args
   : IDENT
   | def_args ',' IDENT
   ;
+
+fn_body: '{' statements '}';
 
 coord: '(' expression ',' expression ')';

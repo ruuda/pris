@@ -1,4 +1,4 @@
-namespace std
+std =
 {
   anchors =
   {
@@ -66,7 +66,7 @@ ax = std.anchors
 }
 
 // Add a slide number to every slide.
-slides.apply
+// TODO: Syntax, such as "slides.apply"?
 {
   font_size = 0.5em
   color = #777777
