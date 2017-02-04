@@ -1,15 +1,15 @@
 namespace std
 {
-  namespace anchors
+  anchors =
   {
     center = (0.5w, 0.5h)
-    top-left = (0.1w, 0.1w)
-    top-right = (0.9w, 0.1w)
-    bottom-left = (0.1w, 1.0h - 0.1w)
-    bottom-right = (0.9w, 1.0h - 0.1w)
+    top_left = (0.1w, 0.1w)
+    top_right = (0.9w, 0.1w)
+    bottom_left = (0.1w, 1.0h - 0.1w)
+    bottom_right = (0.9w, 1.0h - 0.1w)
   }
 
-  fn three-times(x: str)
+  three_times = function(x)
   {
     put x at (0, 0)
     put x at (0, 1.2em)
@@ -21,27 +21,26 @@ namespace std
 import std
 
 // Set the em size to 1/23th of the slide width.
-em-size = 1w / 23
+em_size = 1w / 23
 
 ax = std.anchors
 
 {
-  background-color = #fafafa
+  background_color = #fafafa
 
   // Load 'logo.png', resize it (preserving aspect ratio) to fit in a
   // 5em x 5em box, and put it (with the box center) 5em above ax.center.
-  image-size = (5em, 5em)
-  image-origin = (0.5, 0.5)
-  at (ax.center - (0, 5em)) put image("logo.png")
+  image_origin = (0.5, 0.5)
+  at (ax.center - (0, 5em)) put (image("logo.png") fit (5em, 5em))
 
-  font-size = 2em
-  font-weight = bold
-  text-origin = (0.5, 1.0)
+  font_size = 2em
+  font_weight = bold
+  text_origin = (0.5, 1.0)
 
   // Double quotes render a string.
   at ax.center put "Welcome"
 
-  font-size = 1em
+  font_size = 1em
 
   at (ax.center + (0, 1em)) put "To my talk"
 
@@ -52,25 +51,25 @@ ax = std.anchors
 {
   // All functions return boxes.
   // A box can have variables, but it is also drawn.
-  put three-times("repeat") at ax.center
+  put three_times("repeat") at ax.center
 
-  z = three-times("doesn't matter")
+  z = three_times("doesn't matter")
   at (z.foobar, z.foobar) put "This is at (32, 32)"
 }
 
 {
   // There is some basic drawing stuff.
   color = #404040
-  line-width = 0.02em
-  line-style = solid
-  at ax.top-left put line(ax.top-right - ax.top-left)
+  line_width = 0.02em
+  line_style = solid
+  at ax.top_left put line(ax.top_right - ax.top_left)
 }
 
 // Add a slide number to every slide.
 slides.apply
 {
-  font-size = 0.5em
+  font_size = 0.5em
   color = #777777
-  text-origin = (1.0, 1.0)
-  at ax.bottom_right put (str(slide-number) + "/" + str(slide-total))
+  text_origin = (1.0, 1.0)
+  at ax.bottom_right put (str(slide_number) + "/" + str(slide_count))
 }
