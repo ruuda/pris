@@ -65,6 +65,58 @@ ax = std.anchors
   at ax.top_left put line(ax.top_right - ax.top_left)
 }
 
+{
+  // How to do text formatting? Maybe promoting string literals to boxes is not
+  // such a good idea after all; explicit is better than implicit? And + for
+  // boxes would mean to put them adjacent, origin to width?
+  at (0.5w, 0.5h) put text("Hello ") + emph("world)
+
+  // Or, at the other extreme, embed markup in string literals:
+  at ax.center put "Hello <em>world</em>"
+
+  // How do other languages solve this? String interpolation?
+  at ax.center put "Hello ${font_style = italic}world"
+
+  // Or perhaps suffixes?
+  at ax.center put "Hello " + "world"i
+
+  // Or prefixes?
+  at ax.center put b"Hello, " + "world"
+
+  // That last one seems to work well. Could have multiple:
+  put b"Hi" at ax.l0 // Bold
+  put i"Hi" at ax.l1 // Italic
+  put sc"nsa ghcs aivd" at ax.l2 // Small caps
+
+  // Could also use this to make regular text less magic?
+  put t"Hi" at ax.l0 // Regular text? Nah, looks weird.
+
+  // String concatenation (for regular strings) or adjacent box placement would
+  // be indistinguishable, which is nice ...? Does this mean, put the string
+  // "Hello world" at (0, 0)? Or does it put "Hello " at (0, 0) and "world" at
+  // (0 + <width of previous text>, 0)? They should be the same.
+  put "Hello " + "world" at (0, 0)
+
+  // Should these be user-controllable? Likely, yes (to switch between OpenType
+  // small caps and separate font small caps). Maybe they are functions which
+  // can be overridden.
+  i_style = function()
+  {
+    font_style = italic
+  }
+
+  sc_style = function()
+  {
+    font_family = "Zhe Font Smcp"             // When it is a separate font
+    font_features = font_features ++ ["smcp"] // When the font supports it.
+    // Double ++ for list and string concat perhaps?
+    // Yes, because it is simpler: ++ concatenates, + is for coordinates.
+  }
+
+  // But does it scale? What about bold *and* italic? Let's not worry about that
+  // right now. After all you can set the font and align manually when required.
+}
+
 // Add a slide number to every slide.
 // TODO: Syntax, such as "slides.apply"?
 {
