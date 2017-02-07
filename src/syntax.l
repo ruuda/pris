@@ -9,20 +9,26 @@
 #include <stdio.h>
 #include "syntax.tab.hpp"
 
+#undef YY_DECL
+#define YY_DECL yy::parser::symbol_type yyFlexLexer::yylex()
+
 %}
+
+%option c++
+%option noyywrap
 
 %%
 [/][/][^\n]*                 /* Ignore comments */;
 [ \n]+                       /* Ignore whitespace. */;
-["]([^"\\]|\\.)*["]          return STRING;
--?[0-9]+(\.[0-9]+)?(w|h|em)? return NUMBER;
-#[0-9a-f]{6}                 return COLOR;
-at                           return KW_AT;
-fit                          return KW_FIT;
-function                     return KW_FUNCTION;
-import                       return KW_IMPORT;
-put                          return KW_PUT;
-[a-zA-Z][a-zA-Z0-9_]*        return IDENT;
+["]([^"\\]|\\.)*["]          return yy::parser::token::STRING;
+-?[0-9]+(\.[0-9]+)?(w|h|em)? return yy::parser::token::NUMBER;
+#[0-9a-f]{6}                 return yy::parser::token::COLOR;
+at                           return yy::parser::token::KW_AT;
+fit                          return yy::parser::token::KW_FIT;
+function                     return yy::parser::token::KW_FUNCTION;
+import                       return yy::parser::token::KW_IMPORT;
+put                          return yy::parser::token::KW_PUT;
+[a-zA-Z][a-zA-Z0-9_]*        return yy::parser::token::IDENT;
 [.]                          return '.';
 [,]                          return ',';
 [=]                          return '=';

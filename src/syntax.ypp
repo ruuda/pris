@@ -1,4 +1,17 @@
-%{
+%language "c++"
+
+/* Enable using true (C++) types instead of unions. */
+%define api.value.type variant
+%define api.token.constructor
+
+%code requires
+{
+#include <string>
+#include <vector>
+}
+
+%code
+{
 // Pris -- A language for designing slides
 // Copyright 2017 Ruud van Asseldonk
 
@@ -9,24 +22,17 @@
 #include <stdio.h>
 #include <string.h>
 
-#include <string>
-#include <vector>
-
 #include "src/ast.h"
+
+yy::parser::symbol_type yylex();
 
 extern "C"
 {
-  void yyparse();
-  void yylex();
+  int yyparse();
 
   void yyerror(const char *str)
   {
     fprintf(stderr,"syntax error: %s\n",str);
-  }
-
-  int yywrap()
-  {
-    return 1;
   }
 }
   
@@ -35,18 +41,15 @@ int main()
   yyparse();
 } 
 
-%}
-
-%token STRING NUMBER COLOR KW_AT KW_FIT KW_FUNCTION KW_IMPORT KW_NAMESPACE KW_PUT IDENT
-
-%union
-{
-  std::string string;
-  std::vector<std::string> vector_of_string;
 }
 
-%type <string> IDENT
-%type <vector_of_string> def_args
+%token <std::string> COLOR
+%token <std::string> IDENT
+%token <std::string> NUMBER
+%token <std::string> STRING
+%token KW_AT KW_FIT KW_FUNCTION KW_IMPORT KW_NAMESPACE KW_PUT
+
+%type <std::vector<std::string>> def_args
 
 %%
 
