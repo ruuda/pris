@@ -1,0 +1,30 @@
+// Pris -- A language for designing slides
+// Copyright 2017 Ruud van Asseldonk
+
+// This program is free software: you can redistribute it and/or modify
+// it under the terms of the GNU General Public License version 3. A copy
+// of the License is available in the root of the repository.
+
+use std::str::FromStr;
+use ast::{Unit, Num};
+
+grammar;
+
+pub Term: Num = {
+  <n:Num> => n,
+  "(" <t:Term> ")" => t,
+};
+
+Num: Num = {
+  <n:BareNum> => Num { val: n, unit: None },
+  <n:BareNum> <u:Unit> => Num { val: n, unit: Some(u) },
+};
+
+BareNum: f64 = r"[0-9]+(\.[0-9]+)?" => f64::from_str(<>).unwrap();
+
+Unit: Unit = {
+  "w" => Unit::W,
+  "h" => Unit::H,
+  "em" => Unit::Em,
+  "pt" => Unit::Pt,
+};
