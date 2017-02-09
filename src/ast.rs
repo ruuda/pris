@@ -7,6 +7,13 @@
 
 use std::fmt::{Display, Error, Formatter};
 
+pub enum Stmt<'a> {
+    Assign(Assign<'a>),
+    PutAt(PutAt<'a>),
+}
+
+pub struct Assign<'a>(pub &'a str, pub Term<'a>);
+
 pub enum Term<'a> {
     String(&'a str),
     Number(Num),
@@ -49,7 +56,24 @@ pub enum BinOp {
     Exp,
 }
 
+pub struct PutAt<'a>(pub Term<'a>, pub Term<'a>);
+
 // Pretty-printers.
+
+impl<'a> Display for Stmt<'a> {
+    fn fmt(&self, f: &mut Formatter) -> Result<(), Error> {
+        match *self {
+            Stmt::Assign(ref a) => write!(f, "{}", a),
+            Stmt::PutAt(ref pa) => write!(f, "{}", pa),
+        }
+    }
+}
+
+impl<'a> Display for Assign<'a> {
+    fn fmt(&self, f: &mut Formatter) -> Result<(), Error> {
+        write!(f, "{} = {}", self.0, self.1)
+    }
+}
 
 impl<'a> Display for Term<'a> {
     fn fmt(&self, f: &mut Formatter) -> Result<(), Error> {
@@ -152,5 +176,11 @@ impl<'a> Display for FnDef<'a> {
             first = false;
         }
         write!(f, ")\n{{\n}}")
+    }
+}
+
+impl<'a> Display for PutAt<'a> {
+    fn fmt(&self, f: &mut Formatter) -> Result<(), Error> {
+        write!(f, "put {} at {}", self.0, self.1)
     }
 }
