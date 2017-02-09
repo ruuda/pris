@@ -11,12 +11,10 @@ mod syntax;
 use std::io;
 use std::io::Read;
 
-use ast::Num;
-
 fn main() {
     let mut input = String::new();
     io::stdin().read_to_string(&mut input).unwrap();
-    match syntax::parse_Term(&input) {
+    match syntax::parse_term(&input) {
         Ok(num) => println!("{}", num),
         Err(err) => println!("{:?}", err),
     }

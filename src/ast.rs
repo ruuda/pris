@@ -7,6 +7,14 @@
 
 use std::fmt::{Display, Error, Formatter};
 
+pub enum Term<'a> {
+    String(&'a str),
+    Number(Num),
+    Color(Color),
+}
+
+pub struct Num(pub f64, pub Option<Unit>);
+
 #[derive(Copy, Clone)]
 pub enum Unit {
   W,
@@ -15,9 +23,28 @@ pub enum Unit {
   Pt,
 }
 
-pub struct Num {
-  pub val: f64,
-  pub unit: Option<Unit>,
+pub struct Color(pub u8, pub u8, pub u8);
+
+// Pretty-printers.
+
+impl<'a> Display for Term<'a> {
+    fn fmt(&self, f: &mut Formatter) -> Result<(), Error> {
+        match *self {
+            Term::String(s) => write!(f, "{}", s),
+            Term::Number(ref n) => write!(f, "{}", n),
+            Term::Color(ref c) => write!(f, "{}", c),
+        }
+    }
+}
+
+impl Display for Num {
+    fn fmt(&self, f: &mut Formatter) -> Result<(), Error> {
+        write!(f, "{}", self.0)?;
+        if let Some(unit) = self.1 {
+            write!(f, "{}", unit)?
+        }
+        Ok(())
+    }
 }
 
 impl Display for Unit {
@@ -31,12 +58,8 @@ impl Display for Unit {
     }
 }
 
-impl Display for Num {
+impl Display for Color {
     fn fmt(&self, f: &mut Formatter) -> Result<(), Error> {
-        write!(f, "{}", self.val)?;
-        if let Some(unit) = self.unit {
-            write!(f, "{}", unit)?
-        }
-        Ok(())
+        write!(f, "#{:x}{:x}{:x}", self.0, self.1, self.2)
     }
 }
