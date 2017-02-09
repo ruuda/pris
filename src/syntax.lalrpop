@@ -6,7 +6,7 @@
 // of the License is available in the root of the repository.
 
 use std::str::FromStr;
-use ast::{BinOp, BinTerm, Color, Coord, Idents, Num, Term, Unit};
+use ast::{BinOp, BinTerm, Color, Coord, FnCall, FnDef, Idents, Num, Term, Unit};
 
 grammar;
 
@@ -35,6 +35,8 @@ term: Term<'input> = {
   color => Term::Color(<>),
   idents => Term::Idents(<>),
   coord => Term::Coord(Box::new(<>)),
+  fn_call => Term::FnCall(Box::new(<>)),
+  fn_def => Term::FnDef(<>),
   "(" <expr> ")" => <>,
 };
 
@@ -66,3 +68,23 @@ idents: Idents<'input> = {
 ident: &'input str = r"[a-z][a-z0-9_]*" => <>;
 
 coord: Coord<'input> = "(" <expr> "," <expr> ")" => Coord(<>);
+
+fn_call: FnCall<'input> = {
+  <f:term> "(" ")" => FnCall(f, Vec::new()),
+  <f:term> "(" <a:fn_call_args> ")" => FnCall(f, a),
+};
+
+fn_call_args: Vec<Term<'input>> = {
+  <e:expr> => vec![e],
+  <p:fn_call_args> "," <e:expr> => { let mut v = p; v.push(e); v }
+};
+
+fn_def: FnDef<'input> = {
+  "function" "(" ")" "{" "}" => FnDef(Vec::new()),
+  "function" "(" <a:fn_def_args> ")" "{" "}" => FnDef(a),
+};
+
+fn_def_args: Vec<&'input str> = {
+  <i:ident> => vec![i],
+  <p:fn_def_args> "," <i:ident> => { let mut v = p; v.push(i); v }
+};

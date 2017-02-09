@@ -14,6 +14,8 @@ pub enum Term<'a> {
     Idents(Idents<'a>),
     Coord(Box<Coord<'a>>),
     BinOp(Box<BinTerm<'a>>),
+    FnCall(Box<FnCall<'a>>),
+    FnDef(FnDef<'a>),
 }
 
 pub struct Num(pub f64, pub Option<Unit>);
@@ -33,6 +35,10 @@ pub struct Idents<'a>(pub Vec<&'a str>);
 pub struct Coord<'a>(pub Term<'a>, pub Term<'a>);
 
 pub struct BinTerm<'a>(pub Term<'a>, pub BinOp, pub Term<'a>);
+
+pub struct FnCall<'a>(pub Term<'a>, pub Vec<Term<'a>>);
+
+pub struct FnDef<'a>(pub Vec<&'a str>); // TODO: Body
 
 #[derive(Copy, Clone)]
 pub enum BinOp {
@@ -54,6 +60,8 @@ impl<'a> Display for Term<'a> {
             Term::Idents(ref is) => write!(f, "{}", is),
             Term::Coord(ref co) => write!(f, "{}", co),
             Term::BinOp(ref bt) => write!(f, "{}", bt),
+            Term::FnCall(ref fc) => write!(f, "{}", fc),
+            Term::FnDef(ref fd) => write!(f, "{}", fd),
         }
     }
 }
@@ -118,5 +126,31 @@ impl Display for BinOp {
             BinOp::Div => write!(f, "/"),
             BinOp::Exp => write!(f, "^"),
         }
+    }
+}
+
+impl<'a> Display for FnCall<'a> {
+    fn fmt(&self, f: &mut Formatter) -> Result<(), Error> {
+        write!(f, "{}(", self.0)?;
+        let mut first = true;
+        for arg in &self.1 {
+            if !first { write!(f, ", ")?; }
+            write!(f, "{}", arg)?;
+            first = false;
+        }
+        write!(f, ")")
+    }
+}
+
+impl<'a> Display for FnDef<'a> {
+    fn fmt(&self, f: &mut Formatter) -> Result<(), Error> {
+        write!(f, "function(")?;
+        let mut first = true;
+        for arg in &self.0 {
+            if !first { write!(f, ", ")?; }
+            write!(f, "{}", arg)?;
+            first = false;
+        }
+        write!(f, ")\n{{\n}}")
     }
 }
