@@ -7,11 +7,17 @@
 
 use std::fmt::{Display, Error, Formatter};
 
-pub enum Stmt<'a> {
+pub struct Document<'a>(pub Vec<Item<'a>>);
+
+pub enum Item<'a> {
+    Import(Import<'a>),
     Assign(Assign<'a>),
-    PutAt(PutAt<'a>),
-    Return(Return<'a>),
+    Block(Block<'a>),
 }
+
+pub struct Import<'a>(pub Idents<'a>);
+
+pub struct Idents<'a>(pub Vec<&'a str>);
 
 pub struct Assign<'a>(pub &'a str, pub Term<'a>);
 
@@ -39,17 +45,9 @@ pub enum Unit {
 
 pub struct Color(pub u8, pub u8, pub u8);
 
-pub struct Idents<'a>(pub Vec<&'a str>);
-
 pub struct Coord<'a>(pub Term<'a>, pub Term<'a>);
 
 pub struct BinTerm<'a>(pub Term<'a>, pub BinOp, pub Term<'a>);
-
-pub struct FnCall<'a>(pub Term<'a>, pub Vec<Term<'a>>);
-
-pub struct FnDef<'a>(pub Vec<&'a str>, pub Block<'a>);
-
-pub struct Block<'a>(pub Vec<Stmt<'a>>);
 
 #[derive(Copy, Clone)]
 pub enum BinOp {
@@ -60,19 +58,58 @@ pub enum BinOp {
     Exp,
 }
 
+pub struct FnCall<'a>(pub Term<'a>, pub Vec<Term<'a>>);
+
+pub struct FnDef<'a>(pub Vec<&'a str>, pub Block<'a>);
+
+pub struct Block<'a>(pub Vec<Stmt<'a>>);
+
+pub enum Stmt<'a> {
+    Assign(Assign<'a>),
+    PutAt(PutAt<'a>),
+    Return(Return<'a>),
+}
+
 pub struct PutAt<'a>(pub Term<'a>, pub Term<'a>);
 
 pub struct Return<'a>(pub Term<'a>);
 
 // Pretty-printers.
 
-impl<'a> Display for Stmt<'a> {
+impl<'a> Display for Document<'a> {
+    fn fmt(&self, f: &mut Formatter) -> Result<(), Error> {
+        for item in &self.0 {
+            write!(f, "{}\n", item)?;
+        }
+        Ok(())
+    }
+}
+
+impl<'a> Display for Item<'a> {
     fn fmt(&self, f: &mut Formatter) -> Result<(), Error> {
         match *self {
-            Stmt::Assign(ref a) => write!(f, "{}", a),
-            Stmt::PutAt(ref pa) => write!(f, "{}", pa),
-            Stmt::Return(ref r) => write!(f, "{}", r),
+            Item::Import(ref i) => write!(f, "{}", i),
+            Item::Assign(ref a) => write!(f, "{}", a),
+            Item::Block(ref b) => write!(f, "{}", b),
         }
+    }
+}
+
+impl<'a> Display for Import<'a> {
+    fn fmt(&self, f: &mut Formatter) -> Result<(), Error> {
+        write!(f, "import {}", self.0)
+    }
+}
+
+impl<'a> Display for Idents<'a> {
+    fn fmt(&self, f: &mut Formatter) -> Result<(), Error> {
+        assert!(self.0.len() > 0);
+        let mut parts = self.0.iter();
+        write!(f, "{}", parts.next().unwrap())?;
+        for p in parts {
+            write!(f, ".{}", p)?;
+        }
+        Ok(())
     }
 }
 
@@ -122,18 +159,6 @@ impl Display for Unit {
 impl Display for Color {
     fn fmt(&self, f: &mut Formatter) -> Result<(), Error> {
         write!(f, "#{:x}{:x}{:x}", self.0, self.1, self.2)
-    }
-}
-
-impl<'a> Display for Idents<'a> {
-    fn fmt(&self, f: &mut Formatter) -> Result<(), Error> {
-        assert!(self.0.len() > 0);
-        let mut parts = self.0.iter();
-        write!(f, "{}", parts.next().unwrap())?;
-        for p in parts {
-            write!(f, ".{}", p)?;
-        }
-        Ok(())
     }
 }
 
@@ -206,5 +231,15 @@ impl<'a> Display for PutAt<'a> {
 impl<'a> Display for Return<'a> {
     fn fmt(&self, f: &mut Formatter) -> Result<(), Error> {
         write!(f, "return {}", self.0)
+    }
+}
+
+impl<'a> Display for Stmt<'a> {
+    fn fmt(&self, f: &mut Formatter) -> Result<(), Error> {
+        match *self {
+            Stmt::Assign(ref a) => write!(f, "{}", a),
+            Stmt::PutAt(ref pa) => write!(f, "{}", pa),
+            Stmt::Return(ref r) => write!(f, "{}", r),
+        }
     }
 }

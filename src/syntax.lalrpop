@@ -6,16 +6,27 @@
 // of the License is available in the root of the repository.
 
 use std::str::FromStr;
-use ast::{Assign, BinOp, BinTerm, Block, Color, Coord, FnCall, FnDef, Idents};
-use ast::{Num, PutAt, Return, Stmt, Term, Unit};
+use ast::{Assign, BinOp, BinTerm, Block, Color, Coord, Document, FnCall, FnDef};
+use ast::{Idents, Import, Item, Num, PutAt, Return, Stmt, Term, Unit};
 
 grammar;
 
-pub statement: Stmt<'input> = {
-  assign => Stmt::Assign(<>),
-  put_at => Stmt::PutAt(<>),
-  return => Stmt::Return(<>),
+pub document: Document<'input> = <item*> => Document(<>);
+
+item: Item<'input> = {
+  import => Item::Import(<>),
+  assign => Item::Assign(<>),
+  block => Item::Block(<>),
 };
+
+import: Import<'input> = "import" <idents> => Import(<>);
+
+idents: Idents<'input> = {
+  <i:ident> => Idents(vec![i]),
+  <p:idents> "." <i:ident> => { let Idents(mut v) = p; v.push(i); Idents(v) }
+};
+
+ident: &'input str = r"[a-z][a-z0-9_]*" => <>;
 
 assign: Assign<'input> = <ident> "=" <expr> => Assign(<>);
 
@@ -70,13 +81,6 @@ color: Color = <c:r"#[0-9a-f]{6}"> => {
   Color(r, g, b)
 };
 
-idents: Idents<'input> = {
-  <i:ident> => Idents(vec![i]),
-  <p:idents> "." <i:ident> => { let Idents(mut v) = p; v.push(i); Idents(v) }
-};
-
-ident: &'input str = r"[a-z][a-z0-9_]*" => <>;
-
 coord: Coord<'input> = "(" <expr> "," <expr> ")" => Coord(<>);
 
 fn_call: FnCall<'input> = {
@@ -107,3 +111,9 @@ put_at: PutAt<'input> = {
 };
 
 return: Return<'input> = "return" <expr> => Return(<>);
+
+statement: Stmt<'input> = {
+  assign => Stmt::Assign(<>),
+  put_at => Stmt::PutAt(<>),
+  return => Stmt::Return(<>),
+};
