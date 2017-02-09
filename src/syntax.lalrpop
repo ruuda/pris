@@ -6,7 +6,7 @@
 // of the License is available in the root of the repository.
 
 use std::str::FromStr;
-use ast::{Color, Num, Term, Unit};
+use ast::{Color, Idents, Num, Term, Unit};
 
 grammar;
 
@@ -14,6 +14,7 @@ pub term: Term<'input> = {
   <num> => Term::Number(<>),
   <string> => Term::String(<>),
   <color> => Term::Color(<>),
+  <idents> => Term::Idents(<>),
 };
 
 num: Num = bare_num unit? => Num(<>);
@@ -29,6 +30,16 @@ unit: Unit = {
 
 string: &'input str = r#""([^"\\]|\\.)*""# => <>;
 
-color: Color = "#" <hex_byte> <hex_byte> <hex_byte> => Color(<>);
+color: Color = <c:r"#[0-9a-f]{6}"> => {
+  let r = u8::from_str_radix(&c[1..3], 16).unwrap();
+  let g = u8::from_str_radix(&c[3..5], 16).unwrap();
+  let b = u8::from_str_radix(&c[5..7], 16).unwrap();
+  Color(r, g, b)
+};
 
-hex_byte: u8 = "[0-9a-f]{2}" => u8::from_str_radix(<>, 16).unwrap();
+idents: Idents<'input> = {
+  <i:ident> => Idents(vec![i]),
+  <p:idents> "." <i:ident> => { let Idents(mut v) = p; v.push(i); Idents(v) }
+};
+
+ident: &'input str = r"[a-z][a-z0-9_]*" => <>;

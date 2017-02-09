@@ -11,6 +11,7 @@ pub enum Term<'a> {
     String(&'a str),
     Number(Num),
     Color(Color),
+    Idents(Idents<'a>),
 }
 
 pub struct Num(pub f64, pub Option<Unit>);
@@ -25,6 +26,8 @@ pub enum Unit {
 
 pub struct Color(pub u8, pub u8, pub u8);
 
+pub struct Idents<'a>(pub Vec<&'a str>);
+
 // Pretty-printers.
 
 impl<'a> Display for Term<'a> {
@@ -33,6 +36,7 @@ impl<'a> Display for Term<'a> {
             Term::String(s) => write!(f, "{}", s),
             Term::Number(ref n) => write!(f, "{}", n),
             Term::Color(ref c) => write!(f, "{}", c),
+            Term::Idents(ref is) => write!(f, "{}", is),
         }
     }
 }
@@ -61,5 +65,17 @@ impl Display for Unit {
 impl Display for Color {
     fn fmt(&self, f: &mut Formatter) -> Result<(), Error> {
         write!(f, "#{:x}{:x}{:x}", self.0, self.1, self.2)
+    }
+}
+
+impl<'a> Display for Idents<'a> {
+    fn fmt(&self, f: &mut Formatter) -> Result<(), Error> {
+        assert!(self.0.len() > 0);
+        let mut parts = self.0.iter();
+        write!(f, "{}", parts.next().unwrap())?;
+        for p in parts {
+            write!(f, ".{}", p)?;
+        }
+        Ok(())
     }
 }
