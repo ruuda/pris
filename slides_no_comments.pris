@@ -1,0 +1,88 @@
+std =
+{
+  anchors =
+  {
+    center = (0.5w, 0.5h)
+    top_left = (0.1w, 0.1w)
+    top_right = (0.9w, 0.1w)
+    bottom_left = (0.1w, 1.0h - 0.1w)
+    bottom_right = (0.9w, 1.0h - 0.1w)
+  }
+
+  three_times = function(x)
+  {
+    put x at (0, 0)
+    put x at (0, 1.2em)
+    put x at (0, 2.4em)
+    foobar = 32
+  }
+}
+
+import std
+
+em_size = 1w / 23
+
+ax = std.anchors
+
+{
+  background_color = #fafafa
+
+  image_origin = (0.5, 0.5)
+  at (ax.center - (0, 5em)) put fit(image("logo.png"), (5em, 5em))
+
+  font_size = 2em
+  font_weight = bold
+  text_origin = (0.5, 1.0)
+
+  at ax.center put "Welcome"
+
+  font_size = 1em
+
+  at (ax.center + (0, 1em)) put "To my talk"
+
+  put "To my talk" at (ax.center + (0, 2em))
+}
+
+{
+  put three_times("repeat") at ax.center
+
+  z = three_times("doesn't matter")
+  at (z.foobar, z.foobar) put "This is at (32, 32)"
+}
+
+{
+  color = #404040
+  line_width = 0.02em
+  line_style = solid
+  at ax.top_left put line(ax.top_right - ax.top_left)
+}
+
+{
+  at (0.5w, 0.5h) put text("Hello ") + emph("world")
+
+  at ax.center put "Hello <em>world</em>"
+
+  at ax.center put "Hello " + "world"
+
+  at ax.center put "Hello, " + "world"
+
+  put "Hi" at ax.l0
+  put "Hi" at ax.l1
+  put "nsa ghcs aivd" at ax.l2
+
+  put "Hi" at ax.l0
+
+  put "Hello " + "world" at (0, 0)
+
+  i_style = function()
+  {
+    font_style = italic
+  }
+}
+
+{
+  font_size = 0.5em
+  color = #777777
+  text_origin = (1.0, 1.0)
+  at ax.bottom_right put (str(slide_number) + "/" + str(slide_count))
+}
