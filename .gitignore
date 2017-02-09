@@ -2,3 +2,9 @@
 
 *.swp
 *.swo
+
+# Build output
+/target
+
+# Generated files
+/src/syntax.rs
