@@ -6,13 +6,15 @@
 // of the License is available in the root of the repository.
 
 use std::str::FromStr;
-use ast::{Assign, BinOp, BinTerm, Color, Coord, FnCall, FnDef, Idents, Num, PutAt, Stmt, Term, Unit};
+use ast::{Assign, BinOp, BinTerm, Block, Color, Coord, FnCall, FnDef, Idents};
+use ast::{Num, PutAt, Return, Stmt, Term, Unit};
 
 grammar;
 
 pub statement: Stmt<'input> = {
   assign => Stmt::Assign(<>),
   put_at => Stmt::PutAt(<>),
+  return => Stmt::Return(<>),
 };
 
 assign: Assign<'input> = <ident> "=" <expr> => Assign(<>);
@@ -44,6 +46,7 @@ term: Term<'input> = {
   coord => Term::Coord(Box::new(<>)),
   fn_call => Term::FnCall(Box::new(<>)),
   fn_def => Term::FnDef(<>),
+  block => Term::Block(<>),
   "(" <expr> ")" => <>,
 };
 
@@ -87,8 +90,8 @@ fn_call_args: Vec<Term<'input>> = {
 };
 
 fn_def: FnDef<'input> = {
-  "function" "(" ")" "{" "}" => FnDef(Vec::new()),
-  "function" "(" <a:fn_def_args> ")" "{" "}" => FnDef(a),
+  "function" "(" ")" <b:block> => FnDef(Vec::new(), b),
+  "function" "(" <a:fn_def_args> ")" <b:block> => FnDef(a, b),
 };
 
 fn_def_args: Vec<&'input str> = {
@@ -96,7 +99,11 @@ fn_def_args: Vec<&'input str> = {
   <p:fn_def_args> "," <i:ident> => { let mut v = p; v.push(i); v }
 };
 
+block: Block<'input> = "{" <statement*> "}" => Block(<>);
+
 put_at: PutAt<'input> = {
   "put" <e:expr> "at" <c:expr> => PutAt(e, c),
   "at" <c:expr> "put" <e:expr> => PutAt(e, c),
 };
+
+return: Return<'input> = "return" <expr> => Return(<>);

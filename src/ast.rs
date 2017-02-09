@@ -10,6 +10,7 @@ use std::fmt::{Display, Error, Formatter};
 pub enum Stmt<'a> {
     Assign(Assign<'a>),
     PutAt(PutAt<'a>),
+    Return(Return<'a>),
 }
 
 pub struct Assign<'a>(pub &'a str, pub Term<'a>);
@@ -23,6 +24,7 @@ pub enum Term<'a> {
     BinOp(Box<BinTerm<'a>>),
     FnCall(Box<FnCall<'a>>),
     FnDef(FnDef<'a>),
+    Block(Block<'a>),
 }
 
 pub struct Num(pub f64, pub Option<Unit>);
@@ -45,7 +47,9 @@ pub struct BinTerm<'a>(pub Term<'a>, pub BinOp, pub Term<'a>);
 
 pub struct FnCall<'a>(pub Term<'a>, pub Vec<Term<'a>>);
 
-pub struct FnDef<'a>(pub Vec<&'a str>); // TODO: Body
+pub struct FnDef<'a>(pub Vec<&'a str>, pub Block<'a>);
+
+pub struct Block<'a>(pub Vec<Stmt<'a>>);
 
 #[derive(Copy, Clone)]
 pub enum BinOp {
@@ -58,6 +62,8 @@ pub enum BinOp {
 
 pub struct PutAt<'a>(pub Term<'a>, pub Term<'a>);
 
+pub struct Return<'a>(pub Term<'a>);
+
 // Pretty-printers.
 
 impl<'a> Display for Stmt<'a> {
@@ -65,6 +71,7 @@ impl<'a> Display for Stmt<'a> {
         match *self {
             Stmt::Assign(ref a) => write!(f, "{}", a),
             Stmt::PutAt(ref pa) => write!(f, "{}", pa),
+            Stmt::Return(ref r) => write!(f, "{}", r),
         }
     }
 }
@@ -86,6 +93,7 @@ impl<'a> Display for Term<'a> {
             Term::BinOp(ref bt) => write!(f, "{}", bt),
             Term::FnCall(ref fc) => write!(f, "{}", fc),
             Term::FnDef(ref fd) => write!(f, "{}", fd),
+            Term::Block(ref b) => write!(f, "{}", b),
         }
     }
 }
@@ -175,12 +183,28 @@ impl<'a> Display for FnDef<'a> {
             write!(f, "{}", arg)?;
             first = false;
         }
-        write!(f, ")\n{{\n}}")
+        write!(f, "){}", self.1)
+    }
+}
+
+impl<'a> Display for Block<'a> {
+    fn fmt(&self, f: &mut Formatter) -> Result<(), Error> {
+        write!(f, "\n{{")?;
+        for stmt in &self.0 {
+            write!(f, "\n  {}", stmt)?;
+        }
+        write!(f, "\n}}")
     }
 }
 
 impl<'a> Display for PutAt<'a> {
     fn fmt(&self, f: &mut Formatter) -> Result<(), Error> {
         write!(f, "put {} at {}", self.0, self.1)
+    }
+}
+
+impl<'a> Display for Return<'a> {
+    fn fmt(&self, f: &mut Formatter) -> Result<(), Error> {
+        write!(f, "return {}", self.0)
     }
 }
