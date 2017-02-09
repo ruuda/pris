@@ -6,15 +6,36 @@
 // of the License is available in the root of the repository.
 
 use std::str::FromStr;
-use ast::{Color, Idents, Num, Term, Unit};
+use ast::{BinOp, BinTerm, Color, Coord, Idents, Num, Term, Unit};
 
 grammar;
 
-pub term: Term<'input> = {
-  <num> => Term::Number(<>),
-  <string> => Term::String(<>),
-  <color> => Term::Color(<>),
-  <idents> => Term::Idents(<>),
+pub expr: Term<'input> = { expr_add };
+
+expr_add: Term<'input> = {
+  <expr_mul> => <>,
+  <lhs:expr_add> "+" <rhs:expr_mul> => Term::BinOp(Box::new(BinTerm(lhs, BinOp::Add, rhs))),
+  <lhs:expr_add> "-" <rhs:expr_mul> => Term::BinOp(Box::new(BinTerm(lhs, BinOp::Sub, rhs))),
+};
+
+expr_mul: Term<'input> = {
+  <expr_exp> => <>,
+  <lhs:expr_mul> "*" <rhs:expr_exp> => Term::BinOp(Box::new(BinTerm(lhs, BinOp::Mul, rhs))),
+  <lhs:expr_mul> "/" <rhs:expr_exp> => Term::BinOp(Box::new(BinTerm(lhs, BinOp::Div, rhs))),
+};
+
+expr_exp: Term<'input> = {
+  <term> => <>,
+  <lhs:term> "^" <rhs:term> => Term::BinOp(Box::new(BinTerm(lhs, BinOp::Exp, rhs))),
+};
+
+term: Term<'input> = {
+  string => Term::String(<>),
+  num => Term::Number(<>),
+  color => Term::Color(<>),
+  idents => Term::Idents(<>),
+  coord => Term::Coord(Box::new(<>)),
+  "(" <expr> ")" => <>,
 };
 
 num: Num = bare_num unit? => Num(<>);
@@ -43,3 +64,5 @@ idents: Idents<'input> = {
 };
 
 ident: &'input str = r"[a-z][a-z0-9_]*" => <>;
+
+coord: Coord<'input> = "(" <expr> "," <expr> ")" => Coord(<>);

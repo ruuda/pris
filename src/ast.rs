@@ -12,6 +12,8 @@ pub enum Term<'a> {
     Number(Num),
     Color(Color),
     Idents(Idents<'a>),
+    Coord(Box<Coord<'a>>),
+    BinOp(Box<BinTerm<'a>>),
 }
 
 pub struct Num(pub f64, pub Option<Unit>);
@@ -28,6 +30,19 @@ pub struct Color(pub u8, pub u8, pub u8);
 
 pub struct Idents<'a>(pub Vec<&'a str>);
 
+pub struct Coord<'a>(pub Term<'a>, pub Term<'a>);
+
+pub struct BinTerm<'a>(pub Term<'a>, pub BinOp, pub Term<'a>);
+
+#[derive(Copy, Clone)]
+pub enum BinOp {
+    Add,
+    Sub,
+    Mul,
+    Div,
+    Exp,
+}
+
 // Pretty-printers.
 
 impl<'a> Display for Term<'a> {
@@ -37,6 +52,8 @@ impl<'a> Display for Term<'a> {
             Term::Number(ref n) => write!(f, "{}", n),
             Term::Color(ref c) => write!(f, "{}", c),
             Term::Idents(ref is) => write!(f, "{}", is),
+            Term::Coord(ref co) => write!(f, "{}", co),
+            Term::BinOp(ref bt) => write!(f, "{}", bt),
         }
     }
 }
@@ -77,5 +94,29 @@ impl<'a> Display for Idents<'a> {
             write!(f, ".{}", p)?;
         }
         Ok(())
+    }
+}
+
+impl<'a> Display for Coord<'a> {
+    fn fmt(&self, f: &mut Formatter) -> Result<(), Error> {
+        write!(f, "({}, {})", self.0, self.1)
+    }
+}
+
+impl<'a> Display for BinTerm<'a> {
+    fn fmt(&self, f: &mut Formatter) -> Result<(), Error> {
+        write!(f, "({} {} {})", self.0, self.1, self.2)
+    }
+}
+
+impl Display for BinOp {
+    fn fmt(&self, f: &mut Formatter) -> Result<(), Error> {
+        match *self {
+            BinOp::Add => write!(f, "+"),
+            BinOp::Sub => write!(f, "-"),
+            BinOp::Mul => write!(f, "*"),
+            BinOp::Div => write!(f, "/"),
+            BinOp::Exp => write!(f, "^"),
+        }
     }
 }
