@@ -8,6 +8,7 @@
 extern crate lalrpop_util;
 
 mod ast;
+mod interpreter;
 mod syntax;
 
 use std::io;
@@ -78,5 +79,10 @@ fn main() {
     let mut input = String::new();
     io::stdin().read_to_string(&mut input).unwrap();
     let doc = parse_or_abort(&input);
-    println!("{}", doc);
+    let mut env = interpreter::Env::new();
+    for statement in &doc.0 {
+        interpreter::eval_statement(&mut env, statement).unwrap();
+        println!("EVAL {}", statement);
+        println!("ENV AFTER {:?}", env);
+    }
 }
