@@ -5,14 +5,16 @@
 // it under the terms of the GNU General Public License version 3. A copy
 // of the License is available in the root of the repository.
 
-use std::fmt::{Display, Error, Formatter};
+use std::fmt::{Debug, Display, Error, Formatter};
 
-pub struct Document<'a>(pub Vec<Item<'a>>);
+pub struct Document<'a>(pub Vec<Stmt<'a>>);
 
-pub enum Item<'a> {
+pub enum Stmt<'a> {
     Import(Import<'a>),
     Assign(Assign<'a>),
+    Return(Return<'a>),
     Block(Block<'a>),
+    PutAt(PutAt<'a>),
 }
 
 pub struct Import<'a>(pub Idents<'a>);
@@ -64,15 +66,9 @@ pub struct FnDef<'a>(pub Vec<&'a str>, pub Block<'a>);
 
 pub struct Block<'a>(pub Vec<Stmt<'a>>);
 
-pub enum Stmt<'a> {
-    Assign(Assign<'a>),
-    PutAt(PutAt<'a>),
-    Return(Return<'a>),
-}
+pub struct Return<'a>(pub Term<'a>);
 
 pub struct PutAt<'a>(pub Term<'a>, pub Term<'a>);
-
-pub struct Return<'a>(pub Term<'a>);
 
 // Pretty-printers.
 
@@ -85,12 +81,14 @@ impl<'a> Display for Document<'a> {
     }
 }
 
-impl<'a> Display for Item<'a> {
+impl<'a> Display for Stmt<'a> {
     fn fmt(&self, f: &mut Formatter) -> Result<(), Error> {
         match *self {
-            Item::Import(ref i) => write!(f, "{}", i),
-            Item::Assign(ref a) => write!(f, "{}", a),
-            Item::Block(ref b) => write!(f, "{}", b),
+            Stmt::Import(ref i) => write!(f, "{}", i),
+            Stmt::Assign(ref a) => write!(f, "{}", a),
+            Stmt::Return(ref r) => write!(f, "{}", r),
+            Stmt::Block(ref bk) => write!(f, "{}", bk),
+            Stmt::PutAt(ref pa) => write!(f, "{}", pa),
         }
     }
 }
@@ -212,6 +210,13 @@ impl<'a> Display for FnDef<'a> {
     }
 }
 
+// TODO: Get rid of this one, it is for temporary debugging only.
+impl<'a> Debug for FnDef<'a> {
+    fn fmt(&self, f: &mut Formatter) -> Result<(), Error> {
+        write!(f, "{}", self)
+    }
+}
+
 impl<'a> Display for Block<'a> {
     fn fmt(&self, f: &mut Formatter) -> Result<(), Error> {
         write!(f, "\n{{")?;
@@ -222,24 +227,14 @@ impl<'a> Display for Block<'a> {
     }
 }
 
-impl<'a> Display for PutAt<'a> {
-    fn fmt(&self, f: &mut Formatter) -> Result<(), Error> {
-        write!(f, "put {} at {}", self.0, self.1)
-    }
-}
-
 impl<'a> Display for Return<'a> {
     fn fmt(&self, f: &mut Formatter) -> Result<(), Error> {
         write!(f, "return {}", self.0)
     }
 }
 
-impl<'a> Display for Stmt<'a> {
+impl<'a> Display for PutAt<'a> {
     fn fmt(&self, f: &mut Formatter) -> Result<(), Error> {
-        match *self {
-            Stmt::Assign(ref a) => write!(f, "{}", a),
-            Stmt::PutAt(ref pa) => write!(f, "{}", pa),
-            Stmt::Return(ref r) => write!(f, "{}", r),
-        }
+        write!(f, "put {} at {}", self.0, self.1)
     }
 }

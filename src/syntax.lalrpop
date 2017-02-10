@@ -7,16 +7,18 @@
 
 use std::str::FromStr;
 use ast::{Assign, BinOp, BinTerm, Block, Color, Coord, Document, FnCall, FnDef};
-use ast::{Idents, Import, Item, Num, PutAt, Return, Stmt, Term, Unit};
+use ast::{Idents, Import, Num, PutAt, Return, Stmt, Term, Unit};
 
 grammar;
 
-pub document: Document<'input> = <item*> => Document(<>);
+pub document: Document<'input> = <statement*> => Document(<>);
 
-item: Item<'input> = {
-  import => Item::Import(<>),
-  assign => Item::Assign(<>),
-  block => Item::Block(<>),
+statement: Stmt<'input> = {
+  import => Stmt::Import(<>),
+  assign => Stmt::Assign(<>),
+  return => Stmt::Return(<>),
+  block => Stmt::Block(<>),
+  put_at => Stmt::PutAt(<>),
 };
 
 import: Import<'input> = "import" <idents> => Import(<>);
@@ -105,15 +107,9 @@ fn_def_args: Vec<&'input str> = {
 
 block: Block<'input> = "{" <statement*> "}" => Block(<>);
 
+return: Return<'input> = "return" <expr> => Return(<>);
+
 put_at: PutAt<'input> = {
   "put" <e:expr> "at" <c:expr> => PutAt(e, c),
   "at" <c:expr> "put" <e:expr> => PutAt(e, c),
-};
-
-return: Return<'input> = "return" <expr> => Return(<>);
-
-statement: Stmt<'input> = {
-  assign => Stmt::Assign(<>),
-  put_at => Stmt::PutAt(<>),
-  return => Stmt::Return(<>),
 };
