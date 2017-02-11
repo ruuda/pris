@@ -9,8 +9,8 @@ use std::collections::HashMap;
 use std::rc::Rc;
 use std::result;
 
-use ast::{Assign, BinOp, BinTerm, Block, Coord, FnDef, Idents, Num, Return};
-use ast::{Stmt, Term, Unit};
+use ast::{Assign, BinOp, BinTerm, Block, Color, Coord, FnDef, Idents, Num};
+use ast::{Return, Stmt, Term, Unit};
 use pretty::{Formatter, Print};
 
 // Types used for the interpreter: values and an environment.
@@ -91,7 +91,7 @@ fn eval_expr<'a>(env: &Env<'a>, term: &'a Term<'a>) -> Result<Val<'a>> {
     match *term {
         Term::String(ref s) => Ok(eval_string(s)),
         Term::Number(ref x) => Ok(eval_num(env, x)),
-        Term::Color(ref _c) => panic!("TODO: eval color"),
+        Term::Color(ref c) => Ok(eval_color(c)),
         Term::Idents(ref path) => env.lookup(path),
         Term::Coord(ref co) => eval_coord(env, co),
         Term::BinOp(ref bo) => eval_binop(env, bo),
@@ -126,6 +126,11 @@ fn eval_num<'a>(env: &Env<'a>, num: &'a Num) -> Val<'a> {
     } else {
         Val::Num(x)
     }
+}
+
+fn eval_color<'a>(col: &Color) -> Val<'a> {
+    let Color(rbyte, gbyte, bbyte) = *col;
+    Val::Col(rbyte as f64 / 255.0, gbyte as f64 / 255.0, bbyte as f64 / 255.0)
 }
 
 fn eval_coord<'a>(env: &Env<'a>, coord: &'a Coord<'a>) -> Result<Val<'a>> {
