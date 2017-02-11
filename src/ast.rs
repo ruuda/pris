@@ -5,7 +5,7 @@
 // it under the terms of the GNU General Public License version 3. A copy
 // of the License is available in the root of the repository.
 
-use std::fmt::{Debug, Display, Error, Formatter};
+use pretty::{Formatter, Print};
 
 pub struct Document<'a>(pub Vec<Stmt<'a>>);
 
@@ -72,169 +72,187 @@ pub struct PutAt<'a>(pub Term<'a>, pub Term<'a>);
 
 // Pretty-printers.
 
-impl<'a> Display for Document<'a> {
-    fn fmt(&self, f: &mut Formatter) -> Result<(), Error> {
+impl<'a> Print for Document<'a> {
+    fn print(&self, f: &mut Formatter) {
         for item in &self.0 {
-            write!(f, "{}\n", item)?;
+            f.println(item);
+            f.print("\n");
         }
-        Ok(())
     }
 }
 
-impl<'a> Display for Stmt<'a> {
-    fn fmt(&self, f: &mut Formatter) -> Result<(), Error> {
+impl<'a> Print for Stmt<'a> {
+    fn print(&self, f: &mut Formatter) {
         match *self {
-            Stmt::Import(ref i) => write!(f, "{}", i),
-            Stmt::Assign(ref a) => write!(f, "{}", a),
-            Stmt::Return(ref r) => write!(f, "{}", r),
-            Stmt::Block(ref bk) => write!(f, "{}", bk),
-            Stmt::PutAt(ref pa) => write!(f, "{}", pa),
+            Stmt::Import(ref i) => f.print(i),
+            Stmt::Assign(ref a) => f.print(a),
+            Stmt::Return(ref r) => f.print(r),
+            Stmt::Block(ref bk) => f.print(bk),
+            Stmt::PutAt(ref pa) => f.print(pa),
         }
     }
 }
 
-impl<'a> Display for Import<'a> {
-    fn fmt(&self, f: &mut Formatter) -> Result<(), Error> {
-        write!(f, "import {}", self.0)
+impl<'a> Print for Import<'a> {
+    fn print(&self, f: &mut Formatter) {
+        f.print("import ");
+        f.print(&self.0);
     }
 }
 
-impl<'a> Display for Idents<'a> {
-    fn fmt(&self, f: &mut Formatter) -> Result<(), Error> {
+impl<'a> Print for Idents<'a> {
+    fn print(&self, f: &mut Formatter) {
         assert!(self.0.len() > 0);
         let mut parts = self.0.iter();
-        write!(f, "{}", parts.next().unwrap())?;
+        f.print(parts.next().unwrap());
         for p in parts {
-            write!(f, ".{}", p)?;
+            f.print(".");
+            f.print(p);
         }
-        Ok(())
     }
 }
 
-impl<'a> Display for Assign<'a> {
-    fn fmt(&self, f: &mut Formatter) -> Result<(), Error> {
-        write!(f, "{} = {}", self.0, self.1)
+impl<'a> Print for Assign<'a> {
+    fn print(&self, f: &mut Formatter) {
+        f.print(&self.0);
+        f.print(" = ");
+        f.print(&self.1);
     }
 }
 
-impl<'a> Display for Term<'a> {
-    fn fmt(&self, f: &mut Formatter) -> Result<(), Error> {
+impl<'a> Print for Term<'a> {
+    fn print(&self, f: &mut Formatter) {
         match *self {
-            Term::String(s) => write!(f, "{}", s),
-            Term::Number(ref n) => write!(f, "{}", n),
-            Term::Color(ref c) => write!(f, "{}", c),
-            Term::Idents(ref is) => write!(f, "{}", is),
-            Term::Coord(ref co) => write!(f, "{}", co),
-            Term::BinOp(ref bt) => write!(f, "{}", bt),
-            Term::FnCall(ref fc) => write!(f, "{}", fc),
-            Term::FnDef(ref fd) => write!(f, "{}", fd),
-            Term::Block(ref b) => write!(f, "{}", b),
+            Term::String(string) => f.print(string),
+            Term::Number(ref nm) => f.print(nm),
+            Term::Color(ref col) => f.print(col),
+            Term::Idents(ref is) => f.print(is),
+            Term::Coord(ref coo) => f.print(coo),
+            Term::BinOp(ref bop) => f.print(bop),
+            Term::FnCall(ref fc) => f.print(fc),
+            Term::FnDef(ref fdf) => f.print(fdf),
+            Term::Block(ref blk) => f.print(blk),
         }
     }
 }
 
-impl Display for Num {
-    fn fmt(&self, f: &mut Formatter) -> Result<(), Error> {
-        write!(f, "{}", self.0)?;
+impl Print for Num {
+    fn print(&self, f: &mut Formatter) {
+        f.print_f64(self.0);
         if let Some(unit) = self.1 {
-            write!(f, "{}", unit)?
+            f.print(unit);
         }
-        Ok(())
     }
 }
 
-impl Display for Unit {
-    fn fmt(&self, f: &mut Formatter) -> Result<(), Error> {
+impl Print for Unit {
+    fn print(&self, f: &mut Formatter) {
         match *self {
-            Unit::W => write!(f, "w"),
-            Unit::H => write!(f, "h"),
-            Unit::Em => write!(f, "em"),
-            Unit::Pt => write!(f, "pt"),
+            Unit::W => f.print("w"),
+            Unit::H => f.print("h"),
+            Unit::Em => f.print("em"),
+            Unit::Pt => f.print("pt"),
         }
     }
 }
 
-impl Display for Color {
-    fn fmt(&self, f: &mut Formatter) -> Result<(), Error> {
-        write!(f, "#{:x}{:x}{:x}", self.0, self.1, self.2)
+impl Print for Color {
+    fn print(&self, f: &mut Formatter) {
+        f.print("#");
+        f.print_hex_byte(self.0);
+        f.print_hex_byte(self.1);
+        f.print_hex_byte(self.2);
     }
 }
 
-impl<'a> Display for Coord<'a> {
-    fn fmt(&self, f: &mut Formatter) -> Result<(), Error> {
-        write!(f, "({}, {})", self.0, self.1)
+impl<'a> Print for Coord<'a> {
+    fn print(&self, f: &mut Formatter) {
+        f.print("(");
+        f.print(&self.0);
+        f.print(", ");
+        f.print(&self.1);
+        f.print(")");
     }
 }
 
-impl<'a> Display for BinTerm<'a> {
-    fn fmt(&self, f: &mut Formatter) -> Result<(), Error> {
-        write!(f, "({} {} {})", self.0, self.1, self.2)
+impl<'a> Print for BinTerm<'a> {
+    fn print(&self, f: &mut Formatter) {
+        f.print("(");
+        f.print(&self.0);
+        f.print(" ");
+        f.print(&self.1);
+        f.print(" ");
+        f.print(&self.2);
+        f.print(")");
     }
 }
 
-impl Display for BinOp {
-    fn fmt(&self, f: &mut Formatter) -> Result<(), Error> {
+impl Print for BinOp {
+    fn print(&self, f: &mut Formatter) {
         match *self {
-            BinOp::Add => write!(f, "+"),
-            BinOp::Sub => write!(f, "-"),
-            BinOp::Mul => write!(f, "*"),
-            BinOp::Div => write!(f, "/"),
-            BinOp::Exp => write!(f, "^"),
+            BinOp::Add => f.print("+"),
+            BinOp::Sub => f.print("-"),
+            BinOp::Mul => f.print("*"),
+            BinOp::Div => f.print("/"),
+            BinOp::Exp => f.print("^"),
         }
     }
 }
 
-impl<'a> Display for FnCall<'a> {
-    fn fmt(&self, f: &mut Formatter) -> Result<(), Error> {
-        write!(f, "{}(", self.0)?;
+impl<'a> Print for FnCall<'a> {
+    fn print(&self, f: &mut Formatter) {
+        f.print(&self.0);
+        f.print("(");
         let mut first = true;
         for arg in &self.1 {
-            if !first { write!(f, ", ")?; }
-            write!(f, "{}", arg)?;
+            if !first { f.print(", "); }
+            f.print(arg);
             first = false;
         }
-        write!(f, ")")
+        f.print(")");
     }
 }
 
-impl<'a> Display for FnDef<'a> {
-    fn fmt(&self, f: &mut Formatter) -> Result<(), Error> {
-        write!(f, "function(")?;
+impl<'a> Print for FnDef<'a> {
+    fn print(&self, f: &mut Formatter) {
+        f.print("function(");
         let mut first = true;
         for arg in &self.0 {
-            if !first { write!(f, ", ")?; }
-            write!(f, "{}", arg)?;
+            if !first { f.print(", "); }
+            f.print(arg);
             first = false;
         }
-        write!(f, "){}", self.1)
+        f.print(")");
+        f.print(&self.1);
     }
 }
 
-// TODO: Get rid of this one, it is for temporary debugging only.
-impl<'a> Debug for FnDef<'a> {
-    fn fmt(&self, f: &mut Formatter) -> Result<(), Error> {
-        write!(f, "{}", self)
-    }
-}
-
-impl<'a> Display for Block<'a> {
-    fn fmt(&self, f: &mut Formatter) -> Result<(), Error> {
-        write!(f, "\n{{")?;
+impl<'a> Print for Block<'a> {
+    fn print(&self, f: &mut Formatter) {
+        f.println("\n");
+        f.println("{\n");
+        f.indent_more();
         for stmt in &self.0 {
-            write!(f, "\n  {}", stmt)?;
+            f.println(stmt);
+            f.print("\n");
         }
-        write!(f, "\n}}")
+        f.indent_less();
+        f.println("}");
     }
 }
 
-impl<'a> Display for Return<'a> {
-    fn fmt(&self, f: &mut Formatter) -> Result<(), Error> {
-        write!(f, "return {}", self.0)
+impl<'a> Print for Return<'a> {
+    fn print(&self, f: &mut Formatter) {
+        f.print("return ");
+        f.print(&self.0);
     }
 }
 
-impl<'a> Display for PutAt<'a> {
-    fn fmt(&self, f: &mut Formatter) -> Result<(), Error> {
-        write!(f, "put {} at {}", self.0, self.1)
+impl<'a> Print for PutAt<'a> {
+    fn print(&self, f: &mut Formatter) {
+        f.print("put ");
+        f.print(&self.0);
+        f.print(" at ");
+        f.print(&self.1);
     }
 }

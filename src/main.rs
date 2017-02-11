@@ -9,6 +9,7 @@ extern crate lalrpop_util;
 
 mod ast;
 mod interpreter;
+mod pretty;
 mod syntax;
 
 use std::io;
@@ -82,7 +83,7 @@ fn main() {
     let mut env = interpreter::Env::new();
     for statement in &doc.0 {
         interpreter::eval_statement(&mut env, statement).unwrap();
-        println!("EVAL {}", statement);
-        println!("ENV AFTER {:?}", env);
+        println!("EVAL {}", pretty::print(statement));
+        println!("{}\n", pretty::print(&env));
     }
 }

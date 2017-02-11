@@ -6,15 +6,16 @@
 // of the License is available in the root of the repository.
 
 use std::collections::HashMap;
-
-use ast::{Assign, BinOp, BinTerm, Block, Coord, FnDef, Idents, Num, Return};
-use ast::{Stmt, Term, Unit};
 use std::rc::Rc;
 use std::result;
 
+use ast::{Assign, BinOp, BinTerm, Block, Coord, FnDef, Idents, Num, Return};
+use ast::{Stmt, Term, Unit};
+use pretty::{Formatter, Print};
+
 // Types used for the interpreter: values and an environment.
 
-#[derive(Clone, Debug)]
+#[derive(Clone)]
 enum Val<'a> {
     Num(f64), // TODO: Be consistent about abbreviating things.
     Len(f64),
@@ -26,7 +27,7 @@ enum Val<'a> {
     Fn(&'a FnDef<'a>),
 }
 
-#[derive(Clone, Debug)]
+#[derive(Clone)]
 pub struct Env<'a> {
     bindings: HashMap<&'a str, Val<'a>>,
 }
@@ -50,8 +51,11 @@ impl<'a> Env<'a> {
         if let Val::Num(x) = self.lookup(idents)? {
             Ok(x)
         } else {
-            let msg = format!("Type error: expected num, but {} is <TODO>.", idents);
-            Err(msg)
+            let mut msg = Formatter::new();
+            msg.print("Type error: expected num, but ");
+            msg.print(idents);
+            msg.print("is <TODO>.");
+            Err(msg.into_string())
         }
     }
 
@@ -59,8 +63,11 @@ impl<'a> Env<'a> {
         if let Val::Len(x) = self.lookup(idents)? {
             Ok(x)
         } else {
-            let msg = format!("Type error: expected num, but {} is <TODO>.", idents);
-            Err(msg)
+            let mut msg = Formatter::new();
+            msg.print("Type error: expected len, but ");
+            msg.print(idents);
+            msg.print("is <TODO>.");
+            Err(msg.into_string())
         }
     }
 
@@ -201,4 +208,79 @@ fn eval_assign<'a>(env: &mut Env<'a>, stmt: &'a Assign<'a>) -> Result<()> {
     let value = eval_expr(env, expression)?;
     env.put(target, value);
     Ok(())
+}
+
+// Pretty printers for values and interpreter data structures.
+
+impl<'a> Print for Val<'a> {
+    fn print(&self, f: &mut Formatter) {
+        match *self {
+            Val::Num(x) => {
+                f.print_f64(x);
+                f.print(" (num)");
+            }
+            Val::Len(x) => {
+                f.print_f64(x);
+                f.print(" (len)");
+            }
+            Val::Str(ref s) => {
+                f.print("\"");
+                f.print(&s[..]); // TODO: Escaping.
+                f.print("\"");
+            }
+            Val::Col(r, g, b) => {
+                f.print("(");
+                f.print_f64(r);
+                f.print(", ");
+                f.print_f64(g);
+                f.print(", ");
+                f.print_f64(b);
+                f.print(") (color)");
+            }
+            Val::NumCoord(x, y) => {
+                f.print("(");
+                f.print_f64(x);
+                f.print(", ");
+                f.print_f64(y);
+                f.print(") (num)");
+            }
+            Val::LenCoord(x, y) => {
+                f.print("(");
+                f.print_f64(x);
+                f.print(", ");
+                f.print_f64(y);
+                f.print(") (len)");
+            }
+            Val::Box(ref env) => {
+                f.print("box\n");
+                f.print(env);
+            }
+            Val::Fn(ref fndef) => {
+                f.print(fndef);
+            }
+        }
+    }
+}
+
+// Print implementation for variable bindings when printing env. Prints of the
+// form "name = value".
+impl<'a> Print for (&'a &'a str, &'a Val<'a>) {
+    fn print(&self, f: &mut Formatter) {
+        f.print(self.0);
+        f.print(" = ");
+        f.print(self.1);
+    }
+}
+
+impl<'a> Print for Env<'a> {
+    fn print(&self, f: &mut Formatter) {
+        f.println("{\n");
+        f.indent_more();
+        for binding in self.bindings.iter() {
+            f.println(binding);
+            f.print("\n");
+        }
+        f.indent_less();
+        f.println("}");
+    }
 }
