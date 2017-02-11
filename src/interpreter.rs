@@ -7,7 +7,7 @@
 
 use std::collections::HashMap;
 
-use ast::{Assign, FnDef, Idents, Num, Stmt, Term, Unit};
+use ast::{Assign, Block, FnDef, Idents, Num, Return, Stmt, Term, Unit};
 use std::rc::Rc;
 use std::result;
 
@@ -17,7 +17,7 @@ use std::result;
 enum Val<'a> {
     Num(f64), // TODO: Be consistent about abbreviating things.
     Len(f64),
-    Str(&'a str),
+    Str(String),
     Col(f64, f64, f64),
     NumCoord(f64, f64),
     LenCoord(f64, f64),
@@ -25,7 +25,7 @@ enum Val<'a> {
     Fn(Rc<FnDef<'a>>),
 }
 
-#[derive(Debug)]
+#[derive(Clone, Debug)]
 pub struct Env<'a> {
     bindings: HashMap<&'a str, Val<'a>>,
 }
@@ -76,7 +76,7 @@ pub type Error = String;
 
 fn eval_expr<'a>(env: &Env<'a>, term: &Term<'a>) -> Result<Val<'a>> {
     match *term {
-        Term::String(ref s) => Ok(Val::Str(s)),
+        Term::String(ref s) => Ok(eval_string(s)),
         Term::Number(ref x) => Ok(eval_num(env, x)),
         Term::Color(ref c) => panic!("TODO: eval color"),
         Term::Idents(ref path) => env.lookup(path),
@@ -84,8 +84,15 @@ fn eval_expr<'a>(env: &Env<'a>, term: &Term<'a>) -> Result<Val<'a>> {
         Term::BinOp(ref bo) => panic!("TODO: eval binop"),
         Term::FnCall(ref fc) => panic!("TODO: eval fncall"),
         Term::FnDef(ref fd) => panic!("TODO: eval fndef"),
-        Term::Block(ref bk) => panic!("TODO: eval block"),
+        Term::Block(ref bk) => eval_block(env, bk),
     }
+}
+
+fn eval_string<'a>(s: &'a str) -> Val<'a> {
+    // Strip off the quotes at the start and end.
+    let string = String::from(&s[1..s.len() - 1]);
+    // TODO: Handle escape sequences.
+    Val::Str(string)
 }
 
 fn eval_num<'a>(env: &Env<'a>, num: &Num) -> Val<'a> {
@@ -108,13 +115,31 @@ fn eval_num<'a>(env: &Env<'a>, num: &Num) -> Val<'a> {
     }
 }
 
+fn eval_block<'a>(env: &Env<'a>, block: &Block<'a>) -> Result<Val<'a>> {
+    // A block is evaluated in its enclosing environment, but it does not modify
+    // the environment, it gets a copy.
+    let mut inner_env = (*env).clone();
+
+    for statement in &block.0 {
+        match *statement {
+            // A return statement in a block determines the value that the block
+            // evalates to, if a return is present.
+            Stmt::Return(Return(ref r)) => return eval_expr(&inner_env, r),
+            // Otherwise, evaluating a statement just mutates the environment.
+            _ => eval_statement(&mut inner_env, statement)?,
+        }
+    }
+
+    Ok(Val::Box(Rc::new(inner_env)))
+}
+
 // Statement interpreter.
 
 pub fn eval_statement<'a>(env: &mut Env<'a>, stmt: &Stmt<'a>) -> Result<()> {
     match *stmt {
         Stmt::Import(ref i) => panic!("TODO: eval import"),
         Stmt::Assign(ref a) => eval_assign(env, a),
-        Stmt::Return(ref r) => panic!("TODO: eval return"),
+        Stmt::Return(ref r) => Err(String::from("'return' cannot be used here.")),
         Stmt::Block(ref bk) => panic!("TODO: eval block"),
         Stmt::PutAt(ref pa) => panic!("TODO: eval put at"),
     }
