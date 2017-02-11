@@ -7,7 +7,8 @@
 
 use std::collections::HashMap;
 
-use ast::{Assign, Block, Coord, FnDef, Idents, Num, Return, Stmt, Term, Unit};
+use ast::{Assign, BinOp, BinTerm, Block, Coord, FnDef, Idents, Num, Return};
+use ast::{Stmt, Term, Unit};
 use std::rc::Rc;
 use std::result;
 
@@ -81,7 +82,7 @@ fn eval_expr<'a>(env: &Env<'a>, term: &Term<'a>) -> Result<Val<'a>> {
         Term::Color(ref c) => panic!("TODO: eval color"),
         Term::Idents(ref path) => env.lookup(path),
         Term::Coord(ref co) => eval_coord(env, co),
-        Term::BinOp(ref bo) => panic!("TODO: eval binop"),
+        Term::BinOp(ref bo) => eval_binop(env, bo),
         Term::FnCall(ref fc) => panic!("TODO: eval fncall"),
         Term::FnDef(ref fd) => panic!("TODO: eval fndef"),
         Term::Block(ref bk) => eval_block(env, bk),
@@ -124,6 +125,42 @@ fn eval_coord<'a>(env: &Env<'a>, coord: &Coord<'a>) -> Result<Val<'a>> {
         _ => {
             let msg = "Type error: coord must be (num, num) or (len, len), \
                        but found (<TODO>, <TODO>) instead.";
+            Err(String::from(msg))
+        }
+    }
+}
+
+fn eval_binop<'a>(env: &Env<'a>, binop: &BinTerm<'a>) -> Result<Val<'a>> {
+    let lhs = eval_expr(env, &binop.0)?;
+    let rhs = eval_expr(env, &binop.2)?;
+    match binop.1 {
+        BinOp::Add => eval_add(lhs, rhs),
+        BinOp::Sub => eval_sub(lhs, rhs),
+        BinOp::Mul => panic!("TODO: eval mul"),
+        BinOp::Div => panic!("TODO: eval div"),
+        BinOp::Exp => panic!("TODO: eval exp"),
+    }
+}
+
+fn eval_add<'a>(lhs: Val<'a>, rhs: Val<'a>) -> Result<Val<'a>> {
+    match (lhs, rhs) {
+        (Val::Num(x), Val::Num(y)) => Ok(Val::Num(x + y)),
+        (Val::Len(x), Val::Len(y)) => Ok(Val::Len(x + y)),
+        _ => {
+            let msg = "Type error: '+' expects operands of the same type, \
+                       num or len, but found <TODO> and <TODO> instead.";
+            Err(String::from(msg))
+        }
+    }
+}
+
+fn eval_sub<'a>(lhs: Val<'a>, rhs: Val<'a>) -> Result<Val<'a>> {
+    match (lhs, rhs) {
+        (Val::Num(x), Val::Num(y)) => Ok(Val::Num(x - y)),
+        (Val::Len(x), Val::Len(y)) => Ok(Val::Len(x - y)),
+        _ => {
+            let msg = "Type error: '-' expects operands of the same type, \
+                       num or len, but found <TODO> and <TODO> instead.";
             Err(String::from(msg))
         }
     }
