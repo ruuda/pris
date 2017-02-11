@@ -32,11 +32,17 @@ pub struct Env<'a> {
 
 impl<'a> Env<'a> {
     pub fn new() -> Env<'a> {
-        Env { bindings: HashMap::new() }
+        let mut bindings = HashMap::new();
+        // Default font size is 0.1h.
+        bindings.insert("font_size", Val::Len(108.0));
+        Env { bindings: bindings }
     }
 
     pub fn lookup(&self, idents: &Idents<'a>) -> Result<Val<'a>> {
-        panic!("TODO: implement lookup.");
+        match self.bindings.get(idents.0[0]) {
+            Some(val) => Ok(val.clone()), // TODO: Handle nested lookup.
+            None => Err(format!("Variable '{}' does not exist.", idents.0[0])),
+        }
     }
 
     pub fn lookup_num(&self, idents: &Idents<'a>) -> Result<f64> {
