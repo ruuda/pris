@@ -23,7 +23,7 @@ enum Val<'a> {
     NumCoord(f64, f64),
     LenCoord(f64, f64),
     Box(Rc<Env<'a>>),
-    Fn(Rc<FnDef<'a>>),
+    Fn(&'a FnDef<'a>),
 }
 
 #[derive(Clone, Debug)]
@@ -75,7 +75,7 @@ pub type Error = String;
 
 // Expression interpreter.
 
-fn eval_expr<'a>(env: &Env<'a>, term: &Term<'a>) -> Result<Val<'a>> {
+fn eval_expr<'a>(env: &Env<'a>, term: &'a Term<'a>) -> Result<Val<'a>> {
     match *term {
         Term::String(ref s) => Ok(eval_string(s)),
         Term::Number(ref x) => Ok(eval_num(env, x)),
@@ -84,7 +84,7 @@ fn eval_expr<'a>(env: &Env<'a>, term: &Term<'a>) -> Result<Val<'a>> {
         Term::Coord(ref co) => eval_coord(env, co),
         Term::BinOp(ref bo) => eval_binop(env, bo),
         Term::FnCall(ref fc) => panic!("TODO: eval fncall"),
-        Term::FnDef(ref fd) => panic!("TODO: eval fndef"),
+        Term::FnDef(ref fd) => Ok(Val::Fn(fd)),
         Term::Block(ref bk) => eval_block(env, bk),
     }
 }
@@ -96,7 +96,7 @@ fn eval_string<'a>(s: &'a str) -> Val<'a> {
     Val::Str(string)
 }
 
-fn eval_num<'a>(env: &Env<'a>, num: &Num) -> Val<'a> {
+fn eval_num<'a>(env: &Env<'a>, num: &'a Num) -> Val<'a> {
     let Num(x, opt_unit) = *num;
     if let Some(unit) = opt_unit {
         match unit {
@@ -116,7 +116,7 @@ fn eval_num<'a>(env: &Env<'a>, num: &Num) -> Val<'a> {
     }
 }
 
-fn eval_coord<'a>(env: &Env<'a>, coord: &Coord<'a>) -> Result<Val<'a>> {
+fn eval_coord<'a>(env: &Env<'a>, coord: &'a Coord<'a>) -> Result<Val<'a>> {
     let x = eval_expr(env, &coord.0)?;
     let y = eval_expr(env, &coord.1)?;
     match (x, y) {
@@ -130,7 +130,7 @@ fn eval_coord<'a>(env: &Env<'a>, coord: &Coord<'a>) -> Result<Val<'a>> {
     }
 }
 
-fn eval_binop<'a>(env: &Env<'a>, binop: &BinTerm<'a>) -> Result<Val<'a>> {
+fn eval_binop<'a>(env: &Env<'a>, binop: &'a BinTerm<'a>) -> Result<Val<'a>> {
     let lhs = eval_expr(env, &binop.0)?;
     let rhs = eval_expr(env, &binop.2)?;
     match binop.1 {
@@ -166,7 +166,7 @@ fn eval_sub<'a>(lhs: Val<'a>, rhs: Val<'a>) -> Result<Val<'a>> {
     }
 }
 
-fn eval_block<'a>(env: &Env<'a>, block: &Block<'a>) -> Result<Val<'a>> {
+fn eval_block<'a>(env: &Env<'a>, block: &'a Block<'a>) -> Result<Val<'a>> {
     // A block is evaluated in its enclosing environment, but it does not modify
     // the environment, it gets a copy.
     let mut inner_env = (*env).clone();
@@ -186,7 +186,7 @@ fn eval_block<'a>(env: &Env<'a>, block: &Block<'a>) -> Result<Val<'a>> {
 
 // Statement interpreter.
 
-pub fn eval_statement<'a>(env: &mut Env<'a>, stmt: &Stmt<'a>) -> Result<()> {
+pub fn eval_statement<'a>(env: &mut Env<'a>, stmt: &'a Stmt<'a>) -> Result<()> {
     match *stmt {
         Stmt::Import(ref i) => panic!("TODO: eval import"),
         Stmt::Assign(ref a) => eval_assign(env, a),
@@ -196,7 +196,7 @@ pub fn eval_statement<'a>(env: &mut Env<'a>, stmt: &Stmt<'a>) -> Result<()> {
     }
 }
 
-fn eval_assign<'a>(env: &mut Env<'a>, stmt: &Assign<'a>) -> Result<()> {
+fn eval_assign<'a>(env: &mut Env<'a>, stmt: &'a Assign<'a>) -> Result<()> {
     let Assign(target, ref expression) = *stmt;
     let value = eval_expr(env, expression)?;
     env.put(target, value);
