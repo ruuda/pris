@@ -10,7 +10,7 @@ use std::rc::Rc;
 use std::result;
 
 use ast::{Assign, BinOp, BinTerm, Block, Color, Coord, FnDef, Idents, Num};
-use ast::{Return, Stmt, Term, Unit};
+use ast::{PutAt, Return, Stmt, Term, Unit};
 use pretty::{Formatter, Print};
 
 // Types used for the interpreter: values and an environment.
@@ -275,8 +275,9 @@ pub fn eval_statement<'a>(env: &mut Env<'a>,
                 Err(String::from(msg))
             }
         }
-        Stmt::PutAt(ref _pa) => {
-            panic!("TODO: eval put at")
+        Stmt::PutAt(ref pa) => {
+            eval_put_at(env, pa)?;
+            Ok(None)
         }
     }
 }
@@ -285,6 +286,34 @@ fn eval_assign<'a>(env: &mut Env<'a>, stmt: &'a Assign<'a>) -> Result<()> {
     let Assign(target, ref expression) = *stmt;
     let value = eval_expr(env, expression)?;
     env.put(target, value);
+    Ok(())
+}
+
+fn eval_put_at<'a>(env: &Env<'a>, put_at: &'a PutAt<'a>) -> Result<()> {
+    let content = match eval_expr(env, &put_at.0)? {
+        x @ Val::Frame(..) => x,
+        // TODO: Allow placing strings?
+        _ => {
+            let msg = "Cannot place <TODO>. Only frames can be placed.";
+            return Err(String::from(msg));
+        }
+    };
+
+    let location = match eval_expr(env, &put_at.1)? {
+        x @ Val::LenCoord(..) => x,
+        _ => {
+            let msg = "Placement requires a coordinate with length units, \
+                       but a <TODO> was found instead.";
+            return Err(String::from(msg));
+        }
+    };
+
+    let mut f = Formatter::new();
+    f.print("TODO: at ");
+    f.print(&location);
+    f.print(" put ");
+    f.print(&content);
+    println!("{}", f.into_string());
     Ok(())
 }
 
