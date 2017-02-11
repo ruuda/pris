@@ -16,15 +16,20 @@ use pretty::{Formatter, Print};
 // Types used for the interpreter: values and an environment.
 
 #[derive(Clone)]
-enum Val<'a> {
+pub enum Val<'a> {
     Num(f64), // TODO: Be consistent about abbreviating things.
     Len(f64),
     Str(String),
     Col(f64, f64, f64),
     NumCoord(f64, f64),
     LenCoord(f64, f64),
-    Box(Rc<Env<'a>>),
+    Frame(Rc<Frame<'a>>),
     Fn(&'a FnDef<'a>),
+}
+
+#[derive(Clone)]
+pub struct Frame<'a> {
+    env: Env<'a>,
 }
 
 #[derive(Clone)]
@@ -86,11 +91,11 @@ fn eval_expr<'a>(env: &Env<'a>, term: &'a Term<'a>) -> Result<Val<'a>> {
     match *term {
         Term::String(ref s) => Ok(eval_string(s)),
         Term::Number(ref x) => Ok(eval_num(env, x)),
-        Term::Color(ref c) => panic!("TODO: eval color"),
+        Term::Color(ref _c) => panic!("TODO: eval color"),
         Term::Idents(ref path) => env.lookup(path),
         Term::Coord(ref co) => eval_coord(env, co),
         Term::BinOp(ref bo) => eval_binop(env, bo),
-        Term::FnCall(ref fc) => panic!("TODO: eval fncall"),
+        Term::FnCall(ref _fc) => panic!("TODO: eval fncall"),
         Term::FnDef(ref fd) => Ok(Val::Fn(fd)),
         Term::Block(ref bk) => eval_block(env, bk),
     }
@@ -196,7 +201,7 @@ fn eval_div<'a>(lhs: Val<'a>, rhs: Val<'a>) -> Result<Val<'a>> {
         (Val::Num(x), Val::Num(y)) => Ok(Val::Num(x / y)),
         (Val::Len(x), Val::Num(y)) => Ok(Val::Len(x / y)),
         (Val::Len(x), Val::Len(y)) => Ok(Val::Num(x / y)),
-        (Val::Num(x), Val::Len(y)) => {
+        (Val::Num(_), Val::Len(_)) => {
             let msg = "Type error: dividing a number by a length would produce \
                        a value of inverse length, but this is not supported.";
             Err(String::from(msg))
@@ -219,23 +224,55 @@ fn eval_block<'a>(env: &Env<'a>, block: &'a Block<'a>) -> Result<Val<'a>> {
             // A return statement in a block determines the value that the block
             // evalates to, if a return is present.
             Stmt::Return(Return(ref r)) => return eval_expr(&inner_env, r),
+            // A block statemen to make a frame can only be used at the top
+            // level.
+            Stmt::Block(..) => {
+                let msg = "Error: slides can only be introduced at the top level. \
+                           Note: use 'at (0w, 0w) put { ... }' to place a frame.";
+                return Err(String::from(msg));
+            }
             // Otherwise, evaluating a statement just mutates the environment.
-            _ => eval_statement(&mut inner_env, statement)?,
+            _ => {
+                let maybe_frame = eval_statement(&mut inner_env, statement)?;
+                assert!(maybe_frame.is_none());
+            }
         }
     }
 
-    Ok(Val::Box(Rc::new(inner_env)))
+    let frame = Frame { env: inner_env };
+    Ok(Val::Frame(Rc::new(frame)))
 }
 
 // Statement interpreter.
 
-pub fn eval_statement<'a>(env: &mut Env<'a>, stmt: &'a Stmt<'a>) -> Result<()> {
+pub fn eval_statement<'a>(env: &mut Env<'a>,
+                          stmt: &'a Stmt<'a>) -> Result<Option<Rc<Frame<'a>>>> {
     match *stmt {
-        Stmt::Import(ref i) => Ok(println!("TODO: eval import")),
-        Stmt::Assign(ref a) => eval_assign(env, a),
-        Stmt::Return(ref r) => Err(String::from("'return' cannot be used here.")),
-        Stmt::Block(ref bk) => panic!("TODO: eval block"),
-        Stmt::PutAt(ref pa) => panic!("TODO: eval put at"),
+        Stmt::Import(ref _i) => {
+            println!("TODO: eval import");
+            Ok(None)
+        }
+        Stmt::Assign(ref a) => {
+            eval_assign(env, a)?;
+            Ok(None)
+        }
+        Stmt::Return(..) => {
+            // The return case is handled in block evaluation. A bare return
+            // statement does not make sense.
+            Err(String::from("Syntax error: 'return' cannot be used here."))
+        }
+        Stmt::Block(ref bk) => {
+            if let Val::Frame(frame) = eval_block(env, bk)? {
+                Ok(Some(frame))
+            } else {
+                let msg = "Type error: top-level blocks must evaluate to frames, \
+                           but a <TODO> was encountered instead.";
+                Err(String::from(msg))
+            }
+        }
+        Stmt::PutAt(ref _pa) => {
+            panic!("TODO: eval put at")
+        }
     }
 }
 
@@ -287,9 +324,8 @@ impl<'a> Print for Val<'a> {
                 f.print_f64(y);
                 f.print(") (len)");
             }
-            Val::Box(ref env) => {
-                f.print("box\n");
-                f.print(env);
+            Val::Frame(ref frame) => {
+                f.print(frame);
             }
             Val::Fn(ref fndef) => {
                 f.print(fndef);
@@ -305,6 +341,13 @@ impl<'a> Print for (&'a &'a str, &'a Val<'a>) {
         f.print(self.0);
         f.print(" = ");
         f.print(self.1);
+    }
+}
+
+impl<'a> Print for Frame<'a> {
+    fn print(&self, f: &mut Formatter) {
+        f.print("frame\n");
+        f.print(&self.env);
     }
 }
 

@@ -82,8 +82,12 @@ fn main() {
     let doc = parse_or_abort(&input);
     let mut env = interpreter::Env::new();
     for statement in &doc.0 {
-        interpreter::eval_statement(&mut env, statement).unwrap();
         println!("EVAL {}", pretty::print(statement));
-        println!("{}\n", pretty::print(&env));
+        let mframe = interpreter::eval_statement(&mut env, statement).unwrap();
+        println!("===>\n{}", pretty::print(&env));
+        if let Some(frame) = mframe {
+            println!("===> {}", pretty::print(&frame));
+        }
+        println!("");
     }
 }
