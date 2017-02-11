@@ -143,8 +143,8 @@ fn eval_binop<'a>(env: &Env<'a>, binop: &'a BinTerm<'a>) -> Result<Val<'a>> {
     match binop.1 {
         BinOp::Add => eval_add(lhs, rhs),
         BinOp::Sub => eval_sub(lhs, rhs),
-        BinOp::Mul => panic!("TODO: eval mul"),
-        BinOp::Div => panic!("TODO: eval div"),
+        BinOp::Mul => eval_mul(lhs, rhs),
+        BinOp::Div => eval_div(lhs, rhs),
         BinOp::Exp => panic!("TODO: eval exp"),
     }
 }
@@ -173,6 +173,42 @@ fn eval_sub<'a>(lhs: Val<'a>, rhs: Val<'a>) -> Result<Val<'a>> {
     }
 }
 
+fn eval_mul<'a>(lhs: Val<'a>, rhs: Val<'a>) -> Result<Val<'a>> {
+    match (lhs, rhs) {
+        (Val::Num(x), Val::Num(y)) => Ok(Val::Num(x * y)),
+        (Val::Len(x), Val::Num(y)) => Ok(Val::Len(x * y)),
+        (Val::Num(x), Val::Len(y)) => Ok(Val::Len(x * y)),
+        (Val::Len(_), Val::Len(_)) => {
+            let msg = "Type error: multiplying two lengths would produce an area, \
+                       but area values are not suppored.";
+            Err(String::from(msg))
+        }
+        _ => {
+            let msg = "Type error: '*' expects num or len operands, \
+                       but found <TODO> and <TODO> instead.";
+            Err(String::from(msg))
+        }
+    }
+}
+
+fn eval_div<'a>(lhs: Val<'a>, rhs: Val<'a>) -> Result<Val<'a>> {
+    match (lhs, rhs) {
+        (Val::Num(x), Val::Num(y)) => Ok(Val::Num(x / y)),
+        (Val::Len(x), Val::Num(y)) => Ok(Val::Len(x / y)),
+        (Val::Len(x), Val::Len(y)) => Ok(Val::Num(x / y)),
+        (Val::Num(x), Val::Len(y)) => {
+            let msg = "Type error: dividing a number by a length would produce \
+                       a value of inverse length, but this is not supported.";
+            Err(String::from(msg))
+        }
+        _ => {
+            let msg = "Type error: '/' expects num or len operands, \
+                       but found <TODO> and <TODO> instead.";
+            Err(String::from(msg))
+        }
+    }
+}
+
 fn eval_block<'a>(env: &Env<'a>, block: &'a Block<'a>) -> Result<Val<'a>> {
     // A block is evaluated in its enclosing environment, but it does not modify
     // the environment, it gets a copy.
@@ -195,7 +231,7 @@ fn eval_block<'a>(env: &Env<'a>, block: &'a Block<'a>) -> Result<Val<'a>> {
 
 pub fn eval_statement<'a>(env: &mut Env<'a>, stmt: &'a Stmt<'a>) -> Result<()> {
     match *stmt {
-        Stmt::Import(ref i) => panic!("TODO: eval import"),
+        Stmt::Import(ref i) => Ok(println!("TODO: eval import")),
         Stmt::Assign(ref a) => eval_assign(env, a),
         Stmt::Return(ref r) => Err(String::from("'return' cannot be used here.")),
         Stmt::Block(ref bk) => panic!("TODO: eval block"),
