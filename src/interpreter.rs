@@ -7,7 +7,7 @@
 
 use std::collections::HashMap;
 
-use ast::{Assign, Block, FnDef, Idents, Num, Return, Stmt, Term, Unit};
+use ast::{Assign, Block, Coord, FnDef, Idents, Num, Return, Stmt, Term, Unit};
 use std::rc::Rc;
 use std::result;
 
@@ -80,7 +80,7 @@ fn eval_expr<'a>(env: &Env<'a>, term: &Term<'a>) -> Result<Val<'a>> {
         Term::Number(ref x) => Ok(eval_num(env, x)),
         Term::Color(ref c) => panic!("TODO: eval color"),
         Term::Idents(ref path) => env.lookup(path),
-        Term::Coord(ref co) => panic!("TODO: eval coordinate"),
+        Term::Coord(ref co) => eval_coord(env, co),
         Term::BinOp(ref bo) => panic!("TODO: eval binop"),
         Term::FnCall(ref fc) => panic!("TODO: eval fncall"),
         Term::FnDef(ref fd) => panic!("TODO: eval fndef"),
@@ -112,6 +112,20 @@ fn eval_num<'a>(env: &Env<'a>, num: &Num) -> Val<'a> {
         }
     } else {
         Val::Num(x)
+    }
+}
+
+fn eval_coord<'a>(env: &Env<'a>, coord: &Coord<'a>) -> Result<Val<'a>> {
+    let x = eval_expr(env, &coord.0)?;
+    let y = eval_expr(env, &coord.1)?;
+    match (x, y) {
+        (Val::Num(a), Val::Num(b)) => Ok(Val::NumCoord(a, b)),
+        (Val::Len(a), Val::Len(b)) => Ok(Val::LenCoord(a, b)),
+        _ => {
+            let msg = "Type error: coord must be (num, num) or (len, len), \
+                       but found (<TODO>, <TODO>) instead.";
+            Err(String::from(msg))
+        }
     }
 }
 
