@@ -28,19 +28,19 @@ ax = std.anchors
   background_color = #fafafa
 
   image_origin = (0.5, 0.5)
-  at (ax.center - (0, 5em)) put fit(image("logo.png"), (5em, 5em))
+  at (ax.center - (0em, 5em)) put fit(image("logo.png"), (5em, 5em))
 
-  font_size = 2em
-  font_weight = bold
+  font_size = 32pt
+  font_weight = "bold"
   text_origin = (0.5, 1.0)
 
   at ax.center put "Welcome"
 
-  font_size = 1em
+  font_size = 16pt
 
-  at (ax.center + (0, 1em)) put "To my talk"
+  at (ax.center + (0em, 1em)) put "To my talk"
 
-  put "To my talk" at (ax.center + (0, 2em))
+  put "To my talk" at (ax.center + (0em, 2em))
 }
 
 {

@@ -83,8 +83,32 @@ impl<'a> Env<'a> {
     }
 
     pub fn lookup(&self, idents: &Idents<'a>) -> Result<Val<'a>> {
+        assert!(idents.0.len() > 0);
         match self.bindings.get(idents.0[0]) {
-            Some(val) => Ok(val.clone()), // TODO: Handle nested lookup.
+            Some(val) => {
+                if idents.0.len() == 1 {
+                    Ok(val.clone())
+                } else {
+                    match *val {
+                        Val::Frame(ref frame) => {
+                            let mut more = idents.0.clone();
+                            more.remove(0);
+                            frame.env.lookup(&Idents(more))
+                        }
+                        _ => {
+                            let mut f = Formatter::new();
+                            f.print("Type error while reading variable '");
+                            f.print(idents);
+                            f.print("'. Cannot look up '");
+                            f.print(idents.0[1]);
+                            f.print("' in '");
+                            f.print(idents.0[0]);
+                            f.print("' because it is not a frame.");
+                            Err(f.into_string())
+                        }
+                    }
+                }
+            }
             None => Err(format!("Variable '{}' does not exist.", idents.0[0])),
         }
     }
@@ -193,22 +217,44 @@ fn eval_binop<'a>(env: &Env<'a>, binop: &'a BinTerm<'a>) -> Result<Val<'a>> {
 
 fn eval_add<'a>(lhs: Val<'a>, rhs: Val<'a>) -> Result<Val<'a>> {
     match (lhs, rhs) {
-        (Val::Num(x, d), Val::Num(y, e)) if d == e => Ok(Val::Num(x + y, d)),
-        _ => {
-            let msg = "Type error: '+' expects operands of the same type, \
-                       num or len, but found <TODO> and <TODO> instead.";
-            Err(String::from(msg))
+        (Val::Num(x0, d0), Val::Num(x1, d1)) if d0 == d1 => {
+            Ok(Val::Num(x0 + x1, d0))
+        }
+        (Val::Coord(x0, y0, d0), Val::Coord(x1, y1, d1)) if d0 == d1 => {
+            Ok(Val::Coord(x0 + x1, y0 + y1, d0))
+        }
+        (lhs, rhs) => {
+            let mut f = Formatter::new();
+            f.print("Type error: '+' expects operands of the same type, \
+                     num or len or coords thereof, \
+                     but found '");
+            f.print(lhs);
+            f.print("' and '");
+            f.print(rhs);
+            f.print("' instead.");
+            Err(f.into_string())
         }
     }
 }
 
 fn eval_sub<'a>(lhs: Val<'a>, rhs: Val<'a>) -> Result<Val<'a>> {
     match (lhs, rhs) {
-        (Val::Num(x, d), Val::Num(y, e)) if d == e => Ok(Val::Num(x - y, d)),
-        _ => {
-            let msg = "Type error: '-' expects operands of the same type, \
-                       num or len, but found <TODO> and <TODO> instead.";
-            Err(String::from(msg))
+        (Val::Num(x0, d0), Val::Num(x1, d1)) if d0 == d1 => {
+            Ok(Val::Num(x0 - x1, d0))
+        }
+        (Val::Coord(x0, y0, d0), Val::Coord(x1, y1, d1)) if d0 == d1 => {
+            Ok(Val::Coord(x0 - x1, y0 - y1, d0))
+        }
+        (lhs, rhs) => {
+            let mut f = Formatter::new();
+            f.print("Type error: '-' expects operands of the same type, \
+                     num or len or coords thereof, \
+                     but found '");
+            f.print(lhs);
+            f.print("' and '");
+            f.print(rhs);
+            f.print("' instead.");
+            Err(f.into_string())
         }
     }
 }
