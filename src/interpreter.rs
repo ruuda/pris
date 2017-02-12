@@ -11,6 +11,7 @@ use std::result;
 
 use ast::{Assign, BinOp, BinTerm, Block, Color, Coord, FnCall, FnDef, Idents};
 use ast::{Num, PutAt, Return, Stmt, Term, Unit};
+use builtins;
 use pretty::{Formatter, Print};
 
 // Types used for the interpreter: values and an environment.
@@ -22,7 +23,8 @@ pub enum Val<'a> {
     Col(f64, f64, f64),
     Coord(f64, f64, LenDim),
     Frame(Rc<Frame<'a>>),
-    Fn(&'a FnDef<'a>),
+    FnExtrin(&'a FnDef<'a>),
+    FnIntrin(Builtin),
 }
 
 /// Represents a number of length dimensions.
@@ -41,9 +43,33 @@ pub struct Frame<'a> {
     env: Env<'a>,
 }
 
+// A "builtin" function is a function that takes an environment and a vector of
+// arguments, and produces a new value. We make a wrapper type to be able to
+// implement a no-op clone on it.
+pub struct Builtin(for<'a> fn(&Env<'a>, Vec<Val<'a>>) -> Result<Val<'a>>);
+
+pub type Result<T> = result::Result<T, Error>;
+
+pub type Error = String;
+
 #[derive(Clone)]
 pub struct Env<'a> {
     bindings: HashMap<&'a str, Val<'a>>,
+}
+
+impl Clone for Builtin {
+    fn clone(&self) -> Builtin {
+        let Builtin(x) = *self;
+        Builtin(x)
+    }
+}
+
+impl<'a> Frame<'a> {
+    pub fn new() -> Frame<'a> {
+        Frame {
+            env: Env::new(),
+        }
+    }
 }
 
 impl<'a> Env<'a> {
@@ -51,6 +77,7 @@ impl<'a> Env<'a> {
         let mut bindings = HashMap::new();
         // Default font size is 0.1h.
         bindings.insert("font_size", Val::Num(108.0, 1));
+        bindings.insert("image", Val::FnIntrin(Builtin(builtins::image)));
         Env { bindings: bindings }
     }
 
@@ -90,10 +117,6 @@ impl<'a> Env<'a> {
     }
 }
 
-pub type Result<T> = result::Result<T, Error>;
-
-pub type Error = String;
-
 // Expression interpreter.
 
 fn eval_expr<'a>(env: &Env<'a>, term: &'a Term<'a>) -> Result<Val<'a>> {
@@ -105,7 +128,7 @@ fn eval_expr<'a>(env: &Env<'a>, term: &'a Term<'a>) -> Result<Val<'a>> {
         Term::Coord(ref co) => eval_coord(env, co),
         Term::BinOp(ref bo) => eval_binop(env, bo),
         Term::FnCall(ref f) => eval_call(env, f),
-        Term::FnDef(ref fd) => Ok(Val::Fn(fd)),
+        Term::FnDef(ref fd) => Ok(Val::FnExtrin(fd)),
         Term::Block(ref bk) => eval_block(env, bk),
     }
 }
@@ -218,8 +241,12 @@ fn eval_call<'a>(env: &Env<'a>, call: &'a FnCall<'a>) -> Result<Val<'a>> {
     }
     let func = eval_expr(env, &call.0)?;
     match func {
-        Val::Fn(fn_def) => eval_call_def(env, fn_def, args),
-        // TODO: Deal with built-in functions.
+        // For a user-defined function, we evaluate the function body.
+        Val::FnExtrin(fn_def) => eval_call_def(env, fn_def, args),
+        // For a builtin function, the value carries a function pointer,
+        // so we can just call that.
+        Val::FnIntrin(Builtin(intrin)) => intrin(env, args),
+        // Other things are not callable.
         _ => {
             let msg = "Type error: attempting to call value of type <TODO>. \
                        Only functions can be called.";
@@ -234,7 +261,8 @@ fn eval_call_def<'a>(env: &Env<'a>,
                      -> Result<Val<'a>> {
     // Ensure that a value is provided for every argument, and no more.
     if fn_def.0.len() != args.len() {
-        let msg = format!("Error: function takes {} arguments, but {} were provided.",
+        let msg = format!("Arity error: function takes {} arguments, \
+                           but {} were provided.",
                           fn_def.0.len(), args.len());
         return Err(msg)
     }
@@ -382,8 +410,11 @@ impl<'a> Print for Val<'a> {
             Val::Frame(ref frame) => {
                 f.print(frame);
             }
-            Val::Fn(ref fndef) => {
+            Val::FnExtrin(ref fndef) => {
                 f.print(fndef);
+            }
+            Val::FnIntrin(..) => {
+                f.print("function(...) { <built-in> }");
             }
         }
     }

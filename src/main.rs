@@ -8,6 +8,7 @@
 extern crate lalrpop_util;
 
 mod ast;
+mod builtins;
 mod interpreter;
 mod pretty;
 mod syntax;
