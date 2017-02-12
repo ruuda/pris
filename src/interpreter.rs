@@ -78,6 +78,7 @@ impl<'a> Env<'a> {
         // Default font size is 0.1h.
         bindings.insert("font_size", Val::Num(108.0, 1));
         bindings.insert("image", Val::FnIntrin(Builtin(builtins::image)));
+        bindings.insert("fit", Val::FnIntrin(Builtin(builtins::fit)));
         Env { bindings: bindings }
     }
 
