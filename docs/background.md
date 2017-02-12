@@ -1,3 +1,7 @@
+# Background
+
+Below are some observations that inspired the design of Pris.
+
 ## Observations
 
 While a declarative source with a theme (such as html with css, or LaTeX) works
