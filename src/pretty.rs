@@ -82,6 +82,10 @@ impl Formatter {
         write!(&mut self.target, "{}", content).unwrap();
     }
 
+    pub fn print_i32(&mut self, content: i32) {
+        write!(&mut self.target, "{}", content).unwrap();
+    }
+
     pub fn print_hex_byte(&mut self, content: u8) {
         write!(&mut self.target, "{:2x}", content).unwrap();
     }

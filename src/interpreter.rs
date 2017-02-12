@@ -17,15 +17,24 @@ use pretty::{Formatter, Print};
 
 #[derive(Clone)]
 pub enum Val<'a> {
-    Num(f64), // TODO: Be consistent about abbreviating things.
-    Len(f64),
+    Num(f64, LenDim), // TODO: Be consistent about abbreviating things.
     Str(String),
     Col(f64, f64, f64),
-    NumCoord(f64, f64),
-    LenCoord(f64, f64),
+    Coord(f64, f64, LenDim),
     Frame(Rc<Frame<'a>>),
     Fn(&'a FnDef<'a>),
 }
+
+/// Represents a number of length dimensions.
+///
+/// -2 means "per area".
+/// -1 means "per length".
+/// 0 indicates a dimensionless number.
+/// 1 means "length".
+/// 2 means "area".
+/// 3 means "volume".
+/// etc.
+type LenDim = i32;
 
 #[derive(Clone)]
 pub struct Frame<'a> {
@@ -41,7 +50,7 @@ impl<'a> Env<'a> {
     pub fn new() -> Env<'a> {
         let mut bindings = HashMap::new();
         // Default font size is 0.1h.
-        bindings.insert("font_size", Val::Len(108.0));
+        bindings.insert("font_size", Val::Num(108.0, 1));
         Env { bindings: bindings }
     }
 
@@ -53,7 +62,7 @@ impl<'a> Env<'a> {
     }
 
     pub fn lookup_num(&self, idents: &Idents<'a>) -> Result<f64> {
-        if let Val::Num(x) = self.lookup(idents)? {
+        if let Val::Num(x, 0) = self.lookup(idents)? {
             Ok(x)
         } else {
             let mut msg = Formatter::new();
@@ -65,7 +74,7 @@ impl<'a> Env<'a> {
     }
 
     pub fn lookup_len(&self, idents: &Idents<'a>) -> Result<f64> {
-        if let Val::Len(x) = self.lookup(idents)? {
+        if let Val::Num(x, 1) = self.lookup(idents)? {
             Ok(x)
         } else {
             let mut msg = Formatter::new();
@@ -112,19 +121,19 @@ fn eval_num<'a>(env: &Env<'a>, num: &'a Num) -> Val<'a> {
     let Num(x, opt_unit) = *num;
     if let Some(unit) = opt_unit {
         match unit {
-            Unit::W => Val::Len(1920.0 * x),
-            Unit::H => Val::Len(1080.0 * x),
-            Unit::Pt => Val::Len(1.0 * x),
+            Unit::W => Val::Num(1920.0 * x, 1),
+            Unit::H => Val::Num(1080.0 * x, 1),
+            Unit::Pt => Val::Num(1.0 * x, 1),
             Unit::Em => {
                 // The variable "font_size" should always be set, it is present
                 // in the global environment.
                 let ident_font_size = Idents(vec!["font_size"]);
                 let emsize = env.lookup_len(&ident_font_size).unwrap();
-                Val::Len(emsize * x)
+                Val::Num(emsize * x, 1)
             }
         }
     } else {
-        Val::Num(x)
+        Val::Num(x, 0)
     }
 }
 
@@ -137,8 +146,7 @@ fn eval_coord<'a>(env: &Env<'a>, coord: &'a Coord<'a>) -> Result<Val<'a>> {
     let x = eval_expr(env, &coord.0)?;
     let y = eval_expr(env, &coord.1)?;
     match (x, y) {
-        (Val::Num(a), Val::Num(b)) => Ok(Val::NumCoord(a, b)),
-        (Val::Len(a), Val::Len(b)) => Ok(Val::LenCoord(a, b)),
+        (Val::Num(a, d), Val::Num(b, e)) if d == e => Ok(Val::Coord(a, b, d)),
         _ => {
             let msg = "Type error: coord must be (num, num) or (len, len), \
                        but found (<TODO>, <TODO>) instead.";
@@ -161,8 +169,7 @@ fn eval_binop<'a>(env: &Env<'a>, binop: &'a BinTerm<'a>) -> Result<Val<'a>> {
 
 fn eval_add<'a>(lhs: Val<'a>, rhs: Val<'a>) -> Result<Val<'a>> {
     match (lhs, rhs) {
-        (Val::Num(x), Val::Num(y)) => Ok(Val::Num(x + y)),
-        (Val::Len(x), Val::Len(y)) => Ok(Val::Len(x + y)),
+        (Val::Num(x, d), Val::Num(y, e)) if d == e => Ok(Val::Num(x + y, d)),
         _ => {
             let msg = "Type error: '+' expects operands of the same type, \
                        num or len, but found <TODO> and <TODO> instead.";
@@ -173,8 +180,7 @@ fn eval_add<'a>(lhs: Val<'a>, rhs: Val<'a>) -> Result<Val<'a>> {
 
 fn eval_sub<'a>(lhs: Val<'a>, rhs: Val<'a>) -> Result<Val<'a>> {
     match (lhs, rhs) {
-        (Val::Num(x), Val::Num(y)) => Ok(Val::Num(x - y)),
-        (Val::Len(x), Val::Len(y)) => Ok(Val::Len(x - y)),
+        (Val::Num(x, d), Val::Num(y, e)) if d == e => Ok(Val::Num(x - y, d)),
         _ => {
             let msg = "Type error: '-' expects operands of the same type, \
                        num or len, but found <TODO> and <TODO> instead.";
@@ -185,14 +191,7 @@ fn eval_sub<'a>(lhs: Val<'a>, rhs: Val<'a>) -> Result<Val<'a>> {
 
 fn eval_mul<'a>(lhs: Val<'a>, rhs: Val<'a>) -> Result<Val<'a>> {
     match (lhs, rhs) {
-        (Val::Num(x), Val::Num(y)) => Ok(Val::Num(x * y)),
-        (Val::Len(x), Val::Num(y)) => Ok(Val::Len(x * y)),
-        (Val::Num(x), Val::Len(y)) => Ok(Val::Len(x * y)),
-        (Val::Len(_), Val::Len(_)) => {
-            let msg = "Type error: multiplying two lengths would produce an area, \
-                       but area values are not suppored.";
-            Err(String::from(msg))
-        }
+        (Val::Num(x, d), Val::Num(y, e)) => Ok(Val::Num(x * y, d + e)),
         _ => {
             let msg = "Type error: '*' expects num or len operands, \
                        but found <TODO> and <TODO> instead.";
@@ -203,14 +202,7 @@ fn eval_mul<'a>(lhs: Val<'a>, rhs: Val<'a>) -> Result<Val<'a>> {
 
 fn eval_div<'a>(lhs: Val<'a>, rhs: Val<'a>) -> Result<Val<'a>> {
     match (lhs, rhs) {
-        (Val::Num(x), Val::Num(y)) => Ok(Val::Num(x / y)),
-        (Val::Len(x), Val::Num(y)) => Ok(Val::Len(x / y)),
-        (Val::Len(x), Val::Len(y)) => Ok(Val::Num(x / y)),
-        (Val::Num(_), Val::Len(_)) => {
-            let msg = "Type error: dividing a number by a length would produce \
-                       a value of inverse length, but this is not supported.";
-            Err(String::from(msg))
-        }
+        (Val::Num(x, d), Val::Num(y, e)) => Ok(Val::Num(x / y, d - e)),
         _ => {
             let msg = "Type error: '/' expects num or len operands, \
                        but found <TODO> and <TODO> instead.";
@@ -300,7 +292,7 @@ fn eval_put_at<'a>(env: &Env<'a>, put_at: &'a PutAt<'a>) -> Result<()> {
     };
 
     let location = match eval_expr(env, &put_at.1)? {
-        x @ Val::LenCoord(..) => x,
+        x @ Val::Coord(_, _, 1) => x,
         _ => {
             let msg = "Placement requires a coordinate with length units, \
                        but a <TODO> was found instead.";
@@ -322,13 +314,10 @@ fn eval_put_at<'a>(env: &Env<'a>, put_at: &'a PutAt<'a>) -> Result<()> {
 impl<'a> Print for Val<'a> {
     fn print(&self, f: &mut Formatter) {
         match *self {
-            Val::Num(x) => {
+            Val::Num(x, d) => {
                 f.print_f64(x);
-                f.print(" (num)");
-            }
-            Val::Len(x) => {
-                f.print_f64(x);
-                f.print(" (len)");
+                f.print(" : ");
+                print_unit(f, d);
             }
             Val::Str(ref s) => {
                 f.print("\"");
@@ -342,21 +331,15 @@ impl<'a> Print for Val<'a> {
                 f.print_f64(g);
                 f.print(", ");
                 f.print_f64(b);
-                f.print(") (color)");
+                f.print(") : color");
             }
-            Val::NumCoord(x, y) => {
+            Val::Coord(x, y, d) => {
                 f.print("(");
                 f.print_f64(x);
                 f.print(", ");
                 f.print_f64(y);
-                f.print(") (num)");
-            }
-            Val::LenCoord(x, y) => {
-                f.print("(");
-                f.print_f64(x);
-                f.print(", ");
-                f.print_f64(y);
-                f.print(") (len)");
+                f.print(") : coord of ");
+                print_unit(f, d);
             }
             Val::Frame(ref frame) => {
                 f.print(frame);
@@ -365,6 +348,19 @@ impl<'a> Print for Val<'a> {
                 f.print(fndef);
             }
         }
+    }
+}
+
+fn print_unit(f: &mut Formatter, d: LenDim) {
+    match d {
+        -3 => f.print("len⁻³"),
+        -2 => f.print("len⁻²"),
+        -1 => f.print("len⁻¹"),
+        0 => f.print("num"),
+        1 => f.print("len"),
+        2 => f.print("len²"),
+        3 => f.print("len³"),
+        n => { f.print("len^"); f.print_i32(n); }
     }
 }
 
