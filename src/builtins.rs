@@ -52,6 +52,24 @@ pub fn image<'a>(_env: &Env<'a>, mut args: Vec<Val<'a>>) -> Result<Val<'a>> {
 
     println!("TODO: Should load image '{}' and return it as frame.", fname);
 
-    let frame = Frame::new();
-    Ok(Val::Frame(Rc::new(frame)))
+    Ok(Val::Frame(Rc::new(Frame::new())))
+}
+
+pub fn t<'a>(_env: &Env<'a>, mut args: Vec<Val<'a>>) -> Result<Val<'a>> {
+    if args.len() != 1 {
+        let msg = format!("Arity error: 't' takes one argument, \
+                           but {} were provided.", args.len());
+        return Err(msg)
+    }
+    let text = match args.remove(0) {
+        Val::Str(s) => s,
+        _ => {
+            let msg = "Type error: 't' expects a string, \
+                       but a <TODO> was given instead.";
+            return Err(String::from(msg))
+        }
+    };
+
+    println!("TODO: Generate a text frame for the text '{}'.", text);
+    Ok(Val::Frame(Rc::new(Frame::new())))
 }

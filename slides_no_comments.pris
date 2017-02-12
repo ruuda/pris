@@ -11,10 +11,10 @@ std =
 
   three_times = function(x)
   {
-    put x at (0, 0)
-    put x at (0, 1.2em)
-    put x at (0, 2.4em)
-    foobar = 32
+    put x at (0pt, 0em)
+    put x at (0pt, 1.2em)
+    put x at (0pt, 2.4em)
+    foobar = 32pt
   }
 }
 
@@ -34,26 +34,26 @@ ax = std.anchors
   font_weight = "bold"
   text_origin = (0.5, 1.0)
 
-  at ax.center put "Welcome"
+  at ax.center put t("Welcome")
 
   font_size = 16pt
 
-  at (ax.center + (0em, 1em)) put "To my talk"
+  at (ax.center + (0em, 1em)) put t("To my talk")
 
-  put "To my talk" at (ax.center + (0em, 2em))
+  put t("To my talk") at (ax.center + (0em, 2em))
 }
 
 {
-  put three_times("repeat") at ax.center
+  put std.three_times(t("repeat")) at ax.center
 
-  z = three_times("doesn't matter")
-  at (z.foobar, z.foobar) put "This is at (32, 32)"
+  z = std.three_times(t("doesn't matter"))
+  at (z.foobar, z.foobar) put t("This is at (32, 32)")
 }
 
 {
   color = #404040
   line_width = 0.02em
-  line_style = solid
+  line_style = "solid"
   at ax.top_left put line(ax.top_right - ax.top_left)
 }
 

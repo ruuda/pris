@@ -79,6 +79,7 @@ impl<'a> Env<'a> {
         bindings.insert("font_size", Val::Num(108.0, 1));
         bindings.insert("image", Val::FnIntrin(Builtin(builtins::image)));
         bindings.insert("fit", Val::FnIntrin(Builtin(builtins::fit)));
+        bindings.insert("t", Val::FnIntrin(Builtin(builtins::t)));
         Env { bindings: bindings }
     }
 
