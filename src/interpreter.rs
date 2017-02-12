@@ -9,8 +9,8 @@ use std::collections::HashMap;
 use std::rc::Rc;
 use std::result;
 
-use ast::{Assign, BinOp, BinTerm, Block, Color, Coord, FnDef, Idents, Num};
-use ast::{PutAt, Return, Stmt, Term, Unit};
+use ast::{Assign, BinOp, BinTerm, Block, Color, Coord, FnCall, FnDef, Idents};
+use ast::{Num, PutAt, Return, Stmt, Term, Unit};
 use pretty::{Formatter, Print};
 
 // Types used for the interpreter: values and an environment.
@@ -100,11 +100,11 @@ fn eval_expr<'a>(env: &Env<'a>, term: &'a Term<'a>) -> Result<Val<'a>> {
     match *term {
         Term::String(ref s) => Ok(eval_string(s)),
         Term::Number(ref x) => Ok(eval_num(env, x)),
-        Term::Color(ref c) => Ok(eval_color(c)),
-        Term::Idents(ref path) => env.lookup(path),
+        Term::Color(ref co) => Ok(eval_color(co)),
+        Term::Idents(ref i) => env.lookup(i),
         Term::Coord(ref co) => eval_coord(env, co),
         Term::BinOp(ref bo) => eval_binop(env, bo),
-        Term::FnCall(ref _fc) => panic!("TODO: eval fncall"),
+        Term::FnCall(ref f) => eval_call(env, f),
         Term::FnDef(ref fd) => Ok(Val::Fn(fd)),
         Term::Block(ref bk) => eval_block(env, bk),
     }
@@ -209,6 +209,44 @@ fn eval_div<'a>(lhs: Val<'a>, rhs: Val<'a>) -> Result<Val<'a>> {
             Err(String::from(msg))
         }
     }
+}
+
+fn eval_call<'a>(env: &Env<'a>, call: &'a FnCall<'a>) -> Result<Val<'a>> {
+    let mut args = Vec::with_capacity(call.1.len());
+    for arg in &call.1 {
+        args.push(eval_expr(env, arg)?);
+    }
+    let func = eval_expr(env, &call.0)?;
+    match func {
+        Val::Fn(fn_def) => eval_call_def(env, fn_def, args),
+        // TODO: Deal with built-in functions.
+        _ => {
+            let msg = "Type error: attempting to call value of type <TODO>. \
+                       Only functions can be called.";
+            Err(String::from(msg))
+        }
+    }
+}
+
+fn eval_call_def<'a>(env: &Env<'a>,
+                     fn_def: &'a FnDef<'a>,
+                     args: Vec<Val<'a>>)
+                     -> Result<Val<'a>> {
+    // Ensure that a value is provided for every argument, and no more.
+    if fn_def.0.len() != args.len() {
+        let msg = format!("Error: function takes {} arguments, but {} were provided.",
+                          fn_def.0.len(), args.len());
+        return Err(msg)
+    }
+
+    // For a function call, bring the argument in scope as variables, and then
+    // evaluate the body block.
+    let mut inner_env = env.clone();
+    for (arg_name, val) in fn_def.0.iter().zip(args) {
+        inner_env.put(arg_name, val);
+    }
+
+    eval_block(&inner_env, &fn_def.1)
 }
 
 fn eval_block<'a>(env: &Env<'a>, block: &'a Block<'a>) -> Result<Val<'a>> {
