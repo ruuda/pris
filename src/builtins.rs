@@ -56,6 +56,19 @@ pub fn image<'a>(_env: &Env<'a>, mut args: Vec<Val<'a>>) -> Result<Val<'a>> {
     Ok(Val::Frame(Rc::new(Frame::new())))
 }
 
+pub fn line<'a>(_env: &Env<'a>, mut args: Vec<Val<'a>>) -> Result<Val<'a>> {
+    validate_args("line", &[ValType::Coord(1)], &args)?;
+    let to = match args.remove(0) {
+        Val::Coord(x, y, 1) => (x, y),
+        _ => unreachable!(),
+    };
+
+    println!("TODO: Should add line to ({}, {}) and return it as frame.", to.0, to.1);
+
+    Ok(Val::Frame(Rc::new(Frame::new())))
+}
+
+
 pub fn t<'a>(_env: &Env<'a>, mut args: Vec<Val<'a>>) -> Result<Val<'a>> {
     validate_args("t", &[ValType::Str], &args)?;
     let text = match args.remove(0) {

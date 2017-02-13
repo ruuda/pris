@@ -58,7 +58,7 @@ ax = std.anchors
 }
 
 {
-  at (0.5w, 0.5h) put text("Hello ") + emph("world")
+  at (0.5w, 0.5h) put t("Hello ") + t("world")
 
   at ax.center put "Hello <em>world</em>"
 
