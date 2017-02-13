@@ -138,7 +138,7 @@ impl<'a> Print for Term<'a> {
 
 impl Print for Num {
     fn print(&self, f: &mut Formatter) {
-        f.print_f64(self.0);
+        f.print(self.0);
         if let Some(unit) = self.1 {
             f.print(unit);
         }

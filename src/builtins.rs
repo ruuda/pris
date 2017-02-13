@@ -7,47 +7,48 @@
 
 use std::rc::Rc;
 
-use interpreter::{Env, Frame, Result, Val};
+use error::{Error, Result};
+use runtime::{Env, Frame, Val};
+use types::ValType;
+
+fn validate_args<'a>(fn_name: &str,
+                     expected: &[ValType],
+                     actual: &[Val<'a>])
+                     -> Result<()> {
+    // First check that we have exactly the right number of arguments.
+    if expected.len() != actual.len() {
+        return Err(Error::arity(fn_name, expected.len() as u32, actual.len() as u32))
+    }
+
+    // Then check the type of each.
+    for (i, (ex, ac)) in expected.iter().zip(actual).enumerate() {
+        if *ex != ac.get_type() {
+            return Err(Error::arg_type(fn_name, *ex, ac.get_type(), i as u32))
+        }
+    }
+
+    Ok(())
+}
 
 pub fn fit<'a>(_env: &Env<'a>, mut args: Vec<Val<'a>>) -> Result<Val<'a>> {
-    if args.len() != 2 {
-        let msg = format!("Arity error: 'fit' takes two arguments, \
-                           but {} were provided.", args.len());
-        return Err(msg)
-    }
+    validate_args("fit", &[ValType::Frame, ValType::Coord(1)], &args)?;
     let frame = match args.remove(0) {
         Val::Frame(f) => f,
-        _ => {
-            let msg = "Type error: 'fit' expects a frame as first argument, \
-                       but a <TODO> was given instead.";
-            return Err(String::from(msg))
-        }
+        _ => unreachable!(),
     };
     let size = match args.remove(0) {
         Val::Coord(w, h, 1) => (w, h),
-        _ => {
-            let msg = "Type error: 'fit' expects a coord of len as second argument, \
-                       but a <TODO> was given instead.";
-            return Err(String::from(msg))
-        }
+        _ => unreachable!(),
     };
     println!("TODO: Should fit frame in ({}, {}) and return it as frame.", size.0, size.1);
     Ok(Val::Frame(frame))
 }
 
 pub fn image<'a>(_env: &Env<'a>, mut args: Vec<Val<'a>>) -> Result<Val<'a>> {
-    if args.len() != 1 {
-        let msg = format!("Arity error: 'image' takes a single argument, \
-                           but {} were provided.", args.len());
-        return Err(msg)
-    }
+    validate_args("image", &[ValType::Str], &args)?;
     let fname = match args.remove(0) {
         Val::Str(s) => s,
-        _ => {
-            let msg = "Type error: 'image' expects a string, \
-                       but a <TODO> was given instead.";
-            return Err(String::from(msg))
-        }
+        _ => unreachable!(),
     };
 
     println!("TODO: Should load image '{}' and return it as frame.", fname);
@@ -56,18 +57,10 @@ pub fn image<'a>(_env: &Env<'a>, mut args: Vec<Val<'a>>) -> Result<Val<'a>> {
 }
 
 pub fn t<'a>(_env: &Env<'a>, mut args: Vec<Val<'a>>) -> Result<Val<'a>> {
-    if args.len() != 1 {
-        let msg = format!("Arity error: 't' takes one argument, \
-                           but {} were provided.", args.len());
-        return Err(msg)
-    }
+    validate_args("t", &[ValType::Str], &args)?;
     let text = match args.remove(0) {
         Val::Str(s) => s,
-        _ => {
-            let msg = "Type error: 't' expects a string, \
-                       but a <TODO> was given instead.";
-            return Err(String::from(msg))
-        }
+        _ => unreachable!(),
     };
 
     println!("TODO: Generate a text frame for the text '{}'.", text);

@@ -9,9 +9,12 @@ extern crate lalrpop_util;
 
 mod ast;
 mod builtins;
+mod error;
 mod interpreter;
 mod pretty;
+mod runtime;
 mod syntax;
+mod types;
 
 use std::io;
 use std::io::Read;
@@ -81,10 +84,13 @@ fn main() {
     let mut input = String::new();
     io::stdin().read_to_string(&mut input).unwrap();
     let doc = parse_or_abort(&input);
-    let mut env = interpreter::Env::new();
+    let mut env = runtime::Env::new();
     for statement in &doc.0 {
         println!("EVAL {}", pretty::print(statement));
-        let mframe = interpreter::eval_statement(&mut env, statement).unwrap();
+        let mframe = match interpreter::eval_statement(&mut env, statement) {
+            Ok(x) => x,
+            Err(e) => { e.print(); panic!("Abort after error.") }
+        };
         println!("===>\n{}", pretty::print(&env));
         if let Some(frame) = mframe {
             println!("===> {}", pretty::print(&frame));

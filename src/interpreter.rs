@@ -5,150 +5,20 @@
 // it under the terms of the GNU General Public License version 3. A copy
 // of the License is available in the root of the repository.
 
-use std::collections::HashMap;
 use std::rc::Rc;
-use std::result;
 
 use ast::{Assign, BinOp, BinTerm, Block, Color, Coord, FnCall, FnDef, Idents};
 use ast::{Num, PutAt, Return, Stmt, Term, Unit};
-use builtins;
-use pretty::{Formatter, Print};
-
-// Types used for the interpreter: values and an environment.
-
-#[derive(Clone)]
-pub enum Val<'a> {
-    Num(f64, LenDim), // TODO: Be consistent about abbreviating things.
-    Str(String),
-    Col(f64, f64, f64),
-    Coord(f64, f64, LenDim),
-    Frame(Rc<Frame<'a>>),
-    FnExtrin(&'a FnDef<'a>),
-    FnIntrin(Builtin),
-}
-
-/// Represents a number of length dimensions.
-///
-/// -2 means "per area".
-/// -1 means "per length".
-/// 0 indicates a dimensionless number.
-/// 1 means "length".
-/// 2 means "area".
-/// 3 means "volume".
-/// etc.
-type LenDim = i32;
-
-#[derive(Clone)]
-pub struct Frame<'a> {
-    env: Env<'a>,
-}
-
-// A "builtin" function is a function that takes an environment and a vector of
-// arguments, and produces a new value. We make a wrapper type to be able to
-// implement a no-op clone on it.
-pub struct Builtin(for<'a> fn(&Env<'a>, Vec<Val<'a>>) -> Result<Val<'a>>);
-
-pub type Result<T> = result::Result<T, Error>;
-
-pub type Error = String;
-
-#[derive(Clone)]
-pub struct Env<'a> {
-    bindings: HashMap<&'a str, Val<'a>>,
-}
-
-impl Clone for Builtin {
-    fn clone(&self) -> Builtin {
-        let Builtin(x) = *self;
-        Builtin(x)
-    }
-}
-
-impl<'a> Frame<'a> {
-    pub fn new() -> Frame<'a> {
-        Frame {
-            env: Env::new(),
-        }
-    }
-}
-
-impl<'a> Env<'a> {
-    pub fn new() -> Env<'a> {
-        let mut bindings = HashMap::new();
-        // Default font size is 0.1h.
-        bindings.insert("font_size", Val::Num(108.0, 1));
-        bindings.insert("image", Val::FnIntrin(Builtin(builtins::image)));
-        bindings.insert("fit", Val::FnIntrin(Builtin(builtins::fit)));
-        bindings.insert("t", Val::FnIntrin(Builtin(builtins::t)));
-        Env { bindings: bindings }
-    }
-
-    pub fn lookup(&self, idents: &Idents<'a>) -> Result<Val<'a>> {
-        assert!(idents.0.len() > 0);
-        match self.bindings.get(idents.0[0]) {
-            Some(val) => {
-                if idents.0.len() == 1 {
-                    Ok(val.clone())
-                } else {
-                    match *val {
-                        Val::Frame(ref frame) => {
-                            let mut more = idents.0.clone();
-                            more.remove(0);
-                            frame.env.lookup(&Idents(more))
-                        }
-                        _ => {
-                            let mut f = Formatter::new();
-                            f.print("Type error while reading variable '");
-                            f.print(idents);
-                            f.print("'. Cannot look up '");
-                            f.print(idents.0[1]);
-                            f.print("' in '");
-                            f.print(idents.0[0]);
-                            f.print("' because it is not a frame.");
-                            Err(f.into_string())
-                        }
-                    }
-                }
-            }
-            None => Err(format!("Variable '{}' does not exist.", idents.0[0])),
-        }
-    }
-
-    pub fn lookup_num(&self, idents: &Idents<'a>) -> Result<f64> {
-        if let Val::Num(x, 0) = self.lookup(idents)? {
-            Ok(x)
-        } else {
-            let mut msg = Formatter::new();
-            msg.print("Type error: expected num, but ");
-            msg.print(idents);
-            msg.print("is <TODO>.");
-            Err(msg.into_string())
-        }
-    }
-
-    pub fn lookup_len(&self, idents: &Idents<'a>) -> Result<f64> {
-        if let Val::Num(x, 1) = self.lookup(idents)? {
-            Ok(x)
-        } else {
-            let mut msg = Formatter::new();
-            msg.print("Type error: expected len, but ");
-            msg.print(idents);
-            msg.print("is <TODO>.");
-            Err(msg.into_string())
-        }
-    }
-
-    pub fn put(&mut self, ident: &'a str, val: Val<'a>) {
-        self.bindings.insert(ident, val);
-    }
-}
+use error::{Error, Result};
+use pretty::Formatter;
+use runtime::{Builtin, Frame, Env, Val};
 
 // Expression interpreter.
 
 fn eval_expr<'a>(env: &Env<'a>, term: &'a Term<'a>) -> Result<Val<'a>> {
     match *term {
         Term::String(ref s) => Ok(eval_string(s)),
-        Term::Number(ref x) => Ok(eval_num(env, x)),
+        Term::Number(ref x) => eval_num(env, x),
         Term::Color(ref co) => Ok(eval_color(co)),
         Term::Idents(ref i) => env.lookup(i),
         Term::Coord(ref co) => eval_coord(env, co),
@@ -166,23 +36,23 @@ fn eval_string<'a>(s: &'a str) -> Val<'a> {
     Val::Str(string)
 }
 
-fn eval_num<'a>(env: &Env<'a>, num: &'a Num) -> Val<'a> {
+fn eval_num<'a>(env: &Env<'a>, num: &'a Num) -> Result<Val<'a>> {
     let Num(x, opt_unit) = *num;
     if let Some(unit) = opt_unit {
         match unit {
-            Unit::W => Val::Num(1920.0 * x, 1),
-            Unit::H => Val::Num(1080.0 * x, 1),
-            Unit::Pt => Val::Num(1.0 * x, 1),
+            Unit::W => Ok(Val::Num(1920.0 * x, 1)),
+            Unit::H => Ok(Val::Num(1080.0 * x, 1)),
+            Unit::Pt => Ok(Val::Num(1.0 * x, 1)),
             Unit::Em => {
                 // The variable "font_size" should always be set, it is present
                 // in the global environment.
                 let ident_font_size = Idents(vec!["font_size"]);
-                let emsize = env.lookup_len(&ident_font_size).unwrap();
-                Val::Num(emsize * x, 1)
+                let emsize = env.lookup_len(&ident_font_size)?;
+                Ok(Val::Num(emsize * x, 1))
             }
         }
     } else {
-        Val::Num(x, 0)
+        Ok(Val::Num(x, 0))
     }
 }
 
@@ -199,7 +69,7 @@ fn eval_coord<'a>(env: &Env<'a>, coord: &'a Coord<'a>) -> Result<Val<'a>> {
         _ => {
             let msg = "Type error: coord must be (num, num) or (len, len), \
                        but found (<TODO>, <TODO>) instead.";
-            Err(String::from(msg))
+            Err(Error::Other(String::from(msg)))
         }
     }
 }
@@ -233,7 +103,7 @@ fn eval_add<'a>(lhs: Val<'a>, rhs: Val<'a>) -> Result<Val<'a>> {
             f.print("' and '");
             f.print(rhs);
             f.print("' instead.");
-            Err(f.into_string())
+            Err(Error::Other(f.into_string()))
         }
     }
 }
@@ -255,7 +125,7 @@ fn eval_sub<'a>(lhs: Val<'a>, rhs: Val<'a>) -> Result<Val<'a>> {
             f.print("' and '");
             f.print(rhs);
             f.print("' instead.");
-            Err(f.into_string())
+            Err(Error::Other(f.into_string()))
         }
     }
 }
@@ -266,7 +136,7 @@ fn eval_mul<'a>(lhs: Val<'a>, rhs: Val<'a>) -> Result<Val<'a>> {
         _ => {
             let msg = "Type error: '*' expects num or len operands, \
                        but found <TODO> and <TODO> instead.";
-            Err(String::from(msg))
+            Err(Error::Other(String::from(msg)))
         }
     }
 }
@@ -277,7 +147,7 @@ fn eval_div<'a>(lhs: Val<'a>, rhs: Val<'a>) -> Result<Val<'a>> {
         _ => {
             let msg = "Type error: '/' expects num or len operands, \
                        but found <TODO> and <TODO> instead.";
-            Err(String::from(msg))
+            Err(Error::Other(String::from(msg)))
         }
     }
 }
@@ -298,7 +168,7 @@ fn eval_call<'a>(env: &Env<'a>, call: &'a FnCall<'a>) -> Result<Val<'a>> {
         _ => {
             let msg = "Type error: attempting to call value of type <TODO>. \
                        Only functions can be called.";
-            Err(String::from(msg))
+            Err(Error::Other(String::from(msg)))
         }
     }
 }
@@ -312,7 +182,7 @@ fn eval_call_def<'a>(env: &Env<'a>,
         let msg = format!("Arity error: function takes {} arguments, \
                            but {} were provided.",
                           fn_def.0.len(), args.len());
-        return Err(msg)
+        return Err(Error::Other(msg))
     }
 
     // For a function call, bring the argument in scope as variables, and then
@@ -340,7 +210,7 @@ fn eval_block<'a>(env: &Env<'a>, block: &'a Block<'a>) -> Result<Val<'a>> {
             Stmt::Block(..) => {
                 let msg = "Error: slides can only be introduced at the top level. \
                            Note: use 'at (0w, 0w) put { ... }' to place a frame.";
-                return Err(String::from(msg));
+                return Err(Error::Other(String::from(msg)));
             }
             // Otherwise, evaluating a statement just mutates the environment.
             _ => {
@@ -350,8 +220,7 @@ fn eval_block<'a>(env: &Env<'a>, block: &'a Block<'a>) -> Result<Val<'a>> {
         }
     }
 
-    let frame = Frame { env: inner_env };
-    Ok(Val::Frame(Rc::new(frame)))
+    Ok(Val::Frame(Rc::new(Frame::from_env(inner_env))))
 }
 
 // Statement interpreter.
@@ -370,7 +239,7 @@ pub fn eval_statement<'a>(env: &mut Env<'a>,
         Stmt::Return(..) => {
             // The return case is handled in block evaluation. A bare return
             // statement does not make sense.
-            Err(String::from("Syntax error: 'return' cannot be used here."))
+            Err(Error::Other(String::from("Syntax error: 'return' cannot be used here.")))
         }
         Stmt::Block(ref bk) => {
             if let Val::Frame(frame) = eval_block(env, bk)? {
@@ -378,7 +247,7 @@ pub fn eval_statement<'a>(env: &mut Env<'a>,
             } else {
                 let msg = "Type error: top-level blocks must evaluate to frames, \
                            but a <TODO> was encountered instead.";
-                Err(String::from(msg))
+                Err(Error::Other(String::from(msg)))
             }
         }
         Stmt::PutAt(ref pa) => {
@@ -401,7 +270,7 @@ fn eval_put_at<'a>(env: &Env<'a>, put_at: &'a PutAt<'a>) -> Result<()> {
         // TODO: Allow placing strings?
         _ => {
             let msg = "Cannot place <TODO>. Only frames can be placed.";
-            return Err(String::from(msg));
+            return Err(Error::Other(String::from(msg)));
         }
     };
 
@@ -410,7 +279,7 @@ fn eval_put_at<'a>(env: &Env<'a>, put_at: &'a PutAt<'a>) -> Result<()> {
         _ => {
             let msg = "Placement requires a coordinate with length units, \
                        but a <TODO> was found instead.";
-            return Err(String::from(msg));
+            return Err(Error::Other(String::from(msg)));
         }
     };
 
@@ -421,92 +290,4 @@ fn eval_put_at<'a>(env: &Env<'a>, put_at: &'a PutAt<'a>) -> Result<()> {
     f.print(&content);
     println!("{}", f.into_string());
     Ok(())
-}
-
-// Pretty printers for values and interpreter data structures.
-
-impl<'a> Print for Val<'a> {
-    fn print(&self, f: &mut Formatter) {
-        match *self {
-            Val::Num(x, d) => {
-                f.print_f64(x);
-                f.print(" : ");
-                print_unit(f, d);
-            }
-            Val::Str(ref s) => {
-                f.print("\"");
-                f.print(&s[..]); // TODO: Escaping.
-                f.print("\"");
-            }
-            Val::Col(r, g, b) => {
-                f.print("(");
-                f.print_f64(r);
-                f.print(", ");
-                f.print_f64(g);
-                f.print(", ");
-                f.print_f64(b);
-                f.print(") : color");
-            }
-            Val::Coord(x, y, d) => {
-                f.print("(");
-                f.print_f64(x);
-                f.print(", ");
-                f.print_f64(y);
-                f.print(") : coord of ");
-                print_unit(f, d);
-            }
-            Val::Frame(ref frame) => {
-                f.print(frame);
-            }
-            Val::FnExtrin(ref fndef) => {
-                f.print(fndef);
-            }
-            Val::FnIntrin(..) => {
-                f.print("function(...) { <built-in> }");
-            }
-        }
-    }
-}
-
-fn print_unit(f: &mut Formatter, d: LenDim) {
-    match d {
-        -3 => f.print("len⁻³"),
-        -2 => f.print("len⁻²"),
-        -1 => f.print("len⁻¹"),
-        0 => f.print("num"),
-        1 => f.print("len"),
-        2 => f.print("len²"),
-        3 => f.print("len³"),
-        n => { f.print("len^"); f.print_i32(n); }
-    }
-}
-
-// Print implementation for variable bindings when printing env. Prints of the
-// form "name = value".
-impl<'a> Print for (&'a &'a str, &'a Val<'a>) {
-    fn print(&self, f: &mut Formatter) {
-        f.print(self.0);
-        f.print(" = ");
-        f.print(self.1);
-    }
-}
-
-impl<'a> Print for Frame<'a> {
-    fn print(&self, f: &mut Formatter) {
-        f.print("frame\n");
-        f.print(&self.env);
-    }
-}
-
-impl<'a> Print for Env<'a> {
-    fn print(&self, f: &mut Formatter) {
-        f.println("{\n");
-        f.indent_more();
-        for binding in self.bindings.iter() {
-            f.println(binding);
-            f.print("\n");
-        }
-        f.indent_less();
-        f.println("}");
-    }
 }

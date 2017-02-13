@@ -53,6 +53,24 @@ impl<'a> Print for &'a str {
     }
 }
 
+impl Print for i32 {
+    fn print(&self, f: &mut Formatter) {
+        write!(&mut f.target, "{}", self).unwrap();
+    }
+}
+
+impl Print for u32 {
+    fn print(&self, f: &mut Formatter) {
+        write!(&mut f.target, "{}", self).unwrap();
+    }
+}
+
+impl Print for f64 {
+    fn print(&self, f: &mut Formatter) {
+        write!(&mut f.target, "{}", self).unwrap();
+    }
+}
+
 impl Formatter {
     pub fn new() -> Formatter {
         Formatter { target: String::new(), indent: 0 }
@@ -76,14 +94,6 @@ impl Formatter {
             self.target.push(' ');
         }
         self.print(content);
-    }
-
-    pub fn print_f64(&mut self, content: f64) {
-        write!(&mut self.target, "{}", content).unwrap();
-    }
-
-    pub fn print_i32(&mut self, content: i32) {
-        write!(&mut self.target, "{}", content).unwrap();
     }
 
     pub fn print_hex_byte(&mut self, content: u8) {
