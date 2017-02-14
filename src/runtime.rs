@@ -87,9 +87,10 @@ impl<'a> Env<'a> {
         let mut bindings = HashMap::new();
         // Default font size is 0.1h.
         bindings.insert("font_size", Val::Num(108.0, 1));
-        bindings.insert("image", Val::FnIntrin(Builtin(builtins::image)));
         bindings.insert("fit", Val::FnIntrin(Builtin(builtins::fit)));
+        bindings.insert("image", Val::FnIntrin(Builtin(builtins::image)));
         bindings.insert("line", Val::FnIntrin(Builtin(builtins::line)));
+        bindings.insert("str", Val::FnIntrin(Builtin(builtins::str)));
         bindings.insert("t", Val::FnIntrin(Builtin(builtins::t)));
         Env { bindings: bindings }
     }

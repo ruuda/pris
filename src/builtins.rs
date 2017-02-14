@@ -68,6 +68,16 @@ pub fn line<'a>(_env: &Env<'a>, mut args: Vec<Val<'a>>) -> Result<Val<'a>> {
     Ok(Val::Frame(Rc::new(Frame::new())))
 }
 
+pub fn str<'a>(_env: &Env<'a>, mut args: Vec<Val<'a>>) -> Result<Val<'a>> {
+    // TODO: Make this generic over the dimension?
+    validate_args("str", &[ValType::Num(0)], &args)?;
+    let num = match args.remove(0) {
+        Val::Num(x, _) => x,
+        _ => unreachable!(),
+    };
+
+    Ok(Val::Str(format!("{}", num)))
+}
 
 pub fn t<'a>(_env: &Env<'a>, mut args: Vec<Val<'a>>) -> Result<Val<'a>> {
     validate_args("t", &[ValType::Str], &args)?;
