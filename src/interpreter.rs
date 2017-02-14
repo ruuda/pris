@@ -109,6 +109,9 @@ fn eval_add<'a>(lhs: Val<'a>, rhs: Val<'a>) -> Result<Val<'a>> {
         (Val::Coord(x0, y0, d0), Val::Coord(x1, y1, d1)) if d0 == d1 => {
             Ok(Val::Coord(x0 + x1, y0 + y1, d0))
         }
+        (Val::Str(a), Val::Str(b)) => {
+            Ok(Val::Str(a + &b))
+        }
         (lhs, rhs) => {
             let mut f = Formatter::new();
             f.print("Type error: '+' expects operands of the same type, \
