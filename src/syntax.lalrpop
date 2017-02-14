@@ -38,6 +38,7 @@ expr_add: Term<'input> = {
   <expr_mul> => <>,
   <lhs:expr_add> "+" <rhs:expr_mul> => Term::BinOp(Box::new(BinTerm(lhs, BinOp::Add, rhs))),
   <lhs:expr_add> "-" <rhs:expr_mul> => Term::BinOp(Box::new(BinTerm(lhs, BinOp::Sub, rhs))),
+  <lhs:expr_add> "~" <rhs:expr_mul> => Term::BinOp(Box::new(BinTerm(lhs, BinOp::Adj, rhs))),
 };
 
 expr_mul: Term<'input> = {

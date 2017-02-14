@@ -60,6 +60,36 @@ impl Error {
         Error::Arity(arity_error)
     }
 
+    pub fn binop_type(op_name: &str,
+                      expected: ValType,
+                      actual_lhs: ValType,
+                      actual_rhs: ValType)
+                      -> Error {
+        let mut f = Formatter::new();
+        f.print("'");
+        f.print(op_name);
+        f.print("' expects operands of type '");
+        f.print(expected);
+        f.print("', but found ");
+        if actual_lhs == actual_rhs {
+            f.print("'");
+            f.print(actual_lhs);
+            f.print("' instead.");
+        } else {
+            f.print("'");
+            f.print(actual_lhs);
+            f.print("' and '");
+            f.print(actual_rhs);
+            f.print("' instead.");
+        }
+        let type_error = TypeError {
+            expected: expected,
+            actual: actual_lhs, // TODO: What about actual rhs?
+            message: f.into_string(),
+        };
+        Error::Type(type_error)
+    }
+
     pub fn arg_type(fn_name: &str,
                     expected: ValType,
                     actual: ValType,

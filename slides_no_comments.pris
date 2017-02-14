@@ -58,25 +58,17 @@ ax = std.anchors
 }
 
 {
-  at (0.5w, 0.5h) put t("Hello ") + t("world")
-
-  at ax.center put "Hello <em>world</em>"
-
-  at ax.center put "Hello " + "world"
-
-  at ax.center put "Hello, " + "world"
+  at ax.center put t("Hello ") ~ t("world")
 
   put "Hi" at ax.l0
   put "Hi" at ax.l1
   put "nsa ghcs aivd" at ax.l2
 
-  put "Hi" at ax.l0
-
-  put "Hello " + "world" at (0, 0)
+  put t("Hello ") ~ t("world") at (0pt, 0pt)
 
   i_style = function()
   {
-    font_style = italic
+    font_style = "italic"
   }
 }
 

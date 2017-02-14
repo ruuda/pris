@@ -12,6 +12,7 @@ use ast::{Num, PutAt, Return, Stmt, Term, Unit};
 use error::{Error, Result};
 use pretty::Formatter;
 use runtime::{Builtin, Frame, Env, Val};
+use types::ValType;
 
 // Expression interpreter.
 
@@ -78,11 +79,25 @@ fn eval_binop<'a>(env: &Env<'a>, binop: &'a BinTerm<'a>) -> Result<Val<'a>> {
     let lhs = eval_expr(env, &binop.0)?;
     let rhs = eval_expr(env, &binop.2)?;
     match binop.1 {
+        BinOp::Adj => eval_adj(lhs, rhs),
         BinOp::Add => eval_add(lhs, rhs),
         BinOp::Sub => eval_sub(lhs, rhs),
         BinOp::Mul => eval_mul(lhs, rhs),
         BinOp::Div => eval_div(lhs, rhs),
         BinOp::Exp => panic!("TODO: eval exp"),
+    }
+}
+
+/// Adjoins two frames.
+fn eval_adj<'a>(lhs: Val<'a>, rhs: Val<'a>) -> Result<Val<'a>> {
+    match (lhs, rhs) {
+        (Val::Frame(f0), Val::Frame(_f1)) => {
+            println!("TODO: Should adjoin two frames.");
+            Ok(Val::Frame(f0))
+        }
+        (lhs, rhs) => {
+            Err(Error::binop_type("~", ValType::Frame, lhs.get_type(), rhs.get_type()))
+        }
     }
 }
 

@@ -67,9 +67,9 @@ ax = std.anchors
 
 {
   // How to do text formatting? Maybe promoting string literals to boxes is not
-  // such a good idea after all; explicit is better than implicit? And + for
+  // such a good idea after all; explicit is better than implicit? And ~ for
   // boxes would mean to put them adjacent, origin to width?
-  at (0.5w, 0.5h) put text("Hello ") + emph("world)
+  at (0.5w, 0.5h) put text("Hello ") ~ emph("world)
 
   // Or, at the other extreme, embed markup in string literals:
   at ax.center put "Hello <em>world</em>"
@@ -78,10 +78,10 @@ ax = std.anchors
   at ax.center put "Hello ${font_style = italic}world"
 
   // Or perhaps suffixes?
-  at ax.center put "Hello " + "world"i
+  at ax.center put "Hello " ~ "world"i
 
   // Or prefixes?
-  at ax.center put b"Hello, " + "world"
+  at ax.center put b"Hello, " ~ "world"
 
   // That last one seems to work well. Could have multiple:
   put b"Hi" at ax.l0 // Bold

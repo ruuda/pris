@@ -46,7 +46,7 @@ fn parse_or_abort<'a>(input: &'a str) -> ast::Document<'a> {
         Err(err) => {
             match err {
                 ParseError::InvalidToken { location } => {
-                    report_error(input, location, location + 1);
+                    report_error(input, location, 1);
                     println!("invalid token.");
                 }
                 ParseError::UnrecognizedToken { token, expected } => {
