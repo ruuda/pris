@@ -28,11 +28,23 @@ pub enum Val<'a> {
 #[derive(Clone)]
 pub struct Frame<'a> {
     env: Env<'a>,
+
+    /// The bounding box of the elements in this frame. The x and y coordinates
+    /// of the bounding box are relative to the origin of this frame.
+    bounding_box: BoundingBox,
 }
 
 #[derive(Clone)]
 pub struct Env<'a> {
     bindings: HashMap<&'a str, Val<'a>>,
+}
+
+#[derive(Clone)]
+pub struct BoundingBox {
+    x: f64,
+    y: f64,
+    width: f64,
+    height: f64,
 }
 
 /// A "builtin" function is a function that takes an environment and a vector of
@@ -58,12 +70,14 @@ impl<'a> Frame<'a> {
     pub fn new() -> Frame<'a> {
         Frame {
             env: Env::new(),
+            bounding_box: BoundingBox::empty(),
         }
     }
 
     pub fn from_env(env: Env<'a>) -> Frame<'a> {
         Frame {
-            env: env
+            env: env,
+            bounding_box: BoundingBox::empty(),
         }
     }
 }
@@ -137,6 +151,30 @@ impl<'a> Env<'a> {
 
     pub fn put(&mut self, ident: &'a str, val: Val<'a>) {
         self.bindings.insert(ident, val);
+    }
+}
+
+impl BoundingBox {
+    pub fn empty() -> BoundingBox {
+        BoundingBox {
+            x: 0.0,
+            y: 0.0,
+            width: 0.0,
+            height: 0.0,
+        }
+    }
+
+    pub fn union(&self, other: &BoundingBox) -> BoundingBox {
+        let x0 = self.x.min(other.x);
+        let y0 = self.y.min(other.y);
+        let x1 = (self.x + self.width).max(other.x + other.width);
+        let y1 = (self.y + self.height).max(other.y + other.height);
+        BoundingBox {
+            x: x0,
+            y: y0,
+            width: x1 - x0,
+            height: y1 - y0,
+        }
     }
 }
 
