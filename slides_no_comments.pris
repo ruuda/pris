@@ -60,9 +60,13 @@ ax = std.anchors
 {
   at ax.center put t("Hello ") ~ t("world")
 
-  put "Hi" at ax.l0
-  put "Hi" at ax.l1
-  put "nsa ghcs aivd" at ax.l2
+  l0 = ax.top_left
+  l1 = ax.top_left + (0em, 1.5em)
+  l2 = ax.top_left + (0em, 1.5em)
+
+  put t("Hi") at l0
+  put t("Hi") at l1
+  put t("nsa ghcs aivd") at l2
 
   put t("Hello ") ~ t("world") at (0pt, 0pt)
 
@@ -73,6 +77,8 @@ ax = std.anchors
 }
 
 {
+  slide_number = 22
+  slide_count = 42
   font_size = 0.5em
   color = #777777
   text_origin = (1.0, 1.0)
