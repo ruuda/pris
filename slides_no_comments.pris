@@ -82,5 +82,5 @@ ax = std.anchors
   font_size = 0.5em
   color = #777777
   text_origin = (1.0, 1.0)
-  at ax.bottom_right put (str(slide_number) + "/" + str(slide_count))
+  at ax.bottom_right put t(str(slide_number) + "/" + str(slide_count))
 }
