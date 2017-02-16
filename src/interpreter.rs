@@ -7,9 +7,11 @@
 
 use std::rc::Rc;
 
-use ast::{Assign, BinOp, BinTerm, Block, Color, Coord, FnCall, FnDef, Idents};
+use ast;
+use ast::{Assign, BinOp, BinTerm, Block, Coord, FnCall, FnDef, Idents};
 use ast::{Num, PutAt, Return, Stmt, Term, Unit};
 use error::{Error, Result};
+use elements::{Color};
 use pretty::Formatter;
 use runtime::{Builtin, Frame, Env, Val};
 use types::ValType;
@@ -57,9 +59,10 @@ fn eval_num<'a>(env: &Env<'a>, num: &'a Num) -> Result<Val<'a>> {
     }
 }
 
-fn eval_color<'a>(col: &Color) -> Val<'a> {
-    let Color(rbyte, gbyte, bbyte) = *col;
-    Val::Col(rbyte as f64 / 255.0, gbyte as f64 / 255.0, bbyte as f64 / 255.0)
+fn eval_color<'a>(col: &ast::Color) -> Val<'a> {
+    let ast::Color(rbyte, gbyte, bbyte) = *col;
+    let cf64 = Color::new(rbyte as f64 / 255.0, gbyte as f64 / 255.0, bbyte as f64 / 255.0);
+    Val::Col(cf64)
 }
 
 fn eval_coord<'a>(env: &Env<'a>, coord: &'a Coord<'a>) -> Result<Val<'a>> {
@@ -216,13 +219,14 @@ fn eval_call_def<'a>(env: &Env<'a>,
 fn eval_block<'a>(env: &Env<'a>, block: &'a Block<'a>) -> Result<Val<'a>> {
     // A block is evaluated in its enclosing environment, but it does not modify
     // the environment, it gets a copy.
-    let mut inner_env = (*env).clone();
+    let inner_env = (*env).clone();
+    let mut frame = Frame::from_env(inner_env);
 
     for statement in &block.0 {
         match *statement {
             // A return statement in a block determines the value that the block
             // evalates to, if a return is present.
-            Stmt::Return(Return(ref r)) => return eval_expr(&inner_env, r),
+            Stmt::Return(Return(ref r)) => return eval_expr(frame.get_env(), r),
             // A block statemen to make a frame can only be used at the top
             // level.
             Stmt::Block(..) => {
@@ -232,18 +236,18 @@ fn eval_block<'a>(env: &Env<'a>, block: &'a Block<'a>) -> Result<Val<'a>> {
             }
             // Otherwise, evaluating a statement just mutates the environment.
             _ => {
-                let maybe_frame = eval_statement(&mut inner_env, statement)?;
+                let maybe_frame = eval_statement(&mut frame, statement)?;
                 assert!(maybe_frame.is_none());
             }
         }
     }
 
-    Ok(Val::Frame(Rc::new(Frame::from_env(inner_env))))
+    Ok(Val::Frame(Rc::new(frame)))
 }
 
 // Statement interpreter.
 
-pub fn eval_statement<'a>(env: &mut Env<'a>,
+pub fn eval_statement<'a>(frame: &mut Frame<'a>,
                           stmt: &'a Stmt<'a>) -> Result<Option<Rc<Frame<'a>>>> {
     match *stmt {
         Stmt::Import(ref _i) => {
@@ -251,7 +255,7 @@ pub fn eval_statement<'a>(env: &mut Env<'a>,
             Ok(None)
         }
         Stmt::Assign(ref a) => {
-            eval_assign(env, a)?;
+            eval_assign(frame, a)?;
             Ok(None)
         }
         Stmt::Return(..) => {
@@ -260,7 +264,7 @@ pub fn eval_statement<'a>(env: &mut Env<'a>,
             Err(Error::Other(String::from("Syntax error: 'return' cannot be used here.")))
         }
         Stmt::Block(ref bk) => {
-            if let Val::Frame(frame) = eval_block(env, bk)? {
+            if let Val::Frame(frame) = eval_block(frame.get_env(), bk)? {
                 Ok(Some(frame))
             } else {
                 let msg = "Type error: top-level blocks must evaluate to frames, \
@@ -269,30 +273,29 @@ pub fn eval_statement<'a>(env: &mut Env<'a>,
             }
         }
         Stmt::PutAt(ref pa) => {
-            eval_put_at(env, pa)?;
+            eval_put_at(frame, pa)?;
             Ok(None)
         }
     }
 }
 
-fn eval_assign<'a>(env: &mut Env<'a>, stmt: &'a Assign<'a>) -> Result<()> {
+fn eval_assign<'a>(frame: &mut Frame<'a>, stmt: &'a Assign<'a>) -> Result<()> {
     let Assign(target, ref expression) = *stmt;
-    let value = eval_expr(env, expression)?;
-    env.put(target, value);
+    let value = eval_expr(frame.get_env(), expression)?;
+    frame.put_in_env(target, value);
     Ok(())
 }
 
-fn eval_put_at<'a>(env: &Env<'a>, put_at: &'a PutAt<'a>) -> Result<()> {
-    let content = match eval_expr(env, &put_at.0)? {
+fn eval_put_at<'a>(frame: &mut Frame<'a>, put_at: &'a PutAt<'a>) -> Result<()> {
+    let content = match eval_expr(frame.get_env(), &put_at.0)? {
         x @ Val::Frame(..) => x,
-        // TODO: Allow placing strings?
         _ => {
             let msg = "Cannot place <TODO>. Only frames can be placed.";
             return Err(Error::Other(String::from(msg)));
         }
     };
 
-    let location = match eval_expr(env, &put_at.1)? {
+    let location = match eval_expr(frame.get_env(), &put_at.1)? {
         x @ Val::Coord(_, _, 1) => x,
         _ => {
             let msg = "Placement requires a coordinate with length units, \

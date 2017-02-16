@@ -9,6 +9,7 @@ extern crate lalrpop_util;
 
 mod ast;
 mod builtins;
+mod elements;
 mod error;
 mod interpreter;
 mod pretty;
@@ -84,14 +85,14 @@ fn main() {
     let mut input = String::new();
     io::stdin().read_to_string(&mut input).unwrap();
     let doc = parse_or_abort(&input);
-    let mut env = runtime::Env::new();
+    let mut frame = runtime::Frame::new();
     for statement in &doc.0 {
         println!("EVAL {}", pretty::print(statement));
-        let mframe = match interpreter::eval_statement(&mut env, statement) {
+        let mframe = match interpreter::eval_statement(&mut frame, statement) {
             Ok(x) => x,
             Err(e) => { e.print(); panic!("Abort after error.") }
         };
-        println!("===>\n{}", pretty::print(&env));
+        //println!("===>\n{}", pretty::print(&frame));
         if let Some(frame) = mframe {
             println!("===> {}", pretty::print(&frame));
         }

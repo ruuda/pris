@@ -10,6 +10,7 @@ use std::rc::Rc;
 
 use ast::{FnDef, Idents};
 use builtins;
+use elements::{Color, Element};
 use error::{Error, Result};
 use pretty::{Formatter, Print};
 use types::{LenDim, ValType};
@@ -18,7 +19,7 @@ use types::{LenDim, ValType};
 pub enum Val<'a> {
     Num(f64, LenDim), // TODO: Be consistent about abbreviating things.
     Str(String),
-    Col(f64, f64, f64),
+    Col(Color),
     Coord(f64, f64, LenDim),
     Frame(Rc<Frame<'a>>),
     FnExtrin(&'a FnDef<'a>),
@@ -32,6 +33,8 @@ pub struct Frame<'a> {
     /// The bounding box of the elements in this frame. The x and y coordinates
     /// of the bounding box are relative to the origin of this frame.
     bounding_box: BoundingBox,
+
+    elements: Vec<Element>,
 }
 
 #[derive(Clone)]
@@ -71,6 +74,7 @@ impl<'a> Frame<'a> {
         Frame {
             env: Env::new(),
             bounding_box: BoundingBox::empty(),
+            elements: Vec::new(),
         }
     }
 
@@ -78,7 +82,21 @@ impl<'a> Frame<'a> {
         Frame {
             env: env,
             bounding_box: BoundingBox::empty(),
+            elements: Vec::new(),
         }
+    }
+
+    pub fn get_env(&self) -> &Env<'a> {
+        &self.env
+    }
+
+    pub fn put_in_env(&mut self, ident: &'a str, val: Val<'a>) {
+        self.env.put(ident, val);
+    }
+
+    pub fn add_element(&mut self, elem: Element) {
+        self.elements.push(elem);
+        // TODO: Update bounding box.
     }
 }
 
@@ -201,13 +219,13 @@ impl<'a> Print for Val<'a> {
                 f.print(&s[..]); // TODO: Escaping.
                 f.print("\"");
             }
-            Val::Col(r, g, b) => {
+            Val::Col(ref col) => {
                 f.print("(");
-                f.print(r);
+                f.print(col.r);
                 f.print(", ");
-                f.print(g);
+                f.print(col.g);
                 f.print(", ");
-                f.print(b);
+                f.print(col.b);
                 f.print(") : color");
             }
             Val::Coord(x, y, d) => {
@@ -269,7 +287,9 @@ impl<'a> Print for (&'a &'a str, &'a Val<'a>) {
 
 impl<'a> Print for Frame<'a> {
     fn print(&self, f: &mut Formatter) {
-        f.print("frame\n");
+        f.print("frame with ");
+        f.print(self.elements.len());
+        f.print(" elements\n");
         f.print(&self.env);
     }
 }

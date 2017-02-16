@@ -65,6 +65,12 @@ impl Print for u32 {
     }
 }
 
+impl Print for usize {
+    fn print(&self, f: &mut Formatter) {
+        write!(&mut f.target, "{}", self).unwrap();
+    }
+}
+
 impl Print for f64 {
     fn print(&self, f: &mut Formatter) {
         write!(&mut f.target, "{}", self).unwrap();

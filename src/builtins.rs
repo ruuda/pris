@@ -8,6 +8,7 @@
 use std::rc::Rc;
 
 use error::{Error, Result};
+use elements::{Color, Element, Line};
 use runtime::{Env, Frame, Val};
 use types::ValType;
 
@@ -58,14 +59,22 @@ pub fn image<'a>(_env: &Env<'a>, mut args: Vec<Val<'a>>) -> Result<Val<'a>> {
 
 pub fn line<'a>(_env: &Env<'a>, mut args: Vec<Val<'a>>) -> Result<Val<'a>> {
     validate_args("line", &[ValType::Coord(1)], &args)?;
-    let to = match args.remove(0) {
+    let (x, y) = match args.remove(0) {
         Val::Coord(x, y, 1) => (x, y),
         _ => unreachable!(),
     };
 
-    println!("TODO: Should add line to ({}, {}) and return it as frame.", to.0, to.1);
+    let line = Line {
+        color: Color::new(0.0, 0.0, 0.0), // TODO: Get from env.
+        stroke_width: 2.0, // TODO: Get from env.
+        x: x,
+        y: y,
+    };
 
-    Ok(Val::Frame(Rc::new(Frame::new())))
+    let mut frame = Frame::new();
+    frame.add_element(Element::Line(line));
+
+    Ok(Val::Frame(Rc::new(frame)))
 }
 
 pub fn str<'a>(_env: &Env<'a>, mut args: Vec<Val<'a>>) -> Result<Val<'a>> {
