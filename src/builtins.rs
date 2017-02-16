@@ -72,7 +72,7 @@ pub fn line<'a>(_env: &Env<'a>, mut args: Vec<Val<'a>>) -> Result<Val<'a>> {
     };
 
     let mut frame = Frame::new();
-    frame.add_element(Element::Line(line));
+    frame.place_element(0.0, 0.0, Element::Line(line));
 
     Ok(Val::Frame(Rc::new(frame)))
 }

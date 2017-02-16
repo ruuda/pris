@@ -6,6 +6,13 @@
 // of the License is available in the root of the repository.
 
 #[derive(Clone)]
+pub struct PlacedElement {
+    pub x: f64,
+    pub y: f64,
+    pub element: Element,
+}
+
+#[derive(Clone)]
 pub enum Element {
     Line(Line),
 }

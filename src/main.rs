@@ -92,9 +92,8 @@ fn main() {
             Ok(x) => x,
             Err(e) => { e.print(); panic!("Abort after error.") }
         };
-        //println!("===>\n{}", pretty::print(&frame));
         if let Some(frame) = mframe {
-            println!("===> {}", pretty::print(&frame));
+            println!("FRAME ({} elements)", frame.get_elements().len());
         }
         println!("");
     }

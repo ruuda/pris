@@ -288,15 +288,15 @@ fn eval_assign<'a>(frame: &mut Frame<'a>, stmt: &'a Assign<'a>) -> Result<()> {
 
 fn eval_put_at<'a>(frame: &mut Frame<'a>, put_at: &'a PutAt<'a>) -> Result<()> {
     let content = match eval_expr(frame.get_env(), &put_at.0)? {
-        x @ Val::Frame(..) => x,
+        Val::Frame(f) => f,
         _ => {
             let msg = "Cannot place <TODO>. Only frames can be placed.";
             return Err(Error::Other(String::from(msg)));
         }
     };
 
-    let location = match eval_expr(frame.get_env(), &put_at.1)? {
-        x @ Val::Coord(_, _, 1) => x,
+    let (x, y) = match eval_expr(frame.get_env(), &put_at.1)? {
+        Val::Coord(x, y, 1) => (x, y),
         _ => {
             let msg = "Placement requires a coordinate with length units, \
                        but a <TODO> was found instead.";
@@ -304,11 +304,9 @@ fn eval_put_at<'a>(frame: &mut Frame<'a>, put_at: &'a PutAt<'a>) -> Result<()> {
         }
     };
 
-    let mut f = Formatter::new();
-    f.print("TODO: at ");
-    f.print(&location);
-    f.print(" put ");
-    f.print(&content);
-    println!("{}", f.into_string());
+    for pe in content.get_elements() {
+        frame.place_element(x + pe.x, y + pe.y, pe.element.clone());
+    }
+
     Ok(())
 }

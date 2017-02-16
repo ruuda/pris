@@ -10,7 +10,7 @@ use std::rc::Rc;
 
 use ast::{FnDef, Idents};
 use builtins;
-use elements::{Color, Element};
+use elements::{Color, Element, PlacedElement};
 use error::{Error, Result};
 use pretty::{Formatter, Print};
 use types::{LenDim, ValType};
@@ -34,7 +34,7 @@ pub struct Frame<'a> {
     /// of the bounding box are relative to the origin of this frame.
     bounding_box: BoundingBox,
 
-    elements: Vec<Element>,
+    elements: Vec<PlacedElement>,
 }
 
 #[derive(Clone)]
@@ -94,8 +94,19 @@ impl<'a> Frame<'a> {
         self.env.put(ident, val);
     }
 
-    pub fn add_element(&mut self, elem: Element) {
-        self.elements.push(elem);
+    pub fn get_elements(&self) -> &[PlacedElement] {
+        &self.elements
+    }
+
+    // TODO: Have a vec2 or coord type to use internally. If my DSL has one, I
+    // should probably use one myself too ...
+    pub fn place_element(&mut self, x: f64, y: f64, elem: Element) {
+        let placed = PlacedElement {
+            x: x,
+            y: y,
+            element: elem,
+        };
+        self.elements.push(placed);
         // TODO: Update bounding box.
     }
 }
