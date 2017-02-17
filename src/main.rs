@@ -85,7 +85,14 @@ fn parse_or_abort<'a>(input: &'a str) -> ast::Document<'a> {
 
 fn make_pdf() {
     let surf = cairo::Surface::new("test.pdf", 1920.0, 1080.0);
-    let _cr = cairo::Cairo::new(surf);
+    let mut cr = cairo::Cairo::new(surf);
+    cr.set_source_rgb(0.0, 0.0, 0.0);
+    cr.set_line_width(6.0);
+
+    cr.move_to(32.0, 32.0);
+    cr.line_to(960.0, 520.0);
+
+    cr.stroke();
 }
 
 fn main() {

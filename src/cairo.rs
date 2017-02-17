@@ -59,6 +59,26 @@ impl Cairo {
             ptr: unsafe { cairo_create(surf.ptr) }
         }
     }
+
+    pub fn set_source_rgb(&mut self, r: f64, g: f64, b: f64) {
+        unsafe { cairo_set_source_rgb(self.ptr, r, g, b) }
+    }
+
+    pub fn set_line_width(&mut self, width: f64) {
+        unsafe { cairo_set_line_width(self.ptr, width) }
+    }
+
+    pub fn move_to(&mut self, x: f64, y: f64) {
+        unsafe { cairo_move_to(self.ptr, x, y) }
+    }
+
+    pub fn line_to(&mut self, x: f64, y: f64) {
+        unsafe { cairo_line_to(self.ptr, x, y) }
+    }
+
+    pub fn stroke(&mut self) {
+        unsafe { cairo_stroke(self.ptr) }
+    }
 }
 
 impl Drop for Cairo {
