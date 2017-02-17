@@ -6,9 +6,11 @@
 // of the License is available in the root of the repository.
 
 extern crate lalrpop_util;
+extern crate libc;
 
 mod ast;
 mod builtins;
+mod cairo;
 mod elements;
 mod error;
 mod interpreter;
@@ -81,6 +83,11 @@ fn parse_or_abort<'a>(input: &'a str) -> ast::Document<'a> {
     }
 }
 
+fn make_pdf() {
+    let surf = cairo::Surface::new("test.pdf", 1920.0, 1080.0);
+    let _cr = cairo::Cairo::new(surf);
+}
+
 fn main() {
     let mut input = String::new();
     io::stdin().read_to_string(&mut input).unwrap();
@@ -97,4 +104,6 @@ fn main() {
         }
         println!("");
     }
+
+    make_pdf()
 }

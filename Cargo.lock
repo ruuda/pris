@@ -4,6 +4,7 @@ version = "0.0.0"
 dependencies = [
  "lalrpop 0.12.4 (registry+https://github.com/rust-lang/crates.io-index)",
  "lalrpop-util 0.12.4 (registry+https://github.com/rust-lang/crates.io-index)",
+ "libc 0.2.20 (registry+https://github.com/rust-lang/crates.io-index)",
 ]
 
 [[package]]
