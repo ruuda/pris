@@ -11,6 +11,7 @@ extern crate libc;
 mod ast;
 mod builtins;
 mod cairo;
+mod driver;
 mod elements;
 mod error;
 mod interpreter;
@@ -83,34 +84,30 @@ fn parse_or_abort<'a>(input: &'a str) -> ast::Document<'a> {
     }
 }
 
-fn make_pdf() {
+fn main() {
+    let mut input = String::new();
+    io::stdin().read_to_string(&mut input).unwrap();
+    let doc = parse_or_abort(&input);
+
+    println!("Evaluating document ...");
+
+    let mut frames = Vec::new();
+    let mut context_frame = runtime::Frame::new();
+    for statement in &doc.0 {
+        let result = match interpreter::eval_statement(&mut context_frame, statement) {
+            Ok(x) => x,
+            Err(e) => { e.print(); panic!("Abort after error.") }
+        };
+        if let Some(frame) = result { frames.push(frame); }
+    }
+
     let surf = cairo::Surface::new("test.pdf", 1920.0, 1080.0);
     let mut cr = cairo::Cairo::new(surf);
     cr.set_source_rgb(0.0, 0.0, 0.0);
     cr.set_line_width(6.0);
 
-    cr.move_to(32.0, 32.0);
-    cr.line_to(960.0, 520.0);
-
-    cr.stroke();
-}
-
-fn main() {
-    let mut input = String::new();
-    io::stdin().read_to_string(&mut input).unwrap();
-    let doc = parse_or_abort(&input);
-    let mut frame = runtime::Frame::new();
-    for statement in &doc.0 {
-        println!("EVAL {}", pretty::print(statement));
-        let mframe = match interpreter::eval_statement(&mut frame, statement) {
-            Ok(x) => x,
-            Err(e) => { e.print(); panic!("Abort after error.") }
-        };
-        if let Some(frame) = mframe {
-            println!("FRAME ({} elements)", frame.get_elements().len());
-        }
-        println!("");
+    for (i, frame) in frames.iter().enumerate() {
+        println!("[{}/{}] Painting frame ...", i + 1, frames.len());
+        driver::render_frame(&mut cr, frame);
     }
-
-    make_pdf()
 }

@@ -1,0 +1,15 @@
+top_left = (0w, 0h)
+top_right = (1w, 0h)
+center = (0.5w, 0.5h)
+bottom_left = (0w, 1h)
+bottom_right = (1w, 1h)
+
+{
+  at top_left put line(center)
+  at bottom_left put line(center - bottom_left)
+}
+
+{
+  at top_left put line(bottom_right)
+  at top_right put line(bottom_left - top_right)
+}

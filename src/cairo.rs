@@ -79,6 +79,10 @@ impl Cairo {
     pub fn stroke(&mut self) {
         unsafe { cairo_stroke(self.ptr) }
     }
+
+    pub fn show_page(&mut self) {
+        unsafe { cairo_show_page(self.ptr) }
+    }
 }
 
 impl Drop for Cairo {
