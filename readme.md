@@ -2,6 +2,8 @@
 
 Pris is a domain-specific language for designing slides and other graphics.
 
+[![Build Status][ci-img]][ci]
+
 ## Example
 
 As text is not supported yet, here is a “hello line” program:
@@ -65,6 +67,8 @@ Pris uses [Cairo][cairo] for drawing and links against `libcairo.so`.
 Pris is free software. It is licensed under the
 [GNU General Public License][gplv3], version 3.
 
-[rust]:  https://rust-lang.org
-[cairo]: https://cairographics.org
-[gplv3]: https://www.gnu.org/licenses/gpl-3.0.html
+[ci-img]: https://travis-ci.org/ruuda/pris.svg?branch=master
+[ci]:     https://travis-ci.org/ruuda/pris
+[rust]:   https://rust-lang.org
+[cairo]:  https://cairographics.org
+[gplv3]:  https://www.gnu.org/licenses/gpl-3.0.html
