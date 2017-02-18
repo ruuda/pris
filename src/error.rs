@@ -7,6 +7,7 @@
 
 use std::result;
 
+use ast::Idents;
 use pretty::Formatter;
 use types::ValType;
 
@@ -110,6 +111,26 @@ impl Error {
         }
         f.print(" argument of '");
         f.print(fn_name);
+        f.print("'.");
+        let type_error = TypeError {
+            expected: expected,
+            actual: actual,
+            message: f.into_string(),
+        };
+        Error::Type(type_error)
+    }
+
+    pub fn var_type(var_name: &Idents,
+                    expected: ValType,
+                    actual: ValType)
+                    -> Error {
+        let mut f = Formatter::new();
+        f.print("Expected '");
+        f.print(var_name);
+        f.print("' to have type '");
+        f.print(expected);
+        f.print("', but found '");
+        f.print(actual);
         f.print("'.");
         let type_error = TypeError {
             expected: expected,

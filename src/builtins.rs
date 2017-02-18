@@ -7,8 +7,9 @@
 
 use std::rc::Rc;
 
+use ast::Idents;
 use error::{Error, Result};
-use elements::{Color, Element, Line};
+use elements::{Element, Line};
 use runtime::{Env, Frame, Val};
 use types::ValType;
 
@@ -57,7 +58,7 @@ pub fn image<'a>(_env: &Env<'a>, mut args: Vec<Val<'a>>) -> Result<Val<'a>> {
     Ok(Val::Frame(Rc::new(Frame::new())))
 }
 
-pub fn line<'a>(_env: &Env<'a>, mut args: Vec<Val<'a>>) -> Result<Val<'a>> {
+pub fn line<'a>(env: &Env<'a>, mut args: Vec<Val<'a>>) -> Result<Val<'a>> {
     validate_args("line", &[ValType::Coord(1)], &args)?;
     let (x, y) = match args.remove(0) {
         Val::Coord(x, y, 1) => (x, y),
@@ -65,8 +66,9 @@ pub fn line<'a>(_env: &Env<'a>, mut args: Vec<Val<'a>>) -> Result<Val<'a>> {
     };
 
     let line = Line {
-        color: Color::new(0.0, 0.0, 0.0), // TODO: Get from env.
-        stroke_width: 2.0, // TODO: Get from env.
+        // TODO: Better idents type for non-ast use?
+        color: env.lookup_color(&Idents(vec!["color"]))?,
+        line_width: env.lookup_len(&Idents(vec!["line_width"]))?,
         x: x,
         y: y,
     };

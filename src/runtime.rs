@@ -116,6 +116,8 @@ impl<'a> Env<'a> {
         let mut bindings = HashMap::new();
         // Default font size is 0.1h.
         bindings.insert("font_size", Val::Num(108.0, 1));
+        bindings.insert("line_width", Val::Num(10.8, 1));
+        bindings.insert("color", Val::Col(Color::new(0.0, 0.0, 0.0)));
         bindings.insert("fit", Val::FnIntrin(Builtin(builtins::fit)));
         bindings.insert("image", Val::FnIntrin(Builtin(builtins::image)));
         bindings.insert("line", Val::FnIntrin(Builtin(builtins::line)));
@@ -156,30 +158,29 @@ impl<'a> Env<'a> {
     }
 
     pub fn lookup_num(&self, idents: &Idents<'a>) -> Result<f64> {
-        if let Val::Num(x, 0) = self.lookup(idents)? {
-            Ok(x)
-        } else {
-            let mut msg = Formatter::new();
-            msg.print("Type error: expected num, but ");
-            msg.print(idents);
-            msg.print("is <TODO>.");
-            Err(Error::Other(msg.into_string()))
+        match self.lookup(idents)? {
+            Val::Num(x, 0) => Ok(x),
+            other => Err(Error::var_type(idents, ValType::Num(0), other.get_type())),
         }
     }
 
     pub fn lookup_len(&self, idents: &Idents<'a>) -> Result<f64> {
-        if let Val::Num(x, 1) = self.lookup(idents)? {
-            Ok(x)
-        } else {
-            let mut msg = Formatter::new();
-            msg.print("Type error: expected len, but ");
-            msg.print(idents);
-            msg.print("is <TODO>.");
-            Err(Error::Other(msg.into_string()))
+        match self.lookup(idents)? {
+            Val::Num(x, 1) => Ok(x),
+            other => Err(Error::var_type(idents, ValType::Num(1), other.get_type())),
+        }
+    }
+
+    pub fn lookup_color(&self, idents: &Idents<'a>) -> Result<Color> {
+        match self.lookup(idents)? {
+            Val::Col(col) => Ok(col),
+            other => Err(Error::var_type(idents, ValType::Color, other.get_type())),
         }
     }
 
     pub fn put(&mut self, ident: &'a str, val: Val<'a>) {
+        // TODO: Validate types for known variables, disallow assigning to
+        // constants.
         self.bindings.insert(ident, val);
     }
 }

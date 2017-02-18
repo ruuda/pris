@@ -15,9 +15,10 @@ pub fn render_frame<'a>(cr: &mut Cairo, frame: &Frame<'a>) {
         cr.move_to(pe.x, pe.y);
         match pe.element {
             Element::Line(ref line) => {
+                cr.set_source_rgb(line.color.r, line.color.g, line.color.b);
+                cr.set_line_width(line.line_width);
                 cr.line_to(pe.x + line.x, pe.y + line.y);
                 cr.stroke();
-                // TODO: Stroke width etc?
             }
         }
     }

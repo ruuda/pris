@@ -20,7 +20,7 @@ pub enum Element {
 #[derive(Clone)]
 pub struct Line {
     pub color: Color,
-    pub stroke_width: f64,
+    pub line_width: f64,
     pub x: f64,
     pub y: f64,
 }

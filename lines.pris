@@ -5,7 +5,9 @@ bottom_left = (0w, 1h)
 bottom_right = (1w, 1h)
 
 {
+  line_width = 3pt
   at top_left put line(center)
+  color = #ff0000
   at bottom_left put line(center - bottom_left)
 }
 
