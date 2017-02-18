@@ -1,0 +1,23 @@
+guide_lines = function()
+{
+  d = 0.05w
+  tl = (d, d)
+  tr = (1w - d, d)
+  bl = (d, 1h - d)
+  br = (1w - d, 1h - d)
+
+  at tl put line(tr - tl)
+  at tl put line(bl - tl)
+  at bl put line(br - bl)
+  at tr put line(br - tr)
+}
+
+{
+  color = #888888
+  at (0w, 0w) put guide_lines()
+}
+
+{
+  color = #aaeeff
+  at (0w, 0w) put guide_lines()
+}
