@@ -2,6 +2,27 @@
 
 Pris is a domain-specific language for designing slides and other graphics.
 
+## Example
+
+As text is not supported yet, here is a “hello line” program:
+
+    top_left = (0w, 0h)
+    top_right = (1w, 0h)
+    bottom_left = (0w, 1h)
+    bottom_right = (1w, 1h)
+
+    {
+      at top_left put line(bottom_right)
+      at bottom_left put line(top_right - bottom_left)
+    }
+
+    {
+      at (0w, 0.5h) put line((1w, 0h))
+    }
+
+It creates two slides, the first one with a cross in it, the second one with a
+horizontal line.
+
 ## Comparison to other technologies
 
  * Pris is similar to LaTeX with Beamer in the sense that you write your slides
@@ -27,3 +48,23 @@ Pris is a domain-specific language for designing slides and other graphics.
    direct canvas drawing in being more high-level (graphic elements can be
    manipulated as first-class values), and in being a domain-specific language
    rather than being controlled by a general-purpose scripting language.
+
+## Building
+
+Pris is written in [Rust][rust] and builds with Cargo, the build tool bundled
+with Rust.
+
+    cargo build --release
+    target/release/pris < lines.pris
+    evince test.pdf
+
+Pris uses [Cairo][cairo] for drawing and links against `libcairo.so`.
+
+## License
+
+Pris is free software. It is licensed under the
+[GNU General Public License][gplv3], version 3.
+
+[rust]:  https://rust-lang.org
+[cairo]: https://cairographics.org
+[gplv3]: https://www.gnu.org/licenses/gpl-3.0.html
