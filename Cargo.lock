@@ -2,9 +2,11 @@
 name = "pris"
 version = "0.0.0"
 dependencies = [
+ "docopt 0.6.86 (registry+https://github.com/rust-lang/crates.io-index)",
  "lalrpop 0.12.4 (registry+https://github.com/rust-lang/crates.io-index)",
  "lalrpop-util 0.12.4 (registry+https://github.com/rust-lang/crates.io-index)",
  "libc 0.2.20 (registry+https://github.com/rust-lang/crates.io-index)",
+ "rustc-serialize 0.3.22 (registry+https://github.com/rust-lang/crates.io-index)",
 ]
 
 [[package]]

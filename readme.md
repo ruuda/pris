@@ -57,8 +57,8 @@ Pris is written in [Rust][rust] and builds with Cargo, the build tool bundled
 with Rust.
 
     cargo build --release
-    target/release/pris < lines.pris
-    evince test.pdf
+    target/release/pris examples/lines.pris
+    evince examples/lines.pdf
 
 Pris uses [Cairo][cairo] for drawing and links against `libcairo.so`.
 

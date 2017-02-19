@@ -6,6 +6,7 @@
 // of the License is available in the root of the repository.
 
 use libc::c_char;
+use std::path::Path;
 
 #[allow(non_camel_case_types)]
 enum cairo_surface_t {}
@@ -36,9 +37,9 @@ pub struct Cairo {
 }
 
 impl Surface {
-    pub fn new(fname: &str, width: f64, height: f64) -> Surface {
+    pub fn new(fname: &Path, width: f64, height: f64) -> Surface {
         use std::ffi::CString;
-        let fname_cstr = CString::new(fname).unwrap();
+        let fname_cstr = CString::new(fname.to_str().unwrap()).unwrap();
         Surface {
             ptr: unsafe { cairo_pdf_surface_create(fname_cstr.as_ptr(), width, height) }
         }

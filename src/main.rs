@@ -5,8 +5,10 @@
 // it under the terms of the GNU General Public License version 3. A copy
 // of the License is available in the root of the repository.
 
+extern crate docopt;
 extern crate lalrpop_util;
 extern crate libc;
+extern crate rustc_serialize;
 
 mod ast;
 mod builtins;
@@ -20,9 +22,89 @@ mod runtime;
 mod syntax;
 mod types;
 
-use std::io;
-use std::io::Read;
+use docopt::Docopt;
 use lalrpop_util::ParseError;
+use std::fs::File;
+use std::io::BufReader;
+use std::io::Read;
+use std::io;
+use std::path::{Path, PathBuf};
+
+const USAGE: &'static str = "
+Pris, a language for designing slides.
+
+Usage:
+  pris [--output=<outfile>] [--] <infile>
+  pris (-h | --help)
+
+Options:
+  -h --help              Show this screen.
+  -o --output <outfile>  Write to the specified file, instead of infile.pdf.
+";
+
+#[derive(Debug, RustcDecodable)]
+struct Args {
+    arg_infile: String,
+    flag_output: Option<String>,
+}
+
+fn main() {
+    let args: Args = Docopt::new(USAGE)
+                            .and_then(|d| d.decode())
+                            .unwrap_or_else(|e| e.exit());
+
+    let mut input = String::new();
+    let outfile;
+
+    // Allow reading from stdin by passing "-" as the input filename.
+    if &args.arg_infile == "-" {
+        io::stdin().read_to_string(&mut input).unwrap();
+
+        if let Some(fname) = args.flag_output {
+            outfile = PathBuf::from(fname);
+        } else {
+            panic!("Specifying --output is required when reading from stdin.");
+        }
+    } else {
+        let infile = Path::new(&args.arg_infile);
+        let f = File::open(infile)
+            .expect("Failed to open input file");
+        BufReader::new(f).read_to_string(&mut input)
+            .expect("Failed to read input file");
+
+        outfile = if let Some(fname) = args.flag_output {
+            PathBuf::from(fname)
+        } else {
+            infile.with_extension("pdf")
+        };
+    }
+
+    let doc = parse_or_abort(&input);
+
+    println!("Evaluating document ...");
+
+    let mut frames = Vec::new();
+    let mut context_frame = runtime::Frame::new();
+    for statement in &doc.0 {
+        let result = match interpreter::eval_statement(&mut context_frame, statement) {
+            Ok(x) => x,
+            Err(e) => { e.print(); panic!("Abort after error.") }
+        };
+        if let Some(frame) = result { frames.push(frame); }
+    }
+
+    let surf = cairo::Surface::new(&outfile, 1920.0, 1080.0);
+    let mut cr = cairo::Cairo::new(surf);
+    cr.set_source_rgb(0.0, 0.0, 0.0);
+    cr.set_line_width(6.0);
+
+    for (i, frame) in frames.iter().enumerate() {
+        println!("[{}/{}] Painting frame ...", i + 1, frames.len());
+        driver::render_frame(&mut cr, frame);
+    }
+
+    println!("Document written to {}.", outfile.to_str().unwrap());
+}
 
 fn report_error(input: &str, location: usize, len: usize) {
     let mut line = 1;
@@ -81,33 +163,5 @@ fn parse_or_abort<'a>(input: &'a str) -> ast::Document<'a> {
             }
             std::process::exit(1)
         }
-    }
-}
-
-fn main() {
-    let mut input = String::new();
-    io::stdin().read_to_string(&mut input).unwrap();
-    let doc = parse_or_abort(&input);
-
-    println!("Evaluating document ...");
-
-    let mut frames = Vec::new();
-    let mut context_frame = runtime::Frame::new();
-    for statement in &doc.0 {
-        let result = match interpreter::eval_statement(&mut context_frame, statement) {
-            Ok(x) => x,
-            Err(e) => { e.print(); panic!("Abort after error.") }
-        };
-        if let Some(frame) = result { frames.push(frame); }
-    }
-
-    let surf = cairo::Surface::new("test.pdf", 1920.0, 1080.0);
-    let mut cr = cairo::Cairo::new(surf);
-    cr.set_source_rgb(0.0, 0.0, 0.0);
-    cr.set_line_width(6.0);
-
-    for (i, frame) in frames.iter().enumerate() {
-        println!("[{}/{}] Painting frame ...", i + 1, frames.len());
-        driver::render_frame(&mut cr, frame);
     }
 }
