@@ -1,5 +1,4 @@
 # Editor files
-
 *.swp
 *.swo
 
@@ -8,3 +7,6 @@
 
 # Generated files
 /src/syntax.rs
+
+# Pris output files
+*.pdf
