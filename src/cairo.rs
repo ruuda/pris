@@ -5,7 +5,9 @@
 // it under the terms of the GNU General Public License version 3. A copy
 // of the License is available in the root of the repository.
 
-use libc::c_char;
+use freetype;
+use freetype::freetype_sys::FT_Face;
+use libc::{c_char, c_int};
 use std::path::Path;
 
 #[allow(non_camel_case_types)]
@@ -13,6 +15,9 @@ enum cairo_surface_t {}
 
 #[allow(non_camel_case_types)]
 enum cairo_t {}
+
+#[allow(non_camel_case_types)]
+enum cairo_font_face_t {}
 
 #[link(name = "cairo")]
 extern {
@@ -26,6 +31,10 @@ extern {
     fn cairo_show_page(cr: *mut cairo_t);
     fn cairo_destroy(cr: *mut cairo_t);
     fn cairo_surface_destroy(surf: *mut cairo_surface_t);
+    fn cairo_ft_font_face_create_for_ft_face(face: FT_Face, load_flags: c_int) -> *mut cairo_font_face_t;
+    fn cairo_font_face_destroy(face: *mut cairo_font_face_t);
+    fn cairo_set_font_face(cr: *mut cairo_t, font: *mut cairo_font_face_t);
+    fn cairo_set_font_size(cr: *mut cairo_t, size: f64);
 }
 
 pub struct Surface {
@@ -34,6 +43,12 @@ pub struct Surface {
 
 pub struct Cairo {
     ptr: *mut cairo_t,
+}
+
+pub struct FontFace {
+    ptr: *mut cairo_font_face_t,
+    // Own the FreeType face to keep it alive.
+    ft_face: freetype::Face<'static>,
 }
 
 impl Surface {
@@ -84,10 +99,42 @@ impl Cairo {
     pub fn show_page(&mut self) {
         unsafe { cairo_show_page(self.ptr) }
     }
+
+    pub fn set_font_face(&mut self, face: &FontFace) {
+        unsafe { cairo_set_font_face(self.ptr, face.ptr) }
+    }
+
+    pub fn set_font_size(&mut self, size: f64) {
+        unsafe { cairo_set_font_size(self.ptr, size) }
+    }
 }
 
 impl Drop for Cairo {
     fn drop(&mut self) {
         unsafe { cairo_destroy(self.ptr) }
+    }
+}
+
+impl FontFace {
+    pub fn from_ft_face(mut ft_face: freetype::Face<'static>) -> FontFace {
+        FontFace {
+            ptr: unsafe {
+                cairo_ft_font_face_create_for_ft_face(ft_face.raw_mut(), 0)
+            },
+            ft_face: ft_face,
+        }
+    }
+
+    pub fn get_ft_face(&self) -> &freetype::Face<'static> {
+        &self.ft_face
+    }
+}
+
+impl Drop for FontFace {
+    fn drop(&mut self) {
+        // Because the struct also contains the FreeType font face, it
+        // is guaranteed that the Cairo font face is destroyed before
+        // the FreeType one is.
+        unsafe { cairo_font_face_destroy(self.ptr) }
     }
 }

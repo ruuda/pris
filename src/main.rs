@@ -6,6 +6,7 @@
 // of the License is available in the root of the repository.
 
 extern crate docopt;
+extern crate freetype;
 extern crate lalrpop_util;
 extern crate libc;
 extern crate rustc_serialize;
