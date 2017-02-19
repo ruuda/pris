@@ -15,3 +15,4 @@ rust:
 script:
   - cargo build
   - cargo test
+  - tests/compile_examples.py
