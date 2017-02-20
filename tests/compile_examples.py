@@ -1,5 +1,9 @@
 #!/usr/bin/env python
 
+# This script runs Pris on all files in the examples directory. If one returns a
+# nonzero exit code, it stops and exits with that exit code. This is used on CI,
+# but it can be useful to produce all example pdfs locally too.
+
 # This file is deliberately both valid Python 2 and Python 3.
 
 import subprocess
@@ -15,9 +19,10 @@ def run_pris(fname):
     binpath = os.path.join(root_dir, 'target/debug/pris')
     proc = subprocess.Popen([binpath, fname],
                             stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
-    if proc.wait() != 0:
+    stdout, _ = proc.communicate()
+    if proc.returncode != 0:
         print('FAILED {}\n'.format(fname))
-        print(proc.stdout.decode('utf-8'))
+        print(stdout.decode('utf-8'))
         sys.exit(proc.returncode)
     else:
         print('OK {}'.format(fname))
