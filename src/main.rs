@@ -104,6 +104,27 @@ fn main() {
         driver::render_frame(&mut cr, frame);
     }
 
+    let ft = freetype::Library::init().unwrap();
+    let ft_font = ft.new_face("/usr/share/fonts/cantarell/Cantarell-Regular.otf", 0).unwrap();
+    let cr_font = cairo::FontFace::from_ft_face(ft_font);
+    cr.set_font_face(&cr_font); // This should not be allowed.
+    cr.set_font_size(64.0);
+    let glyphs = [
+        cairo::Glyph::new(73, 128.0, 256.0),
+        cairo::Glyph::new(74, 128.0 + 64.0, 256.0)
+    ];
+    cr.show_glyphs(&glyphs);
+    cr.show_page();
+    // TODO: The drop order is important here. When setting the font face, Cairo
+    // increases the refcount for the given font, keeping it alive. But then the
+    // Rust object gets destroyed, which properly decrements the refcount and
+    // then destroys the FT face. This goes badly however, because Cairo still
+    // uses the font internally. One way to solve this, would be to borrow the
+    // font while drawing glyphs, and to reset it afterwards to a null pointer.
+    drop(cr);
+    drop(cr_font);
+    drop(ft);
+
     println!("Document written to {}.", outfile.to_str().unwrap());
 }
 

@@ -7,7 +7,8 @@
 
 use freetype;
 use freetype::freetype_sys::FT_Face;
-use libc::{c_char, c_int};
+use libc::{c_char, c_int, c_ulong};
+use std::mem;
 use std::path::Path;
 
 #[allow(non_camel_case_types)]
@@ -18,6 +19,14 @@ enum cairo_t {}
 
 #[allow(non_camel_case_types)]
 enum cairo_font_face_t {}
+
+#[repr(C)]
+#[allow(non_camel_case_types)]
+pub struct cairo_glyph_t {
+    index: c_ulong,
+    x: f64,
+    y: f64,
+}
 
 #[link(name = "cairo")]
 extern {
@@ -35,6 +44,7 @@ extern {
     fn cairo_font_face_destroy(face: *mut cairo_font_face_t);
     fn cairo_set_font_face(cr: *mut cairo_t, font: *mut cairo_font_face_t);
     fn cairo_set_font_size(cr: *mut cairo_t, size: f64);
+    fn cairo_show_glyphs(cr: *mut cairo_t, glyphs: *const cairo_glyph_t, num_glyphs: c_int);
 }
 
 pub struct Surface {
@@ -50,6 +60,8 @@ pub struct FontFace {
     // Own the FreeType face to keep it alive.
     ft_face: freetype::Face<'static>,
 }
+
+pub struct Glyph(cairo_glyph_t);
 
 impl Surface {
     pub fn new(fname: &Path, width: f64, height: f64) -> Surface {
@@ -107,6 +119,13 @@ impl Cairo {
     pub fn set_font_size(&mut self, size: f64) {
         unsafe { cairo_set_font_size(self.ptr, size) }
     }
+
+    pub fn show_glyphs(&mut self, glyphs: &[Glyph]) {
+        unsafe {
+            let cgs: *const cairo_glyph_t = mem::transmute(glyphs.as_ptr());
+            cairo_show_glyphs(self.ptr, cgs, glyphs.len() as c_int);
+        }
+    }
 }
 
 impl Drop for Cairo {
@@ -136,5 +155,16 @@ impl Drop for FontFace {
         // is guaranteed that the Cairo font face is destroyed before
         // the FreeType one is.
         unsafe { cairo_font_face_destroy(self.ptr) }
+    }
+}
+
+impl Glyph {
+    pub fn new(index: u64, x: f64, y: f64) -> Glyph {
+        let cg = cairo_glyph_t {
+            index: index as c_ulong,
+            x: x,
+            y: y,
+        };
+        Glyph(cg)
     }
 }
