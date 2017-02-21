@@ -6,6 +6,7 @@
 // of the License is available in the root of the repository.
 
 extern crate docopt;
+extern crate font_loader;
 extern crate freetype;
 extern crate lalrpop_util;
 extern crate libc;
@@ -102,6 +103,15 @@ fn main() {
     for (i, frame) in frames.iter().enumerate() {
         println!("[{}/{}] Painting frame ...", i + 1, frames.len());
         driver::render_frame(&mut cr, frame);
+    }
+
+    // Just messing around with rendering text below here.
+    let mut font_props = font_loader::system_fonts::FontPropertyBuilder::new()
+        .family("cantarell")
+        .build();
+    let fonts = font_loader::system_fonts::query_specific(&mut font_props);
+    for f in &fonts {
+        println!("Font file: {}", f);
     }
 
     let ft = freetype::Library::init().unwrap();

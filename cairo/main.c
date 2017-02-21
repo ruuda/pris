@@ -1,6 +1,8 @@
 #include <cairo/cairo.h>
 #include <cairo/cairo-ft.h>
 #include <cairo/cairo-pdf.h>
+#include <fontconfig/fontconfig.h>
+#include <stdio.h>
 
 int main(int argc, char** argv)
 {
@@ -18,6 +20,19 @@ int main(int argc, char** argv)
   cairo_stroke(cr);
 
   double pt_size = 64.0;
+
+  FcConfig* config = FcInitLoadConfigAndFonts();
+
+  FcPattern* pat = FcPatternBuild(0, FC_FILE, FcTypeString, "Cantarell:style=Regular", (char*)0);
+
+  // We assume that 'font' is not null.
+  FcPattern* font_match = FcFontMatch(config, pat, 0);
+  FcChar8* font_fname = 0;
+  // We assume that this function returns 'FcResultMatch'.
+  FcPatternGetString(font_match, FC_FILE, 0, &font_fname);
+  printf("%s\n", font_fname);
+  FcPatternDestroy(font_match);
+  FcPatternDestroy(pat);
 
   // Note: FT assertions below are ignored.
   FT_Library ft_library;
