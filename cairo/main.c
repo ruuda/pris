@@ -21,25 +21,26 @@ int main(int argc, char** argv)
 
   double pt_size = 64.0;
 
-  FcConfig* config = FcInitLoadConfigAndFonts();
-
-  FcPattern* pat = FcPatternBuild(0, FC_FILE, FcTypeString, "Cantarell:style=Regular", (char*)0);
-
-  // We assume that 'font' is not null.
-  FcPattern* font_match = FcFontMatch(config, pat, 0);
+  // Locate the font file for the Cantarell font. The name is a Fontconfig
+  // pattern; for example, Cantarell bold is "Cantarell:bold".
+  FcPattern* pat = FcNameParse("Cantarell");
+  FcDefaultSubstitute(pat);
+  FcResult result;
+  FcPattern* match = FcFontMatch(0, pat, &result);
   FcChar8* font_fname = 0;
-  // We assume that this function returns 'FcResultMatch'.
-  FcPatternGetString(font_match, FC_FILE, 0, &font_fname);
-  printf("%s\n", font_fname);
-  FcPatternDestroy(font_match);
-  FcPatternDestroy(pat);
+  FcPatternGetString(match, FC_FILE, 0, &font_fname);
 
   // Note: FT assertions below are ignored.
   FT_Library ft_library;
   FT_Init_FreeType(&ft_library);
 
   FT_Face ft_face;
-  FT_New_Face(ft_library, "/usr/share/fonts/cantarell/Cantarell-Regular.otf", 0, &ft_face);
+  FT_New_Face(ft_library, font_fname, 0, &ft_face);
+
+  // Note: we could not destroy these as long as we needed font_fname, as the
+  // match or pattern apparently owns it.
+  FcPatternDestroy(match);
+  FcPatternDestroy(pat);
 
   cairo_font_face_t* font = cairo_ft_font_face_create_for_ft_face(ft_face, 0);
   cairo_glyph_t glyphs[2];
