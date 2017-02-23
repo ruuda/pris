@@ -43,6 +43,7 @@ mod fc {
 
 #[link(name = "fontconfig")]
 extern {
+    fn FcInitLoadConfigAndFonts() -> *mut FcConfig;
     fn FcNameParse(fname: *const FcChar8) -> *mut FcPattern;
     fn FcConfigSubstitute(config: *mut FcConfig, pattern: *mut FcPattern, kind: FcMatchKind) -> FcBool;
     fn FcDefaultSubstitute(pattern: *mut FcPattern);
@@ -58,6 +59,8 @@ pub fn get_font_location(font_query: &str) -> Option<PathBuf> {
     let mut result = None;
 
     unsafe {
+        let mut config = FcInitLoadConfigAndFonts();
+
         // This is the FC_FILE constant in the C API.
         let fc_file = CStr::from_bytes_with_nul_unchecked(b"file\0");
 
@@ -73,7 +76,6 @@ pub fn get_font_location(font_query: &str) -> Option<PathBuf> {
 
         // The docs say that FcConfigSubstitute must be called too, although it
         // is unclear what its purpose is.
-        let config: *mut FcConfig = ptr::null_mut();
         assert!(0 != FcConfigSubstitute(config, pattern, fc::FcMatchPattern));
 
         let mut match_result = fc::FcResultNoMatch;
