@@ -14,8 +14,6 @@ rust:
   - nightly
 
 script:
-  - fc-list
-  - fc-match Cantarell
   - cargo build
   - cargo test
   - tests/compile_examples.py

@@ -29,6 +29,7 @@ int main(int argc, char** argv)
   FcPattern* match = FcFontMatch(0, pat, &result);
   FcChar8* font_fname = 0;
   FcPatternGetString(match, FC_FILE, 0, &font_fname);
+  printf("Font: %s\n", font_fname);
 
   // Note: FT assertions below are ignored.
   FT_Library ft_library;

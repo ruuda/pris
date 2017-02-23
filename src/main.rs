@@ -108,7 +108,7 @@ fn main() {
 
     // Just messing around with rendering text below here.
 
-    let font_fname = match fontconfig::get_font_location("Cantarell:style=Regular") {
+    let font_fname = match fontconfig::get_font_location("Cantarell") {
         Some(fname) => { println!("font: {:?}", fname); fname }
         None => panic!("Could not locate font."),
     };

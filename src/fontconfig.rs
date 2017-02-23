@@ -43,7 +43,6 @@ mod fc {
 
 #[link(name = "fontconfig")]
 extern {
-    fn FcInitLoadConfigAndFonts() -> *mut FcConfig;
     fn FcNameParse(fname: *const FcChar8) -> *mut FcPattern;
     fn FcConfigSubstitute(config: *mut FcConfig, pattern: *mut FcPattern, kind: FcMatchKind) -> FcBool;
     fn FcDefaultSubstitute(pattern: *mut FcPattern);
@@ -52,15 +51,12 @@ extern {
     fn FcPatternDestroy(pattern: *mut FcPattern);
 }
 
-
 /// Given a Fontconfig query such as "Cantarell" or "Cantarell:bold", returns
 /// the absolute path to the corresponding font file, if it could be found.
 pub fn get_font_location(font_query: &str) -> Option<PathBuf> {
     let mut result = None;
 
     unsafe {
-        let mut config = FcInitLoadConfigAndFonts();
-
         // This is the FC_FILE constant in the C API.
         let fc_file = CStr::from_bytes_with_nul_unchecked(b"file\0");
 
@@ -70,15 +66,20 @@ pub fn get_font_location(font_query: &str) -> Option<PathBuf> {
         let query_char8: *const FcChar8 = mem::transmute(query_cstr.as_ptr());
         let pattern = FcNameParse(query_char8);
 
+        // The docs say that FcConfigSubstitute must be called, although it
+        // is unclear what its purpose is.
+        let mut config = ptr::null_mut();
+        assert!(0 != FcConfigSubstitute(config, pattern, fc::FcMatchPattern));
+
         // The parsed pattern might not have some properties set, such as the
         // weight or slant. FcDefaultSubstitute fills these in.
         FcDefaultSubstitute(pattern);
 
-        // The docs say that FcConfigSubstitute must be called too, although it
-        // is unclear what its purpose is.
-        assert!(0 != FcConfigSubstitute(config, pattern, fc::FcMatchPattern));
+        // Note: it is important that the result is initialized to "match",
+        // because FcFontMatch does not overwrite it on success for older
+        // versions of Fontconfig (2.8 at least), apparently.
+        let mut match_result = fc::FcResultMatch;
 
-        let mut match_result = fc::FcResultNoMatch;
         let font_match = FcFontMatch(config, pattern, &mut match_result);
 
         if match_result == fc::FcResultMatch {
