@@ -6,7 +6,6 @@ build   = "build.rs"
 
 [dependencies]
 docopt          = "0.6"  # TODO: Upgrade to 0.7 once lalrpop does too.
-font-loader     = "0.1.4"
 freetype-rs     = "0.11"
 lalrpop-util    = "0.12"
 libc            = "0.2"

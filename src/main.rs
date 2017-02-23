@@ -6,7 +6,6 @@
 // of the License is available in the root of the repository.
 
 extern crate docopt;
-extern crate font_loader;
 extern crate freetype;
 extern crate lalrpop_util;
 extern crate libc;
@@ -18,6 +17,7 @@ mod cairo;
 mod driver;
 mod elements;
 mod error;
+mod fontconfig;
 mod interpreter;
 mod pretty;
 mod runtime;
@@ -105,17 +105,12 @@ fn main() {
         driver::render_frame(&mut cr, frame);
     }
 
-    // Just messing around with rendering text below here.
-    let mut font_props = font_loader::system_fonts::FontPropertyBuilder::new()
-        .family("cantarell")
-        .build();
-    let fonts = font_loader::system_fonts::query_specific(&mut font_props);
-    for f in &fonts {
-        println!("Font file: {}", f);
-    }
 
+    // Just messing around with rendering text below here.
+
+    let font_fname = fontconfig::get_font_location("Cantarell").unwrap();
     let ft = freetype::Library::init().unwrap();
-    let ft_font = ft.new_face("/usr/share/fonts/cantarell/Cantarell-Regular.otf", 0).unwrap();
+    let ft_font = ft.new_face(font_fname, 0).unwrap();
     let cr_font = cairo::FontFace::from_ft_face(ft_font);
     cr.set_font_face(&cr_font); // This should not be allowed.
     cr.set_font_size(64.0);
