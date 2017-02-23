@@ -108,7 +108,10 @@ fn main() {
 
     // Just messing around with rendering text below here.
 
-    let font_fname = fontconfig::get_font_location("Cantarell").unwrap();
+    let font_fname = match fontconfig::get_font_location("Cantarell:style=Regular") {
+        Some(fname) => { println!("font: {:?}", fname); fname }
+        None => panic!("Could not locate font."),
+    };
     let ft = freetype::Library::init().unwrap();
     let ft_font = ft.new_face(font_fname, 0).unwrap();
     let cr_font = cairo::FontFace::from_ft_face(ft_font);

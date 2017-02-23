@@ -15,7 +15,9 @@ use std::ptr;
 enum FcConfig {}
 enum FcPattern {}
 
+type FcBool = c_int;
 type FcChar8 = c_uchar;
+type FcMatchKind = c_int;
 type FcResult = c_int;
 
 // Note: this is an enum in C. We can define one in Rust, but the underlying
@@ -25,17 +27,24 @@ type FcResult = c_int;
 // them anyway (and allow dead code).
 mod fc {
     #![allow(non_upper_case_globals, dead_code)]
+
     use fontconfig::FcResult;
     pub const FcResultMatch: FcResult = 0;
     pub const FcResultNoMatch: FcResult = 1;
     pub const FcResultTypeMismatch: FcResult = 2;
     pub const FcResultNoId: FcResult = 3;
     pub const FcResultOutOfMemory: FcResult = 4;
+
+    use fontconfig::FcMatchKind;
+    pub const FcMatchPattern: FcMatchKind = 0;
+    pub const FcMatchFont: FcMatchKind = 1;
+    pub const FcMatchScan: FcMatchKind = 2;
 }
 
 #[link(name = "fontconfig")]
 extern {
     fn FcNameParse(fname: *const FcChar8) -> *mut FcPattern;
+    fn FcConfigSubstitute(config: *mut FcConfig, pattern: *mut FcPattern, kind: FcMatchKind) -> FcBool;
     fn FcDefaultSubstitute(pattern: *mut FcPattern);
     fn FcFontMatch(config: *mut FcConfig, pattern: *mut FcPattern, result: *mut FcResult) -> *mut FcPattern;
     fn FcPatternGetString(pattern: *mut FcPattern, object: *const c_char, n: c_int, result: *mut *mut FcChar8) -> FcResult;
@@ -62,11 +71,12 @@ pub fn get_font_location(font_query: &str) -> Option<PathBuf> {
         // weight or slant. FcDefaultSubstitute fills these in.
         FcDefaultSubstitute(pattern);
 
-        // Note: the docs say I need FcConfigSubstitute on the pattern too. Not
-        // sure why.
+        // The docs say that FcConfigSubstitute must be called too, although it
+        // is unclear what its purpose is.
+        let config: *mut FcConfig = ptr::null_mut();
+        assert!(0 != FcConfigSubstitute(config, pattern, fc::FcMatchPattern));
 
         let mut match_result = fc::FcResultNoMatch;
-        let config: *mut FcConfig = ptr::null_mut();
         let font_match = FcFontMatch(config, pattern, &mut match_result);
 
         if match_result == fc::FcResultMatch {
