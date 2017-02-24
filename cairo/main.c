@@ -1,6 +1,9 @@
 #include <cairo/cairo.h>
 #include <cairo/cairo-ft.h>
 #include <cairo/cairo-pdf.h>
+#include <harfbuzz/hb.h>
+#include <harfbuzz/hb-ft.h>
+#include <harfbuzz/hb-icu.h>
 #include <fontconfig/fontconfig.h>
 #include <stdio.h>
 
@@ -37,21 +40,48 @@ int main(int argc, char** argv)
 
   FT_Face ft_face;
   FT_New_Face(ft_library, font_fname, 0, &ft_face);
+  FT_Set_Char_Size(ft_face, 0, pt_size, 300, 300);
 
   // Note: we could not destroy these as long as we needed font_fname, as the
   // match or pattern apparently owns it.
   FcPatternDestroy(match);
   FcPatternDestroy(pat);
 
+  hb_face_t* hb_face = hb_ft_face_create(ft_face, 0);
+  hb_font_t* hb_font = hb_ft_font_create(ft_face, 0);
+
+  hb_buffer_t* hb_buf = hb_buffer_create();
+
+  hb_buffer_set_direction(hb_buf, HB_DIRECTION_LTR);
+
+  hb_buffer_add_utf8(hb_buf, "hi", strlen("hi"), 0, strlen("hi"));
+  hb_shape(hb_font, hb_buf, 0 /* features */, 0 /* num_features */);
+
+  unsigned int glyph_count;
+  hb_glyph_info_t* glyph_infos = hb_buffer_get_glyph_infos(hb_buf, &glyph_count);
+  hb_glyph_position_t* glyph_poss = hb_buffer_get_glyph_positions(hb_buf, &glyph_count);
+
   cairo_font_face_t* font = cairo_ft_font_face_create_for_ft_face(ft_face, 0);
   cairo_glyph_t glyphs[2];
 
-  glyphs[0].index = 73; // 'h'
-  glyphs[0].x = 128.0;
-  glyphs[0].y = 256.0;
-  glyphs[1].index = 74; // 'i'
-  glyphs[1].x = 128.0 + 64.0;
-  glyphs[1].y = 256.0;
+  if (glyph_count > 2) {
+    printf("too many glyphs\n");
+    return 1;
+  }
+
+  double x = 128.0;
+  double y = 256.0;
+
+  for (int i = 0; i < glyph_count; i++) {
+    glyphs[i].index = glyph_infos[i].codepoint;
+    x += glyph_poss[i].x_offset;
+    y += glyph_poss[i].y_offset;
+    glyphs[i].x = x;
+    glyphs[i].y = y;
+    x += glyph_poss[i].x_advance;
+    y += glyph_poss[i].y_advance;
+    printf("offset, advance: %d, %d\n", glyph_poss[i].x_offset, glyph_poss[i].x_advance);
+  }
 
   cairo_set_font_face(cr, font);
   cairo_set_font_size(cr, pt_size);
