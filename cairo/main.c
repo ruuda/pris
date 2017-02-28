@@ -40,7 +40,17 @@ int main(int argc, char** argv)
 
   FT_Face ft_face;
   FT_New_Face(ft_library, font_fname, 0, &ft_face);
-  FT_Set_Char_Size(ft_face, 0, pt_size, 300, 300);
+
+  // This size does not affect anything except Harfbuzz. Apparently, we must set
+  // the horizontal and vertical dpi to 72, otherwise offsets are wrong. We
+  // could set the size to the actual point size, but by setting it to 1000.0 we
+  // can reuse the FT font for different sizes. Why 1000 and not 1? For some
+  // reason, with 1 the offsets are 0; I expect Harfbuzz rounds to integers
+  // somewhere. Why 1k and not 10k? I found that with 10k -- for Cantarell at
+  // least -- all offsets are multiples of 10 at that size. This might have
+  // something to do with Truetype units.
+  double hb_scale = 1000.0;
+  FT_Set_Char_Size(ft_face, 0, hb_scale, 72, 72);
 
   // Note: we could not destroy these as long as we needed font_fname, as the
   // match or pattern apparently owns it.
@@ -54,7 +64,8 @@ int main(int argc, char** argv)
 
   hb_buffer_set_direction(hb_buf, HB_DIRECTION_LTR);
 
-  hb_buffer_add_utf8(hb_buf, "hi", strlen("hi"), 0, strlen("hi"));
+  const char* str = "hi, world";
+  hb_buffer_add_utf8(hb_buf, str, strlen(str), 0, strlen(str));
   hb_shape(hb_font, hb_buf, 0 /* features */, 0 /* num_features */);
 
   unsigned int glyph_count;
@@ -62,9 +73,9 @@ int main(int argc, char** argv)
   hb_glyph_position_t* glyph_poss = hb_buffer_get_glyph_positions(hb_buf, &glyph_count);
 
   cairo_font_face_t* font = cairo_ft_font_face_create_for_ft_face(ft_face, 0);
-  cairo_glyph_t glyphs[2];
+  cairo_glyph_t glyphs[9];
 
-  if (glyph_count > 2) {
+  if (glyph_count > sizeof(glyphs) / sizeof(cairo_glyph_t)) {
     printf("too many glyphs\n");
     return 1;
   }
@@ -74,18 +85,18 @@ int main(int argc, char** argv)
 
   for (int i = 0; i < glyph_count; i++) {
     glyphs[i].index = glyph_infos[i].codepoint;
-    x += glyph_poss[i].x_offset;
-    y += glyph_poss[i].y_offset;
+    x += glyph_poss[i].x_offset * pt_size / hb_scale;
+    y += glyph_poss[i].y_offset * pt_size / hb_scale;
     glyphs[i].x = x;
     glyphs[i].y = y;
-    x += glyph_poss[i].x_advance;
-    y += glyph_poss[i].y_advance;
+    x += glyph_poss[i].x_advance * pt_size / hb_scale;
+    y += glyph_poss[i].y_advance * pt_size / hb_scale;
     printf("offset, advance: %d, %d\n", glyph_poss[i].x_offset, glyph_poss[i].x_advance);
   }
 
   cairo_set_font_face(cr, font);
   cairo_set_font_size(cr, pt_size);
-  cairo_show_glyphs(cr, glyphs, 2);
+  cairo_show_glyphs(cr, glyphs, glyph_count);
 
   cairo_font_face_destroy(font);
 
