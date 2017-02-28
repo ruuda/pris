@@ -18,6 +18,7 @@ mod driver;
 mod elements;
 mod error;
 mod fontconfig;
+mod harfbuzz;
 mod interpreter;
 mod pretty;
 mod runtime;
@@ -114,6 +115,9 @@ fn main() {
     };
     let ft = freetype::Library::init().unwrap();
     let ft_font = ft.new_face(font_fname, 0).unwrap();
+    // TODO: Why does this method not take self as &mut? Ask on the Rust
+    // Freetype bug tracker.
+    ft_font.set_char_size(0, 1000, 72, 72).unwrap();
     let cr_font = cairo::FontFace::from_ft_face(ft_font);
     cr.set_font_face(&cr_font); // This should not be allowed.
     cr.set_font_size(64.0);

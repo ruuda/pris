@@ -68,7 +68,7 @@ pub fn get_font_location(font_query: &str) -> Option<PathBuf> {
 
         // The docs say that FcConfigSubstitute must be called, although it
         // is unclear what its purpose is.
-        let mut config = ptr::null_mut();
+        let config = ptr::null_mut();
         assert!(0 != FcConfigSubstitute(config, pattern, fc::FcMatchPattern));
 
         // The parsed pattern might not have some properties set, such as the

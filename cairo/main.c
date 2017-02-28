@@ -57,7 +57,7 @@ int main(int argc, char** argv)
   FcPatternDestroy(match);
   FcPatternDestroy(pat);
 
-  hb_face_t* hb_face = hb_ft_face_create(ft_face, 0);
+  //hb_face_t* hb_face = hb_ft_face_create(ft_face, 0);
   hb_font_t* hb_font = hb_ft_font_create(ft_face, 0);
 
   hb_buffer_t* hb_buf = hb_buffer_create();
