@@ -114,11 +114,16 @@ fn main() {
         None => panic!("Could not locate font."),
     };
     let ft = freetype::Library::init().unwrap();
-    let ft_font = ft.new_face(font_fname, 0).unwrap();
+    let mut ft_face = ft.new_face(font_fname, 0).unwrap();
     // TODO: Why does this method not take self as &mut? Ask on the Rust
     // Freetype bug tracker.
-    ft_font.set_char_size(0, 1000, 72, 72).unwrap();
-    let cr_font = cairo::FontFace::from_ft_face(ft_font);
+    ft_face.set_char_size(0, 1000, 72, 72).unwrap();
+
+    let hb_font = harfbuzz::Font::from_ft_face(&mut ft_face);
+    let mut hb_buffer = harfbuzz::Buffer::new(harfbuzz::Direction::LeftToRight);
+    hb_buffer.add_str("hi");
+
+    let cr_font = cairo::FontFace::from_ft_face(ft_face);
     cr.set_font_face(&cr_font); // This should not be allowed.
     cr.set_font_size(64.0);
     let glyphs = [
