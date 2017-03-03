@@ -119,9 +119,13 @@ fn main() {
     // Freetype bug tracker.
     ft_face.set_char_size(0, 1000, 72, 72).unwrap();
 
-    let hb_font = harfbuzz::Font::from_ft_face(&mut ft_face);
+    let mut hb_font = harfbuzz::Font::from_ft_face(&mut ft_face);
     let mut hb_buffer = harfbuzz::Buffer::new(harfbuzz::Direction::LeftToRight);
     hb_buffer.add_str("hi");
+    hb_buffer.shape(&mut hb_font);
+    for g in hb_buffer.glyphs() {
+        println!("Glyph: {:?}", g);
+    }
 
     let cr_font = cairo::FontFace::from_ft_face(ft_face);
     cr.set_font_face(&cr_font); // This should not be allowed.

@@ -91,7 +91,9 @@ int main(int argc, char** argv)
     glyphs[i].y = y;
     x += glyph_poss[i].x_advance * pt_size / hb_scale;
     y += glyph_poss[i].y_advance * pt_size / hb_scale;
-    printf("offset, advance: %d, %d\n", glyph_poss[i].x_offset, glyph_poss[i].x_advance);
+    printf("codepoint: %d\n", glyph_infos[i].codepoint);
+    printf("x offset, advance: %d, %d\n", glyph_poss[i].x_offset, glyph_poss[i].x_advance);
+    printf("y offset, advance: %d, %d\n", glyph_poss[i].y_offset, glyph_poss[i].y_advance);
   }
 
   cairo_set_font_face(cr, font);

@@ -8,8 +8,9 @@
 use freetype::freetype_sys::FT_Face;
 use freetype;
 use libc::{c_char, c_int, c_uint, c_void};
-use std::ptr;
 use std::mem;
+use std::ptr;
+use std::slice;
 
 #[allow(non_camel_case_types)]
 enum hb_font_t {}
@@ -18,18 +19,32 @@ enum hb_font_t {}
 enum hb_buffer_t {}
 
 #[allow(non_camel_case_types)]
+enum hb_feature_t {}
+
+#[allow(non_camel_case_types)]
 type hb_destroy_func_t = *mut extern fn(*mut c_void);
 
 #[allow(non_camel_case_types)]
 type hb_direction_t = c_int;
 
-/// Text direction (Rust version of `hb_direction_t`).
-#[allow(dead_code)] // Not all variants are used, but they're there anyway.
-pub enum Direction {
-    LeftToRight,
-    RightToLeft,
-    TopToBottom,
-    BottomToTop,
+#[repr(C, packed)]
+#[allow(non_camel_case_types)]
+struct hb_glyph_info_t {
+    // The Harfbuzz type is hb_codepoint_t, which is a typedef for uint32_t.
+    codepoint: u32,
+    // The Harfbuzz type is hb_mask_t, which is a typedef for uint32_t.
+    mask: u32,
+    cluster: u32,
+}
+
+#[repr(C, packed)]
+#[allow(non_camel_case_types)]
+struct hb_glyph_position_t {
+    // The Harfbuzz types are hb_position_t, which is a typedef for int32_t.
+    x_advance: i32,
+    y_advance: i32,
+    x_offset: i32,
+    y_offset: i32,
 }
 
 // Note: this is an enum in C. We can define one in Rust, but the underlying
@@ -41,11 +56,12 @@ mod hb {
     #![allow(dead_code)]
 
     use harfbuzz::hb_direction_t;
+    // Harfbuzz starts numbering at 0 and 4 explicitly for invalid and LTR.
     pub const HB_DIRECTION_INVALID: hb_direction_t = 0;
-    pub const HB_DIRECTION_LTR: hb_direction_t = 1;
-    pub const HB_DIRECTION_RTL: hb_direction_t = 2;
-    pub const HB_DIRECTION_TTB: hb_direction_t = 3;
-    pub const HB_DIRECTION_BTT: hb_direction_t = 4;
+    pub const HB_DIRECTION_LTR: hb_direction_t = 4;
+    pub const HB_DIRECTION_RTL: hb_direction_t = 5;
+    pub const HB_DIRECTION_TTB: hb_direction_t = 6;
+    pub const HB_DIRECTION_BTT: hb_direction_t = 7;
 }
 
 #[link(name = "harfbuzz")]
@@ -55,6 +71,9 @@ extern {
     fn hb_buffer_destroy(buffer: *mut hb_buffer_t);
     fn hb_buffer_set_direction(buffer: *mut hb_buffer_t, direction: hb_direction_t);
     fn hb_buffer_add_utf8(buffer: *mut hb_buffer_t, text: *const c_char, text_len: c_int, item_offset: c_uint, item_length: c_int);
+    fn hb_shape(font: *mut hb_font_t, buffer: *mut hb_buffer_t, features: *const hb_feature_t, num_features: c_uint);
+    fn hb_buffer_get_glyph_infos(buffer: *mut hb_buffer_t, length: *mut c_uint) -> *mut hb_glyph_info_t;
+    fn hb_buffer_get_glyph_positions(buffer: *mut hb_buffer_t, length: *mut c_uint) -> *mut hb_glyph_position_t;
 }
 
 pub struct Font {
@@ -63,6 +82,24 @@ pub struct Font {
 
 pub struct Buffer {
     ptr: *mut hb_buffer_t,
+}
+
+/// Text direction (Rust version of `hb_direction_t`).
+#[allow(dead_code)] // Not all variants are used, but they're there anyway.
+pub enum Direction {
+    LeftToRight,
+    RightToLeft,
+    TopToBottom,
+    BottomToTop,
+}
+
+#[derive(Copy, Clone, Debug)]
+pub struct Glyph {
+    codepoint: u32,
+    x_advance: i32,
+    y_advance: i32,
+    x_offset: i32,
+    y_offset: i32,
 }
 
 impl Font {
@@ -118,6 +155,38 @@ impl Buffer {
         // TODO: What is the difference between the first two and the last two
         // characters?
         unsafe { hb_buffer_add_utf8(self.ptr, chars, count, 0, count) }
+    }
+
+    pub fn shape(&mut self, font: &mut Font) {
+        let features = ptr::null();
+        let num_features = 0;
+        unsafe { hb_shape(font.ptr, self.ptr, features, num_features) }
+    }
+
+    pub fn glyphs(&mut self) -> Vec<Glyph> {
+        let (infos, poss) = unsafe {
+            let mut ilen = 0;
+            let mut plen = 0;
+            // The Harfbuzz docs say that these pointers are valid as long as
+            // the buffer is not modified. We could encode that properly in
+            // Rust's type system, but I want to have the glyph info and
+            // position in one struct anyway, so let's just make a copy and not
+            // worry.
+            let iptr = hb_buffer_get_glyph_infos(self.ptr, &mut ilen);
+            let pptr = hb_buffer_get_glyph_positions(self.ptr, &mut plen);
+            let islice = slice::from_raw_parts(iptr, ilen as usize);
+            let pslice = slice::from_raw_parts(pptr, plen as usize);
+            (islice, pslice)
+        };
+        infos.iter().zip(poss.iter()).map(|(info, pos)| {
+            Glyph {
+                codepoint: info.codepoint,
+                x_offset: pos.x_offset,
+                y_offset: pos.y_offset,
+                x_advance: pos.x_advance,
+                y_advance: pos.y_advance,
+            }
+        }).collect()
     }
 }
 
