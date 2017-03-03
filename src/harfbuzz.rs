@@ -27,7 +27,7 @@ type hb_destroy_func_t = *mut extern fn(*mut c_void);
 #[allow(non_camel_case_types)]
 type hb_direction_t = c_int;
 
-#[repr(C, packed)]
+#[repr(C)]
 #[allow(non_camel_case_types)]
 struct hb_glyph_info_t {
     // The Harfbuzz type is hb_codepoint_t, which is a typedef for uint32_t.
@@ -35,9 +35,15 @@ struct hb_glyph_info_t {
     // The Harfbuzz type is hb_mask_t, which is a typedef for uint32_t.
     mask: u32,
     cluster: u32,
+
+    // Harfbuzz has two private members that are not documented, but which are
+    // in the headers. They are of type hb_var_int_t, which is a union of 32 bit
+    // size.
+    _var1: u32,
+    _var2: u32,
 }
 
-#[repr(C, packed)]
+#[repr(C)]
 #[allow(non_camel_case_types)]
 struct hb_glyph_position_t {
     // The Harfbuzz types are hb_position_t, which is a typedef for int32_t.
@@ -45,6 +51,9 @@ struct hb_glyph_position_t {
     y_advance: i32,
     x_offset: i32,
     y_offset: i32,
+
+    // The glyph position also has this private member, like hb_glyph_info_t.
+    _var1: u32,
 }
 
 // Note: this is an enum in C. We can define one in Rust, but the underlying
