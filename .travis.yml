@@ -1,17 +1,23 @@
 language: rust
 
-addons:
-  apt:
-    packages:
-      - fonts-cantarell
-      - libcairo2-dev
-
 rust:
   - 1.13.0
   - 1.14.0
   - 1.15.1
   - beta
   - nightly
+
+# Apparently there is no libharfbuzz-dev package for ancient Ubuntu 12.04, opt
+# for the slightly less ancient 14.04 image.
+dist: trusty
+sudo: false
+
+addons:
+  apt:
+    packages:
+      - fonts-cantarell
+      - libcairo2-dev
+      - libharfbuzz-dev
 
 script:
   - cargo build

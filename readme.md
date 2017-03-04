@@ -60,15 +60,17 @@ with Rust.
     target/release/pris examples/lines.pris
     evince examples/lines.pdf
 
-Pris uses [Cairo][cairo] for drawing and links against `libcairo.so`.
+Pris uses [Cairo][cairo] for drawing and [Harfbuzz][harfbuzz] for text shaping,
+and links against `libcairo.so` and `libharfbuzz.so`.
 
 ## License
 
 Pris is free software. It is licensed under the
 [GNU General Public License][gplv3], version 3.
 
-[ci-img]: https://travis-ci.org/ruuda/pris.svg?branch=master
-[ci]:     https://travis-ci.org/ruuda/pris
-[rust]:   https://rust-lang.org
-[cairo]:  https://cairographics.org
-[gplv3]:  https://www.gnu.org/licenses/gpl-3.0.html
+[ci-img]:   https://travis-ci.org/ruuda/pris.svg?branch=master
+[ci]:       https://travis-ci.org/ruuda/pris
+[rust]:     https://rust-lang.org
+[cairo]:    https://cairographics.org
+[harfbuzz]: https://www.freedesktop.org/wiki/Software/HarfBuzz/
+[gplv3]:    https://www.gnu.org/licenses/gpl-3.0.html
