@@ -104,11 +104,11 @@ pub enum Direction {
 
 #[derive(Copy, Clone, Debug)]
 pub struct Glyph {
-    codepoint: u32,
-    x_advance: i32,
-    y_advance: i32,
-    x_offset: i32,
-    y_offset: i32,
+    pub codepoint: u32,
+    pub x_advance: i32,
+    pub y_advance: i32,
+    pub x_offset: i32,
+    pub y_offset: i32,
 }
 
 impl Font {

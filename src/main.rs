@@ -121,20 +121,24 @@ fn main() {
 
     let mut hb_font = harfbuzz::Font::from_ft_face(&mut ft_face);
     let mut hb_buffer = harfbuzz::Buffer::new(harfbuzz::Direction::LeftToRight);
-    hb_buffer.add_str("hi");
+    hb_buffer.add_str("Déjà vu garçon koffie file");
     hb_buffer.shape(&mut hb_font);
-    for g in hb_buffer.glyphs() {
-        println!("Glyph: {:?}", g);
-    }
 
     let cr_font = cairo::FontFace::from_ft_face(ft_face);
     cr.set_font_face(&cr_font); // This should not be allowed.
     cr.set_font_size(64.0);
-    let glyphs = [
-        cairo::Glyph::new(73, 128.0, 256.0),
-        cairo::Glyph::new(74, 128.0 + 64.0, 256.0)
-    ];
-    cr.show_glyphs(&glyphs);
+    let hb_glyphs = hb_buffer.glyphs();
+    let mut cr_glyphs = Vec::with_capacity(hb_glyphs.len());
+    let (mut cur_x, mut cur_y) = (128.0, 256.0);
+    for hg in hb_glyphs {
+        cur_x += hg.x_offset as f64 / 1000.0 * 64.0;
+        cur_y += hg.y_offset as f64 / 1000.0 * 64.0;
+        let cg = cairo::Glyph::new(hg.codepoint as u64, cur_x, cur_y);
+        cur_x += hg.x_advance as f64 / 1000.0 * 64.0;
+        cur_y += hg.y_advance as f64 / 1000.0 * 64.0;
+        cr_glyphs.push(cg);
+    }
+    cr.show_glyphs(&cr_glyphs);
     cr.show_page();
     // TODO: The drop order is important here. When setting the font face, Cairo
     // increases the refcount for the given font, keeping it alive. But then the
