@@ -76,6 +76,7 @@ mod hb {
 #[link(name = "harfbuzz")]
 extern {
     fn hb_ft_font_create(ft_face: FT_Face, destroy: hb_destroy_func_t) -> *mut hb_font_t;
+    fn hb_font_destroy(font: *mut hb_font_t);
     fn hb_buffer_create() -> *mut hb_buffer_t;
     fn hb_buffer_destroy(buffer: *mut hb_buffer_t);
     fn hb_buffer_set_direction(buffer: *mut hb_buffer_t, direction: hb_direction_t);
@@ -122,7 +123,7 @@ impl Font {
 
 impl Drop for Font {
     fn drop(&mut self) {
-        // TODO: Figure out lifetimes.
+        unsafe { hb_font_destroy(self.ptr) }
     }
 }
 
