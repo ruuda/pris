@@ -5,13 +5,16 @@
 // it under the terms of the GNU General Public License version 3. A copy
 // of the License is available in the root of the repository.
 
+use freetype;
 use std::collections::HashMap;
+use std::collections::hash_map::Entry;
 use std::rc::Rc;
 
 use ast::{FnDef, Idents};
 use builtins;
 use elements::{Color, Element, PlacedElement};
 use error::{Error, Result};
+use fontconfig;
 use pretty::{Formatter, Print};
 use types::{LenDim, ValType};
 
@@ -54,6 +57,12 @@ pub struct BoundingBox {
 /// arguments, and produces a new value. We make a wrapper type to be able to
 /// implement a no-op clone on it.
 pub struct Builtin(pub for<'a> fn(&Env<'a>, Vec<Val<'a>>) -> Result<Val<'a>>);
+
+/// Keeps track of loaded Freetype fonts, indexed by (family name, style) pairs.
+pub struct FontMap<'a> {
+    freetype: freetype::Library,
+    fonts: HashMap<(&'a str, &'a str), freetype::Face<'static>>,
+}
 
 impl<'a> Val<'a> {
     pub fn get_type(&self) -> ValType {
@@ -213,6 +222,48 @@ impl Clone for Builtin {
     fn clone(&self) -> Builtin {
         let Builtin(x) = *self;
         Builtin(x)
+    }
+}
+
+impl<'a> FontMap<'a> {
+    pub fn new() -> FontMap<'a> {
+        FontMap {
+            freetype: freetype::Library::init().expect("Failed to initialize Freetype."),
+            fonts: HashMap::new(),
+        }
+    }
+
+    pub fn get(&mut self, family: &'a str, style: &'a str) -> Option<&mut freetype::Face<'static>> {
+        let key = (family, style);
+
+        let entry = match self.fonts.entry(key) {
+            Entry::Occupied(x) => return Some(x.into_mut()),
+            Entry::Vacant(x) => x,
+        };
+
+        // We don't have the font already, look up the file and load it with
+        // Freetype.
+
+        let mut query = family.to_string();
+        query.push(':');
+        query.push_str(style);
+        let font_fname = match fontconfig::get_font_location(&query) {
+            Some(fname) => fname,
+            None => return None,
+        };
+
+        let ft_face = self.freetype
+            .new_face(font_fname, 0)
+            .expect("Failed to load font using Freetype.");
+
+        // Set a standard size and DPI, so the Harfbuzz output will be relative
+        // to this size, and we can scale ourselves when necessary.
+        // TODO: Why does this method not take self as &mut? Ask on the Rust
+        // Freetype bug tracker.
+        ft_face.set_char_size(0, 1000, 72, 72).unwrap();
+
+        let ft_face_ref = entry.insert(ft_face);
+        Some(ft_face_ref)
     }
 }
 

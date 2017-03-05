@@ -109,22 +109,18 @@ fn main() {
 
     // Just messing around with rendering text below here.
 
-    let font_fname = match fontconfig::get_font_location("Cantarell") {
-        Some(fname) => { println!("font: {:?}", fname); fname }
+    let mut font_map = runtime::FontMap::new();
+    let mut ft_face = match font_map.get("Cantarell", "Regular") {
+        Some(face) => face,
         None => panic!("Could not locate font."),
     };
-    let ft = freetype::Library::init().unwrap();
-    let mut ft_face = ft.new_face(font_fname, 0).unwrap();
-    // TODO: Why does this method not take self as &mut? Ask on the Rust
-    // Freetype bug tracker.
-    ft_face.set_char_size(0, 1000, 72, 72).unwrap();
 
     let mut hb_font = harfbuzz::Font::from_ft_face(&mut ft_face);
     let mut hb_buffer = harfbuzz::Buffer::new(harfbuzz::Direction::LeftToRight);
     hb_buffer.add_str("Déjà vu garçon koffie file");
     hb_buffer.shape(&mut hb_font);
 
-    let cr_font = cairo::FontFace::from_ft_face(ft_face);
+    let cr_font = cairo::FontFace::from_ft_face(ft_face.clone());
     cr.set_font_face(&cr_font); // This should not be allowed.
     cr.set_font_size(64.0);
     let hb_glyphs = hb_buffer.glyphs();
@@ -148,7 +144,6 @@ fn main() {
     // font while drawing glyphs, and to reset it afterwards to a null pointer.
     drop(cr);
     drop(cr_font);
-    drop(ft);
 
     println!("Document written to {}.", outfile.to_str().unwrap());
 }
