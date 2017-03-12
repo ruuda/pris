@@ -8,8 +8,10 @@
 use std::rc::Rc;
 
 use ast::Idents;
+use cairo;
+use elements::{Element, Line, Text};
 use error::{Error, Result};
-use elements::{Element, Line};
+use harfbuzz;
 use runtime::{Env, FontMap, Frame, Val};
 use types::ValType;
 
@@ -32,7 +34,7 @@ fn validate_args<'a>(fn_name: &str,
     Ok(())
 }
 
-pub fn fit<'a>(_fm: &mut FontMap<'a>,
+pub fn fit<'a>(_fm: &mut FontMap,
                _env: &Env<'a>,
                mut args: Vec<Val<'a>>)
                -> Result<Val<'a>> {
@@ -49,7 +51,7 @@ pub fn fit<'a>(_fm: &mut FontMap<'a>,
     Ok(Val::Frame(frame))
 }
 
-pub fn image<'a>(_fm: &mut FontMap<'a>,
+pub fn image<'a>(_fm: &mut FontMap,
                  _env: &Env<'a>,
                  mut args: Vec<Val<'a>>)
                  -> Result<Val<'a>> {
@@ -64,7 +66,7 @@ pub fn image<'a>(_fm: &mut FontMap<'a>,
     Ok(Val::Frame(Rc::new(Frame::new())))
 }
 
-pub fn line<'a>(_fm: &mut FontMap<'a>,
+pub fn line<'a>(_fm: &mut FontMap,
                 env: &Env<'a>,
                 mut args: Vec<Val<'a>>)
                 -> Result<Val<'a>> {
@@ -88,7 +90,7 @@ pub fn line<'a>(_fm: &mut FontMap<'a>,
     Ok(Val::Frame(Rc::new(frame)))
 }
 
-pub fn str<'a>(_fm: &mut FontMap<'a>,
+pub fn str<'a>(_fm: &mut FontMap,
                _env: &Env<'a>,
                mut args: Vec<Val<'a>>)
                -> Result<Val<'a>> {
@@ -102,8 +104,8 @@ pub fn str<'a>(_fm: &mut FontMap<'a>,
     Ok(Val::Str(format!("{}", num)))
 }
 
-pub fn t<'a>(_fm: &mut FontMap<'a>,
-             _env: &Env<'a>,
+pub fn t<'a>(fm: &mut FontMap,
+             env: &Env<'a>,
              mut args: Vec<Val<'a>>)
              -> Result<Val<'a>> {
     validate_args("t", &[ValType::Str], &args)?;
@@ -112,6 +114,46 @@ pub fn t<'a>(_fm: &mut FontMap<'a>,
         _ => unreachable!(),
     };
 
-    println!("TODO: Generate a text frame for the text '{}'.", text);
-    Ok(Val::Frame(Rc::new(Frame::new())))
+    // Read the font details from the 'font_family' and 'font_style' variables,
+    // and locate the corresponding FreeType face.
+    let font_family = env.lookup_str(&Idents(vec!["font_family"]))?;
+    let font_style = env.lookup_str(&Idents(vec!["font_style"]))?;
+    let font_size = env.lookup_len(&Idents(vec!["font_size"]))?;
+    let mut ft_face = match fm.get(&font_family, &font_style) {
+        Some(face) => face,
+        None => return Err(Error::missing_font(font_family, font_style)),
+    };
+
+    // Shape the text using Harfbuzz: convert the UTF-8 string and input font
+    // into a list of glyphs with offsets.
+    let mut hb_font = harfbuzz::Font::from_ft_face(&mut ft_face);
+    let mut hb_buffer = harfbuzz::Buffer::new(harfbuzz::Direction::LeftToRight);
+    hb_buffer.add_str(&text);
+    hb_buffer.shape(&mut hb_font);
+
+    // Position all the glyphs: Harfbuzz gives offsets, but we need absolute
+    // locations. Store them in the representation that Cairo expects.
+    let hb_glyphs = hb_buffer.glyphs();
+    let mut cr_glyphs = Vec::with_capacity(hb_glyphs.len());
+    let (mut cur_x, mut cur_y) = (0.0, 0.0);
+    // Compensate for the fixed font size which is set for the Freetype font,
+    // and apply the desired font size.
+    let size_factor = font_size / 1000.0;
+    for hg in hb_glyphs {
+        cur_x += hg.x_offset as f64 * size_factor;
+        cur_y += hg.y_offset as f64 * size_factor;
+        let cg = cairo::Glyph::new(hg.codepoint as u64, cur_x, cur_y);
+        cur_x += hg.x_advance as f64 * size_factor;
+        cur_y += hg.y_advance as f64 * size_factor;
+        cr_glyphs.push(cg);
+    }
+
+    let text_elem = Text {
+        color: env.lookup_color(&Idents(vec!["color"]))?,
+        glyphs: cr_glyphs,
+    };
+
+    let mut frame = Frame::new();
+    frame.place_element(0.0, 0.0, Element::Text(text_elem));
+    Ok(Val::Frame(Rc::new(frame)))
 }

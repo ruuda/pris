@@ -5,6 +5,8 @@
 // it under the terms of the GNU General Public License version 3. A copy
 // of the License is available in the root of the repository.
 
+use cairo;
+
 #[derive(Clone)]
 pub struct PlacedElement {
     pub x: f64,
@@ -15,6 +17,7 @@ pub struct PlacedElement {
 #[derive(Clone)]
 pub enum Element {
     Line(Line),
+    Text(Text),
 }
 
 #[derive(Clone)]
@@ -31,6 +34,12 @@ pub struct Color {
     pub r: f64,
     pub g: f64,
     pub b: f64,
+}
+
+#[derive(Clone)]
+pub struct Text {
+    pub color: Color,
+    pub glyphs: Vec<cairo::Glyph>,
 }
 
 impl Color {

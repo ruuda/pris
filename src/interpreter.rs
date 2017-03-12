@@ -18,7 +18,7 @@ use types::ValType;
 
 // Expression interpreter.
 
-fn eval_expr<'a>(fm: &mut FontMap<'a>,
+fn eval_expr<'a>(fm: &mut FontMap,
                  env: &Env<'a>,
                  term: &'a Term<'a>)
                  -> Result<Val<'a>> {
@@ -68,7 +68,7 @@ fn eval_color<'a>(col: &ast::Color) -> Val<'a> {
     Val::Col(cf64)
 }
 
-fn eval_coord<'a>(fm: &mut FontMap<'a>,
+fn eval_coord<'a>(fm: &mut FontMap,
                   env: &Env<'a>,
                   coord: &'a Coord<'a>)
                   -> Result<Val<'a>> {
@@ -84,7 +84,7 @@ fn eval_coord<'a>(fm: &mut FontMap<'a>,
     }
 }
 
-fn eval_binop<'a>(fm: &mut FontMap<'a>,
+fn eval_binop<'a>(fm: &mut FontMap,
                   env: &Env<'a>,
                   binop: &'a BinTerm<'a>)
                   -> Result<Val<'a>> {
@@ -182,7 +182,7 @@ fn eval_div<'a>(lhs: Val<'a>, rhs: Val<'a>) -> Result<Val<'a>> {
     }
 }
 
-fn eval_call<'a>(fm: &mut FontMap<'a>,
+fn eval_call<'a>(fm: &mut FontMap,
                  env: &Env<'a>,
                  call: &'a FnCall<'a>)
                  -> Result<Val<'a>> {
@@ -206,7 +206,7 @@ fn eval_call<'a>(fm: &mut FontMap<'a>,
     }
 }
 
-fn eval_call_def<'a>(fm: &mut FontMap<'a>,
+fn eval_call_def<'a>(fm: &mut FontMap,
                      env: &Env<'a>,
                      fn_def: &'a FnDef<'a>,
                      args: Vec<Val<'a>>)
@@ -229,7 +229,7 @@ fn eval_call_def<'a>(fm: &mut FontMap<'a>,
     eval_block(fm, &inner_env, &fn_def.1)
 }
 
-fn eval_block<'a>(fm: &mut FontMap<'a>,
+fn eval_block<'a>(fm: &mut FontMap,
                   env: &Env<'a>,
                   block: &'a Block<'a>)
                   -> Result<Val<'a>> {
@@ -263,7 +263,7 @@ fn eval_block<'a>(fm: &mut FontMap<'a>,
 
 // Statement interpreter.
 
-pub fn eval_statement<'a>(fm: &mut FontMap<'a>,
+pub fn eval_statement<'a>(fm: &mut FontMap,
                           frame: &mut Frame<'a>,
                           stmt: &'a Stmt<'a>)
                           -> Result<Option<Rc<Frame<'a>>>> {
@@ -297,7 +297,7 @@ pub fn eval_statement<'a>(fm: &mut FontMap<'a>,
     }
 }
 
-fn eval_assign<'a>(fm: &mut FontMap<'a>,
+fn eval_assign<'a>(fm: &mut FontMap,
                    frame: &mut Frame<'a>,
                    stmt: &'a Assign<'a>)
                    -> Result<()> {
@@ -307,7 +307,7 @@ fn eval_assign<'a>(fm: &mut FontMap<'a>,
     Ok(())
 }
 
-fn eval_put_at<'a>(fm: &mut FontMap<'a>,
+fn eval_put_at<'a>(fm: &mut FontMap,
                    frame: &mut Frame<'a>,
                    put_at: &'a PutAt<'a>)
                    -> Result<()> {

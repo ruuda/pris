@@ -56,12 +56,12 @@ pub struct BoundingBox {
 /// A "builtin" function is a function that takes an environment and a vector of
 /// arguments, and produces a new value. We make a wrapper type to be able to
 /// implement a no-op clone on it.
-pub struct Builtin(pub for<'a> fn(&mut FontMap<'a>, &Env<'a>, Vec<Val<'a>>) -> Result<Val<'a>>);
+pub struct Builtin(pub for<'a> fn(&mut FontMap, &Env<'a>, Vec<Val<'a>>) -> Result<Val<'a>>);
 
 /// Keeps track of loaded Freetype fonts, indexed by (family name, style) pairs.
-pub struct FontMap<'a> {
+pub struct FontMap {
     freetype: freetype::Library,
-    fonts: HashMap<(&'a str, &'a str), freetype::Face<'static>>,
+    fonts: HashMap<(String, String), freetype::Face<'static>>,
 }
 
 impl<'a> Val<'a> {
@@ -187,6 +187,13 @@ impl<'a> Env<'a> {
         }
     }
 
+    pub fn lookup_str(&self, idents: &Idents<'a>) -> Result<String> {
+        match self.lookup(idents)? {
+            Val::Str(s) => Ok(s),
+            other => Err(Error::var_type(idents, ValType::Str, other.get_type())),
+        }
+    }
+
     pub fn put(&mut self, ident: &'a str, val: Val<'a>) {
         // TODO: Validate types for known variables, disallow assigning to
         // constants.
@@ -225,16 +232,16 @@ impl Clone for Builtin {
     }
 }
 
-impl<'a> FontMap<'a> {
-    pub fn new() -> FontMap<'a> {
+impl FontMap {
+    pub fn new() -> FontMap {
         FontMap {
             freetype: freetype::Library::init().expect("Failed to initialize Freetype."),
             fonts: HashMap::new(),
         }
     }
 
-    pub fn get(&mut self, family: &'a str, style: &'a str) -> Option<&mut freetype::Face<'static>> {
-        let key = (family, style);
+    pub fn get(&mut self, family: &str, style: &str) -> Option<&mut freetype::Face<'static>> {
+        let key = (family.to_string(), style.to_string());
 
         let entry = match self.fonts.entry(key) {
             Entry::Occupied(x) => return Some(x.into_mut()),

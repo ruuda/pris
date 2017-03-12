@@ -22,6 +22,7 @@ pub type Result<T> = result::Result<T, Error>;
 pub enum Error {
     Arity(ArityError),
     Type(TypeError),
+    MissingFont(MissingFontError),
     Other(String),
 }
 
@@ -39,6 +40,11 @@ pub struct TypeError {
     #[allow(dead_code)] // Used in tests (TODO).
     actual: ValType,
     message: String,
+}
+
+pub struct MissingFontError {
+    family: String,
+    style: String,
 }
 
 impl Error {
@@ -140,11 +146,20 @@ impl Error {
         Error::Type(type_error)
     }
 
+    pub fn missing_font(family: String, style: String) -> Error {
+        let err = MissingFontError {
+            family: family,
+            style: style,
+        };
+        Error::MissingFont(err)
+    }
+
     pub fn print(&self) {
         print!("\x1b[31;1mError: \x1b[0m");
         match *self {
             Error::Arity(ref ae) => println!("{}\n", ae.message),
             Error::Type(ref tye) => println!("{}\n", tye.message),
+            Error::MissingFont(ref mf) => println!("The font '{} {}' cannot be found.\n", mf.family, mf.style),
             Error::Other(ref ot) => println!("{}\n", ot),
         }
     }

@@ -22,6 +22,7 @@ enum cairo_font_face_t {}
 
 #[repr(C)]
 #[allow(non_camel_case_types)]
+#[derive(Copy, Clone)]
 pub struct cairo_glyph_t {
     index: c_ulong,
     x: f64,
@@ -61,6 +62,7 @@ pub struct FontFace {
     ft_face: freetype::Face<'static>,
 }
 
+#[derive(Copy, Clone)]
 pub struct Glyph(cairo_glyph_t);
 
 impl Surface {
@@ -166,5 +168,10 @@ impl Glyph {
             y: y,
         };
         Glyph(cg)
+    }
+
+    /// Make a copy of the glyph, offset by the specified amount.
+    pub fn offset(&self, dx: f64, dy: f64) -> Glyph {
+        Glyph::new(self.0.index, self.0.x + dx, self.0.y + dy)
     }
 }
