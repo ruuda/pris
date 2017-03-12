@@ -125,6 +125,9 @@ impl<'a> Env<'a> {
         let mut bindings = HashMap::new();
         // Default font size is 0.1h.
         bindings.insert("font_size", Val::Num(108.0, 1));
+        // The default font is "sans roman", which is usually DejaVu Sans Book.
+        bindings.insert("font_family", Val::Str("sans".to_string()));
+        bindings.insert("font_style", Val::Str("roman".to_string()));
         bindings.insert("line_width", Val::Num(10.8, 1));
         bindings.insert("color", Val::Col(Color::new(0.0, 0.0, 0.0)));
         bindings.insert("fit", Val::FnIntrin(Builtin(builtins::fit)));
