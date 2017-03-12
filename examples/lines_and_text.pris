@@ -4,12 +4,16 @@ bottom_left = (0w, 1h)
 bottom_right = (1w, 1h)
 
 {
-  line_width = 0.01w
   at top_left put line(bottom_right)
   at bottom_left put line(top_right - bottom_left)
+
+  font_family = "Cantarell"
+  font_size = 0.2h
+  color = #882244
+  at (0.1w, 0.1w + font_size) put t("Hello world")
 }
 
 {
-  line_width = 0.005w
+  color = #000000
   at (0w, 0.5h) put line((1w, 0h))
 }

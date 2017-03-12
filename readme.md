@@ -6,7 +6,14 @@ Pris is a domain-specific language for designing slides and other graphics.
 
 ## Example
 
-As text is not supported yet, here is a “hello line” program:
+The obligatory “hello world”:
+
+    {
+      put t("Hello world") at (0.1w, 0.5h)
+    }
+
+And to show a little more of the language, here is a slightly more elaborate
+program that also draws lines:
 
     top_left = (0w, 0h)
     top_right = (1w, 0h)
@@ -16,14 +23,20 @@ As text is not supported yet, here is a “hello line” program:
     {
       at top_left put line(bottom_right)
       at bottom_left put line(top_right - bottom_left)
+
+      font_family = "Cantarell"
+      font_size = 0.3h
+      color = #882244
+      at (0.1w, 0.1w + font_size) put t("A language for designing slides.")
     }
 
     {
+      color = #000000
       at (0w, 0.5h) put line((1w, 0h))
     }
 
 It creates two slides, the first one with a cross in it, the second one with a
-horizontal line.
+horizontal line. The first slide contains text in dark purple.
 
 ## Comparison to other technologies
 
