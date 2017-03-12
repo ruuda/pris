@@ -196,7 +196,7 @@ fn eval_call<'a>(fm: &mut FontMap<'a>,
         Val::FnExtrin(fn_def) => eval_call_def(fm, env, fn_def, args),
         // For a builtin function, the value carries a function pointer,
         // so we can just call that.
-        Val::FnIntrin(Builtin(intrin)) => intrin(env, args),
+        Val::FnIntrin(Builtin(intrin)) => intrin(fm, env, args),
         // Other things are not callable.
         _ => {
             let msg = "Type error: attempting to call value of type <TODO>. \

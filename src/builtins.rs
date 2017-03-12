@@ -10,7 +10,7 @@ use std::rc::Rc;
 use ast::Idents;
 use error::{Error, Result};
 use elements::{Element, Line};
-use runtime::{Env, Frame, Val};
+use runtime::{Env, FontMap, Frame, Val};
 use types::ValType;
 
 fn validate_args<'a>(fn_name: &str,
@@ -32,7 +32,10 @@ fn validate_args<'a>(fn_name: &str,
     Ok(())
 }
 
-pub fn fit<'a>(_env: &Env<'a>, mut args: Vec<Val<'a>>) -> Result<Val<'a>> {
+pub fn fit<'a>(_fm: &mut FontMap<'a>,
+               _env: &Env<'a>,
+               mut args: Vec<Val<'a>>)
+               -> Result<Val<'a>> {
     validate_args("fit", &[ValType::Frame, ValType::Coord(1)], &args)?;
     let frame = match args.remove(0) {
         Val::Frame(f) => f,
@@ -46,7 +49,10 @@ pub fn fit<'a>(_env: &Env<'a>, mut args: Vec<Val<'a>>) -> Result<Val<'a>> {
     Ok(Val::Frame(frame))
 }
 
-pub fn image<'a>(_env: &Env<'a>, mut args: Vec<Val<'a>>) -> Result<Val<'a>> {
+pub fn image<'a>(_fm: &mut FontMap<'a>,
+                 _env: &Env<'a>,
+                 mut args: Vec<Val<'a>>)
+                 -> Result<Val<'a>> {
     validate_args("image", &[ValType::Str], &args)?;
     let fname = match args.remove(0) {
         Val::Str(s) => s,
@@ -58,7 +64,10 @@ pub fn image<'a>(_env: &Env<'a>, mut args: Vec<Val<'a>>) -> Result<Val<'a>> {
     Ok(Val::Frame(Rc::new(Frame::new())))
 }
 
-pub fn line<'a>(env: &Env<'a>, mut args: Vec<Val<'a>>) -> Result<Val<'a>> {
+pub fn line<'a>(_fm: &mut FontMap<'a>,
+                env: &Env<'a>,
+                mut args: Vec<Val<'a>>)
+                -> Result<Val<'a>> {
     validate_args("line", &[ValType::Coord(1)], &args)?;
     let (x, y) = match args.remove(0) {
         Val::Coord(x, y, 1) => (x, y),
@@ -79,7 +88,10 @@ pub fn line<'a>(env: &Env<'a>, mut args: Vec<Val<'a>>) -> Result<Val<'a>> {
     Ok(Val::Frame(Rc::new(frame)))
 }
 
-pub fn str<'a>(_env: &Env<'a>, mut args: Vec<Val<'a>>) -> Result<Val<'a>> {
+pub fn str<'a>(_fm: &mut FontMap<'a>,
+               _env: &Env<'a>,
+               mut args: Vec<Val<'a>>)
+               -> Result<Val<'a>> {
     // TODO: Make this generic over the dimension?
     validate_args("str", &[ValType::Num(0)], &args)?;
     let num = match args.remove(0) {
@@ -90,7 +102,10 @@ pub fn str<'a>(_env: &Env<'a>, mut args: Vec<Val<'a>>) -> Result<Val<'a>> {
     Ok(Val::Str(format!("{}", num)))
 }
 
-pub fn t<'a>(_env: &Env<'a>, mut args: Vec<Val<'a>>) -> Result<Val<'a>> {
+pub fn t<'a>(_fm: &mut FontMap<'a>,
+             _env: &Env<'a>,
+             mut args: Vec<Val<'a>>)
+             -> Result<Val<'a>> {
     validate_args("t", &[ValType::Str], &args)?;
     let text = match args.remove(0) {
         Val::Str(s) => s,
