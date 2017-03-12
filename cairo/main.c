@@ -1,3 +1,4 @@
+#include <assert.h>
 #include <cairo/cairo.h>
 #include <cairo/cairo-ft.h>
 #include <cairo/cairo-pdf.h>
@@ -26,7 +27,7 @@ int main(int argc, char** argv)
 
   // Locate the font file for the Cantarell font. The name is a Fontconfig
   // pattern; for example, Cantarell bold is "Cantarell:bold".
-  FcPattern* pat = FcNameParse("Cantarell");
+  FcPattern* pat = FcNameParse("Minion Pro");
   FcDefaultSubstitute(pat);
   FcResult result;
   FcPattern* match = FcFontMatch(0, pat, &result);
@@ -64,9 +65,12 @@ int main(int argc, char** argv)
 
   hb_buffer_set_direction(hb_buf, HB_DIRECTION_LTR);
 
+  hb_feature_t feature;
+  assert(hb_feature_from_string("smcp", 4, &feature));
+
   const char* str = "hi, world";
   hb_buffer_add_utf8(hb_buf, str, strlen(str), 0, strlen(str));
-  hb_shape(hb_font, hb_buf, 0 /* features */, 0 /* num_features */);
+  hb_shape(hb_font, hb_buf, &feature, 1);
 
   unsigned int glyph_count;
   hb_glyph_info_t* glyph_infos = hb_buffer_get_glyph_infos(hb_buf, &glyph_count);
