@@ -145,10 +145,6 @@ impl FontFace {
             ft_face: ft_face,
         }
     }
-
-    pub fn get_ft_face(&self) -> &freetype::Face<'static> {
-        &self.ft_face
-    }
 }
 
 impl Drop for FontFace {

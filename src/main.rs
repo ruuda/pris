@@ -104,7 +104,7 @@ fn main() {
 
     for (i, frame) in frames.iter().enumerate() {
         println!("[{}/{}] Painting frame ...", i + 1, frames.len());
-        driver::render_frame(&mut cr, frame);
+        driver::render_frame(&mut fm, &mut cr, frame);
     }
 
 

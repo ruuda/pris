@@ -39,6 +39,9 @@ pub struct Color {
 #[derive(Clone)]
 pub struct Text {
     pub color: Color,
+    pub font_family: String,
+    pub font_style: String,
+    pub font_size: f64,
     pub glyphs: Vec<cairo::Glyph>,
 }
 

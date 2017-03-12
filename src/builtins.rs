@@ -150,6 +150,9 @@ pub fn t<'a>(fm: &mut FontMap,
 
     let text_elem = Text {
         color: env.lookup_color(&Idents(vec!["color"]))?,
+        font_family: font_family,
+        font_style: font_style,
+        font_size: font_size,
         glyphs: cr_glyphs,
     };
 
