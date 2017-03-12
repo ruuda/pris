@@ -252,7 +252,7 @@ impl FontMap {
         // Freetype.
 
         let mut query = family.to_string();
-        query.push(':');
+        query.push_str(":style=");
         query.push_str(style);
         let font_fname = match fontconfig::get_font_location(&query) {
             Some(fname) => fname,
