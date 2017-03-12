@@ -107,43 +107,7 @@ fn main() {
         driver::render_frame(&mut fm, &mut cr, frame);
     }
 
-
-    // Just messing around with rendering text below here.
-
-    let mut ft_face = match fm.get("Cantarell", "Regular") {
-        Some(face) => face,
-        None => panic!("Could not locate font."),
-    };
-
-    let mut hb_font = harfbuzz::Font::from_ft_face(&mut ft_face);
-    let mut hb_buffer = harfbuzz::Buffer::new(harfbuzz::Direction::LeftToRight);
-    hb_buffer.add_str("Déjà vu garçon koffie file");
-    hb_buffer.shape(&mut hb_font);
-
-    let cr_font = cairo::FontFace::from_ft_face(ft_face.clone());
-    cr.set_font_face(&cr_font); // This should not be allowed.
-    cr.set_font_size(64.0);
-    let hb_glyphs = hb_buffer.glyphs();
-    let mut cr_glyphs = Vec::with_capacity(hb_glyphs.len());
-    let (mut cur_x, mut cur_y) = (128.0, 256.0);
-    for hg in hb_glyphs {
-        cur_x += hg.x_offset as f64 / 1000.0 * 64.0;
-        cur_y += hg.y_offset as f64 / 1000.0 * 64.0;
-        let cg = cairo::Glyph::new(hg.codepoint as u64, cur_x, cur_y);
-        cur_x += hg.x_advance as f64 / 1000.0 * 64.0;
-        cur_y += hg.y_advance as f64 / 1000.0 * 64.0;
-        cr_glyphs.push(cg);
-    }
-    cr.show_glyphs(&cr_glyphs);
-    cr.show_page();
-    // TODO: The drop order is important here. When setting the font face, Cairo
-    // increases the refcount for the given font, keeping it alive. But then the
-    // Rust object gets destroyed, which properly decrements the refcount and
-    // then destroys the FT face. This goes badly however, because Cairo still
-    // uses the font internally. One way to solve this, would be to borrow the
-    // font while drawing glyphs, and to reset it afterwards to a null pointer.
     drop(cr);
-    drop(cr_font);
 
     println!("Document written to {}.", outfile.to_str().unwrap());
 }
