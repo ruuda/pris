@@ -86,10 +86,11 @@ fn main() {
 
     println!("Evaluating document ...");
 
+    let mut fm = runtime::FontMap::new();
     let mut frames = Vec::new();
     let mut context_frame = runtime::Frame::new();
     for statement in &doc.0 {
-        let result = match interpreter::eval_statement(&mut context_frame, statement) {
+        let result = match interpreter::eval_statement(&mut fm, &mut context_frame, statement) {
             Ok(x) => x,
             Err(e) => { e.print(); panic!("Abort after error.") }
         };
@@ -109,8 +110,7 @@ fn main() {
 
     // Just messing around with rendering text below here.
 
-    let mut font_map = runtime::FontMap::new();
-    let mut ft_face = match font_map.get("Cantarell", "Regular") {
+    let mut ft_face = match fm.get("Cantarell", "Regular") {
         Some(face) => face,
         None => panic!("Could not locate font."),
     };

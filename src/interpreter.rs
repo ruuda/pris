@@ -13,22 +13,25 @@ use ast::{Num, PutAt, Return, Stmt, Term, Unit};
 use error::{Error, Result};
 use elements::{Color};
 use pretty::Formatter;
-use runtime::{Builtin, Frame, Env, Val};
+use runtime::{Builtin, FontMap, Frame, Env, Val};
 use types::ValType;
 
 // Expression interpreter.
 
-fn eval_expr<'a>(env: &Env<'a>, term: &'a Term<'a>) -> Result<Val<'a>> {
+fn eval_expr<'a>(fm: &mut FontMap<'a>,
+                 env: &Env<'a>,
+                 term: &'a Term<'a>)
+                 -> Result<Val<'a>> {
     match *term {
         Term::String(ref s) => Ok(eval_string(s)),
         Term::Number(ref x) => eval_num(env, x),
         Term::Color(ref co) => Ok(eval_color(co)),
         Term::Idents(ref i) => env.lookup(i),
-        Term::Coord(ref co) => eval_coord(env, co),
-        Term::BinOp(ref bo) => eval_binop(env, bo),
-        Term::FnCall(ref f) => eval_call(env, f),
+        Term::Coord(ref co) => eval_coord(fm, env, co),
+        Term::BinOp(ref bo) => eval_binop(fm, env, bo),
+        Term::FnCall(ref f) => eval_call(fm, env, f),
         Term::FnDef(ref fd) => Ok(Val::FnExtrin(fd)),
-        Term::Block(ref bk) => eval_block(env, bk),
+        Term::Block(ref bk) => eval_block(fm, env, bk),
     }
 }
 
@@ -65,9 +68,12 @@ fn eval_color<'a>(col: &ast::Color) -> Val<'a> {
     Val::Col(cf64)
 }
 
-fn eval_coord<'a>(env: &Env<'a>, coord: &'a Coord<'a>) -> Result<Val<'a>> {
-    let x = eval_expr(env, &coord.0)?;
-    let y = eval_expr(env, &coord.1)?;
+fn eval_coord<'a>(fm: &mut FontMap<'a>,
+                  env: &Env<'a>,
+                  coord: &'a Coord<'a>)
+                  -> Result<Val<'a>> {
+    let x = eval_expr(fm, env, &coord.0)?;
+    let y = eval_expr(fm, env, &coord.1)?;
     match (x, y) {
         (Val::Num(a, d), Val::Num(b, e)) if d == e => Ok(Val::Coord(a, b, d)),
         _ => {
@@ -78,9 +84,12 @@ fn eval_coord<'a>(env: &Env<'a>, coord: &'a Coord<'a>) -> Result<Val<'a>> {
     }
 }
 
-fn eval_binop<'a>(env: &Env<'a>, binop: &'a BinTerm<'a>) -> Result<Val<'a>> {
-    let lhs = eval_expr(env, &binop.0)?;
-    let rhs = eval_expr(env, &binop.2)?;
+fn eval_binop<'a>(fm: &mut FontMap<'a>,
+                  env: &Env<'a>,
+                  binop: &'a BinTerm<'a>)
+                  -> Result<Val<'a>> {
+    let lhs = eval_expr(fm, env, &binop.0)?;
+    let rhs = eval_expr(fm, env, &binop.2)?;
     match binop.1 {
         BinOp::Adj => eval_adj(lhs, rhs),
         BinOp::Add => eval_add(lhs, rhs),
@@ -173,15 +182,18 @@ fn eval_div<'a>(lhs: Val<'a>, rhs: Val<'a>) -> Result<Val<'a>> {
     }
 }
 
-fn eval_call<'a>(env: &Env<'a>, call: &'a FnCall<'a>) -> Result<Val<'a>> {
+fn eval_call<'a>(fm: &mut FontMap<'a>,
+                 env: &Env<'a>,
+                 call: &'a FnCall<'a>)
+                 -> Result<Val<'a>> {
     let mut args = Vec::with_capacity(call.1.len());
     for arg in &call.1 {
-        args.push(eval_expr(env, arg)?);
+        args.push(eval_expr(fm, env, arg)?);
     }
-    let func = eval_expr(env, &call.0)?;
+    let func = eval_expr(fm, env, &call.0)?;
     match func {
         // For a user-defined function, we evaluate the function body.
-        Val::FnExtrin(fn_def) => eval_call_def(env, fn_def, args),
+        Val::FnExtrin(fn_def) => eval_call_def(fm, env, fn_def, args),
         // For a builtin function, the value carries a function pointer,
         // so we can just call that.
         Val::FnIntrin(Builtin(intrin)) => intrin(env, args),
@@ -194,7 +206,8 @@ fn eval_call<'a>(env: &Env<'a>, call: &'a FnCall<'a>) -> Result<Val<'a>> {
     }
 }
 
-fn eval_call_def<'a>(env: &Env<'a>,
+fn eval_call_def<'a>(fm: &mut FontMap<'a>,
+                     env: &Env<'a>,
                      fn_def: &'a FnDef<'a>,
                      args: Vec<Val<'a>>)
                      -> Result<Val<'a>> {
@@ -213,10 +226,13 @@ fn eval_call_def<'a>(env: &Env<'a>,
         inner_env.put(arg_name, val);
     }
 
-    eval_block(&inner_env, &fn_def.1)
+    eval_block(fm, &inner_env, &fn_def.1)
 }
 
-fn eval_block<'a>(env: &Env<'a>, block: &'a Block<'a>) -> Result<Val<'a>> {
+fn eval_block<'a>(fm: &mut FontMap<'a>,
+                  env: &Env<'a>,
+                  block: &'a Block<'a>)
+                  -> Result<Val<'a>> {
     // A block is evaluated in its enclosing environment, but it does not modify
     // the environment, it gets a copy.
     let inner_env = (*env).clone();
@@ -226,7 +242,7 @@ fn eval_block<'a>(env: &Env<'a>, block: &'a Block<'a>) -> Result<Val<'a>> {
         match *statement {
             // A return statement in a block determines the value that the block
             // evalates to, if a return is present.
-            Stmt::Return(Return(ref r)) => return eval_expr(frame.get_env(), r),
+            Stmt::Return(Return(ref r)) => return eval_expr(fm, frame.get_env(), r),
             // A block statemen to make a frame can only be used at the top
             // level.
             Stmt::Block(..) => {
@@ -236,7 +252,7 @@ fn eval_block<'a>(env: &Env<'a>, block: &'a Block<'a>) -> Result<Val<'a>> {
             }
             // Otherwise, evaluating a statement just mutates the environment.
             _ => {
-                let maybe_frame = eval_statement(&mut frame, statement)?;
+                let maybe_frame = eval_statement(fm, &mut frame, statement)?;
                 assert!(maybe_frame.is_none());
             }
         }
@@ -247,15 +263,17 @@ fn eval_block<'a>(env: &Env<'a>, block: &'a Block<'a>) -> Result<Val<'a>> {
 
 // Statement interpreter.
 
-pub fn eval_statement<'a>(frame: &mut Frame<'a>,
-                          stmt: &'a Stmt<'a>) -> Result<Option<Rc<Frame<'a>>>> {
+pub fn eval_statement<'a>(fm: &mut FontMap<'a>,
+                          frame: &mut Frame<'a>,
+                          stmt: &'a Stmt<'a>)
+                          -> Result<Option<Rc<Frame<'a>>>> {
     match *stmt {
         Stmt::Import(ref _i) => {
             println!("TODO: eval import");
             Ok(None)
         }
         Stmt::Assign(ref a) => {
-            eval_assign(frame, a)?;
+            eval_assign(fm, frame, a)?;
             Ok(None)
         }
         Stmt::Return(..) => {
@@ -264,7 +282,7 @@ pub fn eval_statement<'a>(frame: &mut Frame<'a>,
             Err(Error::Other(String::from("Syntax error: 'return' cannot be used here.")))
         }
         Stmt::Block(ref bk) => {
-            if let Val::Frame(frame) = eval_block(frame.get_env(), bk)? {
+            if let Val::Frame(frame) = eval_block(fm, frame.get_env(), bk)? {
                 Ok(Some(frame))
             } else {
                 let msg = "Type error: top-level blocks must evaluate to frames, \
@@ -273,21 +291,27 @@ pub fn eval_statement<'a>(frame: &mut Frame<'a>,
             }
         }
         Stmt::PutAt(ref pa) => {
-            eval_put_at(frame, pa)?;
+            eval_put_at(fm, frame, pa)?;
             Ok(None)
         }
     }
 }
 
-fn eval_assign<'a>(frame: &mut Frame<'a>, stmt: &'a Assign<'a>) -> Result<()> {
+fn eval_assign<'a>(fm: &mut FontMap<'a>,
+                   frame: &mut Frame<'a>,
+                   stmt: &'a Assign<'a>)
+                   -> Result<()> {
     let Assign(target, ref expression) = *stmt;
-    let value = eval_expr(frame.get_env(), expression)?;
+    let value = eval_expr(fm, frame.get_env(), expression)?;
     frame.put_in_env(target, value);
     Ok(())
 }
 
-fn eval_put_at<'a>(frame: &mut Frame<'a>, put_at: &'a PutAt<'a>) -> Result<()> {
-    let content = match eval_expr(frame.get_env(), &put_at.0)? {
+fn eval_put_at<'a>(fm: &mut FontMap<'a>,
+                   frame: &mut Frame<'a>,
+                   put_at: &'a PutAt<'a>)
+                   -> Result<()> {
+    let content = match eval_expr(fm, frame.get_env(), &put_at.0)? {
         Val::Frame(f) => f,
         _ => {
             let msg = "Cannot place <TODO>. Only frames can be placed.";
@@ -295,7 +319,7 @@ fn eval_put_at<'a>(frame: &mut Frame<'a>, put_at: &'a PutAt<'a>) -> Result<()> {
         }
     };
 
-    let (x, y) = match eval_expr(frame.get_env(), &put_at.1)? {
+    let (x, y) = match eval_expr(fm, frame.get_env(), &put_at.1)? {
         Val::Coord(x, y, 1) => (x, y),
         _ => {
             let msg = "Placement requires a coordinate with length units, \
