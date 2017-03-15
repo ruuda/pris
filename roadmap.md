@@ -2,12 +2,16 @@
 
 Points are ordered from highest priority to lowest priority.
 
-## Near-term
+## Done
 
 * Add support for text (FreeType and Harfbuzz).
+
+## Near-term
+
+* Implement anchors and adjunction.
+* Add support for Opentype features (smcp, onum).
 * Write a custom lexer to support comments.
 * Extend the syntax to support string prefixes, define what they mean.
-* Implement anchors and adjunction.
 
 ## Longer-term
 
