@@ -132,6 +132,8 @@ pub fn t<'a>(fm: &mut FontMap,
         "center" => TextAlign::Center,
         "right" => TextAlign::Right,
         other => {
+            // TODO: Move this error to an error at assignment time, not at
+            // evaluation time. More type safety is more better.
             let mut fmt = Formatter::new();
             fmt.print("'");
             fmt.print(other);
