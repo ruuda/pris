@@ -12,6 +12,7 @@ use cairo;
 use elements::{Element, Line, Text};
 use error::{Error, Result};
 use harfbuzz;
+use pretty::Formatter;
 use runtime::{Env, FontMap, Frame, Val};
 use types::ValType;
 
@@ -114,14 +115,30 @@ pub fn t<'a>(fm: &mut FontMap,
         _ => unreachable!(),
     };
 
+    enum TextAlign { Left, Center, Right }
+
     // Read the font details from the 'font_family' and 'font_style' variables,
     // and locate the corresponding FreeType face.
     let font_family = env.lookup_str(&Idents(vec!["font_family"]))?;
     let font_style = env.lookup_str(&Idents(vec!["font_style"]))?;
     let font_size = env.lookup_len(&Idents(vec!["font_size"]))?;
+    let text_align = env.lookup_str(&Idents(vec!["text_align"]))?;
     let mut ft_face = match fm.get(&font_family, &font_style) {
         Some(face) => face,
         None => return Err(Error::missing_font(font_family, font_style)),
+    };
+    let ta = match text_align.as_ref() {
+        "left" => TextAlign::Left,
+        "center" => TextAlign::Center,
+        "right" => TextAlign::Right,
+        other => {
+            let mut fmt = Formatter::new();
+            fmt.print("'");
+            fmt.print(other);
+            fmt.print("' is not a valid value for 'text_align'. ");
+            fmt.print("Must be one of 'left', 'center', 'right'.");
+            return Err(Error::value(fmt.into_string()))
+        }
     };
 
     // Shape the text using Harfbuzz: convert the UTF-8 string and input font
@@ -147,6 +164,15 @@ pub fn t<'a>(fm: &mut FontMap,
         cur_y += hg.y_advance as f64 * size_factor;
         cr_glyphs.push(cg);
     }
+
+    // Apply x offset to enforce text alignment.
+    let width = cur_x;
+    let offset = match ta {
+        TextAlign::Left => 0.0,
+        TextAlign::Center => width * -0.5,
+        TextAlign::Right => width * -1.0,
+    };
+    cr_glyphs = cr_glyphs.iter().map(|g| g.offset(offset, 0.0)).collect();
 
     let text_elem = Text {
         color: env.lookup_color(&Idents(vec!["color"]))?,
