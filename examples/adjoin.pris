@@ -1,0 +1,3 @@
+{
+  put t("Hello") ~ line((1em, 0w)) ~ t("world") at (0.1w, 0.5h)
+}
