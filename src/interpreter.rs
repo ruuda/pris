@@ -401,5 +401,9 @@ fn eval_put_at<'a>(fm: &mut FontMap,
         frame.place_element(pos + pe.position, pe.element.clone());
     }
 
+    // Update the anchor of the frame: the anchor of a block is the anchor of
+    // the element that was placed last.
+    frame.set_anchor(pos + content.get_anchor());
+
     Ok(())
 }
