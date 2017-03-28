@@ -12,7 +12,7 @@ use std::rc::Rc;
 
 use ast::{FnDef, Idents};
 use builtins;
-use elements::{Color, Element, PlacedElement};
+use elements::{Color, Element, PlacedElement, Vec2};
 use error::{Error, Result};
 use fontconfig;
 use pretty::{Formatter, Print};
@@ -107,12 +107,9 @@ impl<'a> Frame<'a> {
         &self.elements
     }
 
-    // TODO: Have a vec2 or coord type to use internally. If my DSL has one, I
-    // should probably use one myself too ...
-    pub fn place_element(&mut self, x: f64, y: f64, elem: Element) {
+    pub fn place_element(&mut self, position: Vec2, elem: Element) {
         let placed = PlacedElement {
-            x: x,
-            y: y,
+            position: position,
             element: elem,
         };
         self.elements.push(placed);

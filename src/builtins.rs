@@ -9,7 +9,7 @@ use std::rc::Rc;
 
 use ast::Idents;
 use cairo;
-use elements::{Element, Line, Text};
+use elements::{Element, Line, Text, Vec2};
 use error::{Error, Result};
 use harfbuzz;
 use pretty::Formatter;
@@ -72,8 +72,8 @@ pub fn line<'a>(_fm: &mut FontMap,
                 mut args: Vec<Val<'a>>)
                 -> Result<Val<'a>> {
     validate_args("line", &[ValType::Coord(1)], &args)?;
-    let (x, y) = match args.remove(0) {
-        Val::Coord(x, y, 1) => (x, y),
+    let offset = match args.remove(0) {
+        Val::Coord(x, y, 1) => Vec2::new(x, y),
         _ => unreachable!(),
     };
 
@@ -81,12 +81,11 @@ pub fn line<'a>(_fm: &mut FontMap,
         // TODO: Better idents type for non-ast use?
         color: env.lookup_color(&Idents(vec!["color"]))?,
         line_width: env.lookup_len(&Idents(vec!["line_width"]))?,
-        x: x,
-        y: y,
+        offset: offset,
     };
 
     let mut frame = Frame::new();
-    frame.place_element(0.0, 0.0, Element::Line(line));
+    frame.place_element(Vec2::zero(), Element::Line(line));
 
     Ok(Val::Frame(Rc::new(frame)))
 }
@@ -185,6 +184,6 @@ pub fn t<'a>(fm: &mut FontMap,
     };
 
     let mut frame = Frame::new();
-    frame.place_element(0.0, 0.0, Element::Text(text_elem));
+    frame.place_element(Vec2::zero(), Element::Text(text_elem));
     Ok(Val::Frame(Rc::new(frame)))
 }

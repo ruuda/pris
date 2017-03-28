@@ -14,10 +14,11 @@ pub fn render_frame<'a>(fm: &mut FontMap, cr: &mut Cairo, frame: &Frame<'a>) {
     for pe in frame.get_elements() {
         match pe.element {
             Element::Line(ref line) => {
-                cr.move_to(pe.x, pe.y);
+                cr.move_to(pe.position.x, pe.position.y);
                 cr.set_source_rgb(line.color.r, line.color.g, line.color.b);
                 cr.set_line_width(line.line_width);
-                cr.line_to(pe.x + line.x, pe.y + line.y);
+                let to = pe.position + line.offset;
+                cr.line_to(to.x, to.y);
                 cr.stroke();
             }
 
@@ -25,7 +26,9 @@ pub fn render_frame<'a>(fm: &mut FontMap, cr: &mut Cairo, frame: &Frame<'a>) {
                 // Cairo uses absolute positions for glyphs, so we need to add
                 // the final positions to the glyph locations.
                 let glyphs_offset: Vec<_> = text.glyphs.iter()
-                                                .map(|g| g.offset(pe.x, pe.y))
+                                                // TODO: Make offset type take
+                                                // Vec2.
+                                                .map(|g| g.offset(pe.position.x, pe.position.y))
                                                 .collect();
                 // If we were able to shape the text, then the FT font must
                 // exist still. TODO: Would it be better to just embed a

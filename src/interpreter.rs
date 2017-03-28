@@ -11,7 +11,7 @@ use ast;
 use ast::{Assign, BinOp, BinTerm, Block, Coord, FnCall, FnDef, Idents};
 use ast::{Num, PutAt, Return, Stmt, Term, Unit};
 use error::{Error, Result};
-use elements::{Color};
+use elements::{Color, Vec2};
 use pretty::Formatter;
 use runtime::{Builtin, FontMap, Frame, Env, Val};
 use types::ValType;
@@ -319,8 +319,9 @@ fn eval_put_at<'a>(fm: &mut FontMap,
         }
     };
 
-    let (x, y) = match eval_expr(fm, frame.get_env(), &put_at.1)? {
-        Val::Coord(x, y, 1) => (x, y),
+    let pos = match eval_expr(fm, frame.get_env(), &put_at.1)? {
+        // TODO: Make Coord type carry Vec2 instead of separate x, y.
+        Val::Coord(x, y, 1) => Vec2::new(x, y),
         _ => {
             let msg = "Placement requires a coordinate with length units, \
                        but a <TODO> was found instead.";
@@ -329,7 +330,7 @@ fn eval_put_at<'a>(fm: &mut FontMap,
     };
 
     for pe in content.get_elements() {
-        frame.place_element(x + pe.x, y + pe.y, pe.element.clone());
+        frame.place_element(pos + pe.position, pe.element.clone());
     }
 
     Ok(())
