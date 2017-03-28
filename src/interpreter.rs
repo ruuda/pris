@@ -103,9 +103,14 @@ fn eval_binop<'a>(fm: &mut FontMap,
 /// Adjoins two frames.
 fn eval_adj<'a>(lhs: Val<'a>, rhs: Val<'a>) -> Result<Val<'a>> {
     match (lhs, rhs) {
-        (Val::Frame(f0), Val::Frame(_f1)) => {
-            println!("TODO: Should adjoin two frames.");
-            Ok(Val::Frame(f0))
+        (Val::Frame(f0), Val::Frame(f1)) => {
+            let mut frame = (*f0).clone();
+            let anchor = f0.get_anchor();
+            for pe in f1.get_elements() {
+                frame.place_element(anchor + pe.position, pe.element.clone());
+            }
+            frame.set_anchor(anchor + f1.get_anchor());
+            Ok(Val::Frame(Rc::new(frame)))
         }
         (lhs, rhs) => {
             Err(Error::binop_type("~", ValType::Frame, lhs.get_type(), rhs.get_type()))

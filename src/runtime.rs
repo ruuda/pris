@@ -37,6 +37,10 @@ pub struct Frame<'a> {
     /// of the bounding box are relative to the origin of this frame.
     bounding_box: BoundingBox,
 
+    /// The anchor of this frame; the position at which elements should be
+    /// placed when a frame is adjoined, relative to the origin of this frame.
+    anchor: Vec2,
+
     elements: Vec<PlacedElement>,
 }
 
@@ -83,6 +87,7 @@ impl<'a> Frame<'a> {
         Frame {
             env: Env::new(),
             bounding_box: BoundingBox::empty(),
+            anchor: Vec2::zero(),
             elements: Vec::new(),
         }
     }
@@ -91,6 +96,7 @@ impl<'a> Frame<'a> {
         Frame {
             env: env,
             bounding_box: BoundingBox::empty(),
+            anchor: Vec2::zero(),
             elements: Vec::new(),
         }
     }
@@ -105,6 +111,14 @@ impl<'a> Frame<'a> {
 
     pub fn get_elements(&self) -> &[PlacedElement] {
         &self.elements
+    }
+
+    pub fn get_anchor(&self) -> Vec2 {
+        self.anchor
+    }
+
+    pub fn set_anchor(&mut self, a: Vec2) {
+        self.anchor = a;
     }
 
     pub fn place_element(&mut self, position: Vec2, elem: Element) {

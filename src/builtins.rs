@@ -86,6 +86,7 @@ pub fn line<'a>(_fm: &mut FontMap,
 
     let mut frame = Frame::new();
     frame.place_element(Vec2::zero(), Element::Line(line));
+    frame.set_anchor(offset);
 
     Ok(Val::Frame(Rc::new(frame)))
 }
@@ -185,5 +186,6 @@ pub fn t<'a>(fm: &mut FontMap,
 
     let mut frame = Frame::new();
     frame.place_element(Vec2::zero(), Element::Text(text_elem));
+    frame.set_anchor(Vec2::new(offset + width, 0.0));
     Ok(Val::Frame(Rc::new(frame)))
 }
