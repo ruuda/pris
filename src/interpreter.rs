@@ -6,6 +6,7 @@
 // of the License is available in the root of the repository.
 
 use std::rc::Rc;
+use std::char;
 
 use ast;
 use ast::{Assign, BinOp, BinTerm, Block, Coord, FnCall, FnDef, Idents};
@@ -38,7 +39,69 @@ fn eval_expr<'a>(fm: &mut FontMap,
 fn eval_string<'a>(s: &'a str) -> Val<'a> {
     // Strip off the quotes at the start and end.
     let string = String::from(&s[1..s.len() - 1]);
-    // TODO: Handle escape sequences.
+    let mut string = String::with_capacity(s.len() - 2);
+
+    // TODO: Move escape sequence handling into the parser.
+
+    // Parsing escape sequences in a string literal is a small state machine
+    // with the following states.
+    enum EscState {
+        Normal,
+        Escape,
+        Unicode(u32, u32),
+    }
+
+    let mut st = EscState::Normal;
+
+    // Iterate all characters except for the enclosing quotes.
+    for ch in s[1..s.len() - 1].chars() {
+        match st {
+            EscState::Normal => {
+                match ch {
+                    '\\' => st = EscState::Escape,
+                    _ => string.push(ch),
+                }
+            }
+            EscState::Escape => {
+                match ch {
+                    '\\' => { string.push('\\'); st = EscState::Normal; }
+                    '"' => { string.push('"'); st = EscState::Normal; }
+                    'u' => { st = EscState::Unicode(0, 6); }
+                    _ => panic!("Invalid escape code. TODO: Turn into parse error."),
+                }
+            }
+            EscState::Unicode(codepoint, num_left) => {
+                // An unicode escape sequence of the form \u1f574 consists of at
+                // most 6 hexadecimal characters, and ends at the first non-hex
+                // character. Examples:
+                // "\u"        -> U+0
+                // "\u1f574z"  -> U+1F574, U+7A
+                // "\u1f5741"  -> U+1F5741
+                // "\u01f5741" -> U+1F574, U+31
+                if ch.is_digit(16) && num_left > 0 {
+                    // Parsing the digit will succeed, because we checked above.
+                    let d = ch.to_digit(16).unwrap();
+                    st = EscState::Unicode(codepoint * 16 + d, num_left - 1);
+                } else {
+                    let c = char::from_u32(codepoint)
+                        .expect("Invalid code point. TODO: Turn into parse error.");
+                    string.push(c);
+                    string.push(ch);
+                    st = EscState::Normal;
+                }
+            }
+        }
+    }
+
+    match st {
+        EscState::Unicode(codepoint, _num_left) => {
+            let c = char::from_u32(codepoint)
+                .expect("Invalid code point. TODO: Turn into parse error.");
+            string.push(c);
+        }
+        _ => { }
+    }
+
     Val::Str(string)
 }
 
