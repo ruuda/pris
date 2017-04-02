@@ -6,6 +6,7 @@
 // of the License is available in the root of the repository.
 
 use cairo;
+use rsvg::Svg;
 use std::ops;
 
 #[derive(Clone)]
@@ -25,6 +26,7 @@ pub struct Vec2 {
 pub enum Element {
     Line(Line),
     Text(Text),
+    Svg(Svg),
 }
 
 #[derive(Clone)]

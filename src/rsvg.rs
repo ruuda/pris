@@ -29,6 +29,7 @@ extern {
 
 #[link(name = "gobject-2.0")]
 extern {
+    fn g_object_ref(object: *mut c_void);
     fn g_object_unref(object: *mut c_void);
 }
 
@@ -88,18 +89,35 @@ impl Svg {
         Ok(result)
     }
 
-    pub fn draw(&mut self, cairo: &mut Cairo) -> Result<(), ()> {
+    pub fn draw(&self, cairo: &mut Cairo) {
         unsafe {
+            // Note: `rsvg_handle_render_cairo` takes the handle as mutable
+            // pointer according to the docs; not as immutable. But
+            // conceptually, drawing is an immutable operation. I am assuming
+            // here that it indeed does not mutate the object.
             if rsvg_handle_render_cairo(self.handle, cairo.get_raw_ptr()) != 1 {
-                return Err(())
+                panic!("Failed to draw svg, rsvg reported an error.");
             }
         }
-        Ok(())
     }
 }
 
 impl Drop for Svg {
     fn drop(&mut self) {
         unsafe { g_object_unref(mem::transmute(self.handle)) }
+    }
+}
+
+impl Clone for Svg {
+    fn clone(&self) -> Svg {
+        // The RsvgHandle is a GObject, which is refcounted. So to clone, we can
+        // bump the refcount, and after that we can safely alias the handle. We
+        // can produce two mutable pointers to the same RsvgHandle in this way,
+        // but this is fine because we do not mutate the object after
+        // construction. (This assumes that drawing does not mutate.)
+        unsafe { g_object_ref(mem::transmute(self.handle)) }
+        Svg {
+            handle: self.handle,
+        }
     }
 }

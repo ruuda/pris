@@ -109,7 +109,7 @@ fn main() {
     }
 
     let mut svg = rsvg::Svg::open("image.svg").unwrap();
-    svg.draw(&mut cr).unwrap();
+    svg.draw(&mut cr);
 
     drop(cr);
 

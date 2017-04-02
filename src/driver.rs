@@ -43,6 +43,11 @@ pub fn render_frame<'a>(fm: &mut FontMap, cr: &mut Cairo, frame: &Frame<'a>) {
                 // TODO: The cr_font should outlive the Cairo, because Cairo
                 // might internally reference the font still. How to model this?
             }
+
+            Element::Svg(ref svg) => {
+                // TODO: Offset and scale.
+                svg.draw(cr);
+            }
         }
     }
     cr.show_page()
