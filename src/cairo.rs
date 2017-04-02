@@ -90,6 +90,10 @@ impl Cairo {
         }
     }
 
+    pub unsafe fn get_raw_ptr(&mut self) -> *mut cairo_t {
+        self.ptr
+    }
+
     pub fn set_source_rgb(&mut self, r: f64, g: f64, b: f64) {
         unsafe { cairo_set_source_rgb(self.ptr, r, g, b) }
     }

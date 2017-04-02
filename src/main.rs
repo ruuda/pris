@@ -108,6 +108,9 @@ fn main() {
         driver::render_frame(&mut fm, &mut cr, frame);
     }
 
+    let mut svg = rsvg::Svg::open("image.svg").unwrap();
+    svg.draw(&mut cr).unwrap();
+
     drop(cr);
 
     println!("Document written to {}.", outfile.to_str().unwrap());
