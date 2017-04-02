@@ -37,8 +37,6 @@ fn eval_expr<'a>(fm: &mut FontMap,
 }
 
 fn eval_string<'a>(s: &'a str) -> Val<'a> {
-    // Strip off the quotes at the start and end.
-    let string = String::from(&s[1..s.len() - 1]);
     let mut string = String::with_capacity(s.len() - 2);
 
     // TODO: Move escape sequence handling into the parser.
