@@ -1,11 +1,12 @@
 #include <assert.h>
-#include <cairo/cairo.h>
 #include <cairo/cairo-ft.h>
 #include <cairo/cairo-pdf.h>
-#include <harfbuzz/hb.h>
+#include <cairo/cairo.h>
+#include <fontconfig/fontconfig.h>
 #include <harfbuzz/hb-ft.h>
 #include <harfbuzz/hb-icu.h>
-#include <fontconfig/fontconfig.h>
+#include <harfbuzz/hb.h>
+#include <librsvg/rsvg.h>
 #include <stdio.h>
 
 int main(int argc, char** argv)
@@ -106,6 +107,25 @@ int main(int argc, char** argv)
 
   cairo_font_face_destroy(font);
 
+  cairo_show_page(cr);
+
+  // Draw some svg using rsvg.
+  RsvgHandle* svg = rsvg_handle_new();
+  FILE* svgfile = fopen("image.svg", "r");
+  unsigned char buffer[1024];
+  size_t bytes_read;
+  while (1)
+  {
+    bytes_read = fread(buffer, 1, 1024, svgfile);
+    assert(TRUE == rsvg_handle_write(svg, buffer, bytes_read, 0));
+    if (feof(svgfile)) break;
+  }
+  fclose(svgfile);
+  assert(TRUE == rsvg_handle_close(svg, 0));
+
+  assert(TRUE == rsvg_handle_render_cairo(svg, cr));
+
+  g_object_unref(svg);
   cairo_show_page(cr);
 
   cairo_destroy(cr);
