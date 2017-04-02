@@ -21,6 +21,7 @@ mod fontconfig;
 mod harfbuzz;
 mod interpreter;
 mod pretty;
+mod rsvg;
 mod runtime;
 mod syntax;
 mod types;

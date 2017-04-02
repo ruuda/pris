@@ -15,7 +15,7 @@ use std::path::Path;
 enum cairo_surface_t {}
 
 #[allow(non_camel_case_types)]
-enum cairo_t {}
+pub enum cairo_t {}
 
 #[allow(non_camel_case_types)]
 enum cairo_font_face_t {}
