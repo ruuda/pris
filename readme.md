@@ -74,7 +74,8 @@ with Rust.
     evince examples/lines.pdf
 
 Pris uses [Cairo][cairo] for drawing and [Harfbuzz][harfbuzz] for text shaping,
-and links against `libcairo.so` and `libharfbuzz.so`.
+and links against `libcairo.so` and `libharfbuzz.so`. It uses [Rsvg][rsvg] to
+render svg images, for which it links against `librsvg-2.so`.
 
 ## License
 
@@ -86,4 +87,5 @@ Pris is free software. It is licensed under the
 [rust]:     https://rust-lang.org
 [cairo]:    https://cairographics.org
 [harfbuzz]: https://www.freedesktop.org/wiki/Software/HarfBuzz/
+[rsvg]:     https://wiki.gnome.org/Projects/LibRsvg
 [gplv3]:    https://www.gnu.org/licenses/gpl-3.0.html
