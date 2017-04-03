@@ -19,6 +19,7 @@ addons:
       - fonts-cantarell
       - libcairo2-dev
       - libharfbuzz-dev
+      - librsvg2-dev
 
 script:
   - cargo build
