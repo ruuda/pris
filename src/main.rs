@@ -108,7 +108,7 @@ fn main() {
         driver::render_frame(&mut fm, &mut cr, frame);
     }
 
-    let mut svg = rsvg::Svg::open("image.svg").unwrap();
+    let mut svg = rsvg::Svg::open("examples/image.svg").unwrap();
     svg.draw(&mut cr);
 
     drop(cr);
