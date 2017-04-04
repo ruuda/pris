@@ -24,6 +24,7 @@ pub enum Error {
     Type(TypeError),
     Value(ValueError),
     MissingFont(MissingFontError),
+    MissingFile(MissingFileError),
     Other(String),
 }
 
@@ -50,6 +51,10 @@ pub struct ValueError {
 pub struct MissingFontError {
     family: String,
     style: String,
+}
+
+pub struct MissingFileError {
+    path: String,
 }
 
 impl Error {
@@ -166,6 +171,13 @@ impl Error {
         Error::MissingFont(err)
     }
 
+    pub fn missing_file(path: String) -> Error {
+        let err = MissingFileError {
+            path: path,
+        };
+        Error::MissingFile(err)
+    }
+
     pub fn print(&self) {
         print!("\x1b[31;1mError: \x1b[0m");
         match *self {
@@ -173,6 +185,7 @@ impl Error {
             Error::Type(ref tye) => println!("{}\n", tye.message),
             Error::Value(ref ve) => println!("{}\n", ve.message),
             Error::MissingFont(ref mf) => println!("The font '{} {}' cannot be found.\n", mf.family, mf.style),
+            Error::MissingFile(ref mf) => println!("The file '{}' does not exist.\n", mf.path),
             Error::Other(ref ot) => println!("{}\n", ot),
         }
     }

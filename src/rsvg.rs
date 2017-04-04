@@ -16,7 +16,10 @@ use std::ptr;
 pub enum RsvgHandle {}
 enum GError {}
 
+#[allow(non_camel_case_types)]
 type gboolean = c_int;
+
+#[allow(non_camel_case_types)]
 type gsize = c_ulong;
 
 #[link(name = "rsvg-2")]
@@ -39,7 +42,7 @@ pub struct Svg {
 
 impl Svg {
     pub fn open<P: AsRef<Path>>(path: P) -> Result<Svg, ()> {
-        let mut f = match fs::File::open(path) {
+        let f = match fs::File::open(path) {
             Ok(f) => f,
             // TODO: Proper error handling.
             Err(..) => return Err(()),

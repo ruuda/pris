@@ -14,6 +14,7 @@ use error::{Error, Result};
 use harfbuzz;
 use pretty::Formatter;
 use runtime::{Env, FontMap, Frame, Val};
+use rsvg;
 use types::ValType;
 
 fn validate_args<'a>(fn_name: &str,
@@ -50,21 +51,6 @@ pub fn fit<'a>(_fm: &mut FontMap,
     };
     println!("TODO: Should fit frame in ({}, {}) and return it as frame.", size.0, size.1);
     Ok(Val::Frame(frame))
-}
-
-pub fn image<'a>(_fm: &mut FontMap,
-                 _env: &Env<'a>,
-                 mut args: Vec<Val<'a>>)
-                 -> Result<Val<'a>> {
-    validate_args("image", &[ValType::Str], &args)?;
-    let fname = match args.remove(0) {
-        Val::Str(s) => s,
-        _ => unreachable!(),
-    };
-
-    println!("TODO: Should load image '{}' and return it as frame.", fname);
-
-    Ok(Val::Frame(Rc::new(Frame::new())))
 }
 
 pub fn line<'a>(_fm: &mut FontMap,
@@ -187,5 +173,39 @@ pub fn t<'a>(fm: &mut FontMap,
     let mut frame = Frame::new();
     frame.place_element(Vec2::zero(), Element::Text(text_elem));
     frame.set_anchor(Vec2::new(offset + width, 0.0));
+    Ok(Val::Frame(Rc::new(frame)))
+}
+
+pub fn image<'a>(_fm: &mut FontMap,
+                 _env: &Env<'a>,
+                 mut args: Vec<Val<'a>>)
+                 -> Result<Val<'a>> {
+    validate_args("image", &[ValType::Str], &args)?;
+    let path = match args.remove(0) {
+        Val::Str(s) => s,
+        _ => unreachable!(),
+    };
+
+    if !path.ends_with(".svg") {
+        let msg = format!("Cannot load '{}', only svg images are supported for now.", path);
+        return Err(Error::Other(msg))
+    }
+
+    // TODO: Make path relative to the source file. Some kind of state would be
+    // required for this. Time to replace the FontMap everywhere with a more
+    // elaborate state structure.
+
+    let svg = match rsvg::Svg::open(&path) {
+        Ok(svg) => svg,
+        // TODO: Actually, the cause does not have to be a missing file, it
+        // might be an ill-formed file or some other kind of IO error too.
+        // Move error handling into the rsvg module proper.
+        Err(()) => return Err(Error::missing_file(path)),
+    };
+
+    let mut frame = Frame::new();
+    frame.place_element(Vec2::zero(), Element::Svg(svg));
+    // TODO: Find out size, set anchor.
+    // frame.set_anchor(Vec2::new(0.0, 0.0));
     Ok(Val::Frame(Rc::new(frame)))
 }
