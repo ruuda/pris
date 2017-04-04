@@ -29,6 +29,18 @@ pub struct cairo_glyph_t {
     y: f64,
 }
 
+#[repr(C)]
+#[allow(non_camel_case_types)]
+#[derive(Copy, Clone)]
+pub struct cairo_matrix_t {
+    xx: f64,
+    yx: f64,
+    xy: f64,
+    yy: f64,
+    x0: f64,
+    y0: f64,
+}
+
 #[link(name = "cairo")]
 extern {
     fn cairo_pdf_surface_create(fname: *const c_char, width: f64, height: f64) -> *mut cairo_surface_t;
@@ -46,6 +58,9 @@ extern {
     fn cairo_set_font_face(cr: *mut cairo_t, font: *mut cairo_font_face_t);
     fn cairo_set_font_size(cr: *mut cairo_t, size: f64);
     fn cairo_show_glyphs(cr: *mut cairo_t, glyphs: *const cairo_glyph_t, num_glyphs: c_int);
+    fn cairo_get_matrix(cr: *mut cairo_t, matrix: *mut cairo_matrix_t);
+    fn cairo_set_matrix(cr: *mut cairo_t, matrix: *const cairo_matrix_t);
+    fn cairo_translate(cr: *mut cairo_t, tx: f64, ty: f64);
 }
 
 pub struct Surface {
@@ -64,6 +79,9 @@ pub struct FontFace {
 
 #[derive(Copy, Clone)]
 pub struct Glyph(cairo_glyph_t);
+
+#[derive(Copy, Clone)]
+pub struct Matrix(cairo_matrix_t);
 
 impl Surface {
     pub fn new(fname: &Path, width: f64, height: f64) -> Surface {
@@ -131,6 +149,23 @@ impl Cairo {
             let cgs: *const cairo_glyph_t = mem::transmute(glyphs.as_ptr());
             cairo_show_glyphs(self.ptr, cgs, glyphs.len() as c_int);
         }
+    }
+
+    pub fn get_matrix(&self) -> Matrix {
+        unsafe {
+            let mut mtx: cairo_matrix_t = mem::uninitialized();
+            cairo_get_matrix(self.ptr, &mut mtx);
+            Matrix(mtx)
+        }
+    }
+
+    pub fn set_matrix(&mut self, matrix: &Matrix) {
+        let &Matrix(ref mtx) = matrix;
+        unsafe { cairo_set_matrix(self.ptr, mtx) }
+    }
+
+    pub fn translate(&mut self, tx: f64, ty: f64) {
+        unsafe { cairo_translate(self.ptr, tx, ty) }
     }
 }
 

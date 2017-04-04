@@ -45,8 +45,11 @@ pub fn render_frame<'a>(fm: &mut FontMap, cr: &mut Cairo, frame: &Frame<'a>) {
             }
 
             Element::Svg(ref svg) => {
-                // TODO: Offset and scale.
+                // Store the current transform so we can restore it later.
+                let matrix = cr.get_matrix();
+                cr.translate(pe.position.x, pe.position.y);
                 svg.draw(cr);
+                cr.set_matrix(&matrix);
             }
         }
     }
