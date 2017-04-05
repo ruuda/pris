@@ -28,7 +28,7 @@ ax = std.anchors
   background_color = #fafafa
 
   image_origin = (0.5, 0.5)
-  at (ax.center - (0em, 5em)) put fit(image("logo.png"), (5em, 5em))
+  at (ax.center - (0em, 5em)) put fit(image("examples/image.svg"), (5em, 5em))
 
   font_size = 32pt
   font_weight = "bold"
