@@ -49,7 +49,9 @@ extern {
     fn cairo_set_line_width(cr: *mut cairo_t, width: f64);
     fn cairo_move_to(cr: *mut cairo_t, x: f64, y: f64);
     fn cairo_line_to(cr: *mut cairo_t, x: f64, y: f64);
+    fn cairo_rectangle(cr: *mut cairo_t, x: f64, y: f64, w: f64, h: f64);
     fn cairo_stroke(cr: *mut cairo_t);
+    fn cairo_fill(cr: *mut cairo_t);
     fn cairo_show_page(cr: *mut cairo_t);
     fn cairo_destroy(cr: *mut cairo_t);
     fn cairo_surface_destroy(surf: *mut cairo_surface_t);
@@ -128,8 +130,16 @@ impl Cairo {
         unsafe { cairo_line_to(self.ptr, x, y) }
     }
 
+    pub fn rectangle(&mut self, x: f64, y: f64, w: f64, h: f64) {
+        unsafe { cairo_rectangle(self.ptr, x, y, w, h) }
+    }
+
     pub fn stroke(&mut self) {
         unsafe { cairo_stroke(self.ptr) }
+    }
+
+    pub fn fill(&mut self) {
+        unsafe { cairo_fill(self.ptr) }
     }
 
     pub fn show_page(&mut self) {

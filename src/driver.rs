@@ -5,12 +5,26 @@
 // it under the terms of the GNU General Public License version 3. A copy
 // of the License is available in the root of the repository.
 
+use ast::Idents;
 use cairo::{Cairo, FontFace};
-use elements::Element;
+use elements::{Color, Element};
 use runtime::{FontMap, Frame};
 
-// TODO: Should take a path, not str.
+fn draw_background(cr: &mut Cairo, color: Color) {
+    // TODO: Do not hard-code the canvas dimensions.
+    cr.rectangle(0.0, 0.0, 1920.0, 1080.0);
+    cr.set_source_rgb(color.r, color.g, color.b);
+    cr.fill();
+}
+
 pub fn render_frame<'a>(fm: &mut FontMap, cr: &mut Cairo, frame: &Frame<'a>) {
+    // TODO: Ensure that writing to background_color only accepts a color value,
+    // so a lookup failure here is never a type error.
+    let var_bgcolor = Idents(vec!["background_color"]);
+    if let Ok(bgcolor) = frame.get_env().lookup_color(&var_bgcolor) {
+        draw_background(cr, bgcolor);
+    }
+
     for pe in frame.get_elements() {
         match pe.element {
             Element::Line(ref line) => {
