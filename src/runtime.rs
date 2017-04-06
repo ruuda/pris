@@ -105,6 +105,37 @@ impl<'a> Frame<'a> {
         &self.env
     }
 
+    /// Look up a read-only field, or any variable in the environment.
+    ///
+    /// In general, looking up a field on a frame will look up a variable in the
+    /// frame's environment. However, there are a few fields (such as `width`)
+    /// which are provided by the runtime, and this function computes those.
+    /// Variables with the same names cannot be assigned to to prevent
+    /// unexpected shadowing. (TODO: Enforce that in assignment.)
+    pub fn lookup(&self, idents: &Idents<'a>) -> Result<Val<'a>> {
+        assert!(idents.0.len() > 0);
+
+        // When the identifier matches one of the read-only fields, we compute
+        // it here on the fly.
+        let ro_field = match idents.0[0] {
+            "width" => Some(Val::Num(self.bounding_box.width, 1)),
+            "height" => Some(Val::Num(self.bounding_box.width, 1)),
+            "size" => Some(Val::Coord(self.bounding_box.width, self.bounding_box.height, 1)),
+            _ => None
+        };
+
+        if let Some(val) = ro_field {
+            // TODO: Assert that there are no more parts in the identifier,
+            // extract the field lookup error message from Env::lookup to be
+            // generic, and reuse it here.
+            return Ok(val)
+        }
+
+        // If the identifier does not refer to a generated read-only field,
+        // look up in the environment.
+        self.env.lookup(idents)
+    }
+
     pub fn put_in_env(&mut self, ident: &'a str, val: Val<'a>) {
         self.env.put(ident, val);
     }
@@ -165,7 +196,7 @@ impl<'a> Env<'a> {
                         Val::Frame(ref frame) => {
                             let mut more = idents.0.clone();
                             more.remove(0);
-                            frame.env.lookup(&Idents(more))
+                            frame.lookup(&Idents(more))
                         }
                         _ => {
                             let mut f = Formatter::new();
