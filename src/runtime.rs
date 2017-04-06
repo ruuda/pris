@@ -221,6 +221,15 @@ impl<'a> Env<'a> {
 }
 
 impl BoundingBox {
+    pub fn new(position: Vec2, size: Vec2) -> BoundingBox {
+        BoundingBox {
+            x: position.x,
+            y: position.y,
+            width: size.x,
+            height: size.y,
+        }
+    }
+
     pub fn empty() -> BoundingBox {
         BoundingBox {
             // TODO: Use the Vec2 type?

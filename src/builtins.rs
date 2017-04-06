@@ -73,6 +73,8 @@ pub fn line<'a>(_fm: &mut FontMap,
     let mut frame = Frame::new();
     frame.place_element(Vec2::zero(), Element::Line(line));
     frame.set_anchor(offset);
+    // TODO: Make bounding box take Vec2.
+    frame.union_bounding_box(&BoundingBox::sized(offset.x, offset.y));
 
     Ok(Val::Frame(Rc::new(frame)))
 }
@@ -173,6 +175,11 @@ pub fn t<'a>(fm: &mut FontMap,
     let mut frame = Frame::new();
     frame.place_element(Vec2::zero(), Element::Text(text_elem));
     frame.set_anchor(Vec2::new(offset + width, 0.0));
+
+    let top_left = Vec2::new(offset, -font_size);
+    let size = Vec2::new(width, font_size);
+    frame.union_bounding_box(&BoundingBox::new(top_left, size));
+
     Ok(Val::Frame(Rc::new(frame)))
 }
 
