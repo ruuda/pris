@@ -13,7 +13,7 @@ use elements::{Element, Line, Text, Vec2};
 use error::{Error, Result};
 use harfbuzz;
 use pretty::Formatter;
-use runtime::{Env, FontMap, Frame, Val};
+use runtime::{BoundingBox, Env, FontMap, Frame, Val};
 use rsvg;
 use types::ValType;
 
@@ -202,10 +202,15 @@ pub fn image<'a>(_fm: &mut FontMap,
         // Move error handling into the rsvg module proper.
         Err(()) => return Err(Error::missing_file(path)),
     };
+    let (width, height) = svg.size();
 
     let mut frame = Frame::new();
     frame.place_element(Vec2::zero(), Element::Svg(svg));
-    // TODO: Find out size, set anchor.
-    // frame.set_anchor(Vec2::new(0.0, 0.0));
+    frame.union_bounding_box(&BoundingBox::sized(width as f64, height as f64));
+
+    // The image anchor is in the top right, so images can be adjoined easily:
+    // the origin is top left.
+    frame.set_anchor(Vec2::new(width as f64, 0.0));
+
     Ok(Val::Frame(Rc::new(frame)))
 }

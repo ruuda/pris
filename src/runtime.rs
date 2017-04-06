@@ -121,6 +121,10 @@ impl<'a> Frame<'a> {
         self.anchor = a;
     }
 
+    pub fn union_bounding_box(&mut self, bb: &BoundingBox) {
+        self.bounding_box = self.bounding_box.union(bb);
+    }
+
     pub fn place_element(&mut self, position: Vec2, elem: Element) {
         let placed = PlacedElement {
             position: position,
@@ -219,10 +223,21 @@ impl<'a> Env<'a> {
 impl BoundingBox {
     pub fn empty() -> BoundingBox {
         BoundingBox {
+            // TODO: Use the Vec2 type?
             x: 0.0,
             y: 0.0,
             width: 0.0,
             height: 0.0,
+        }
+    }
+
+    /// Creates a bounding box at (0, 0) with the given size.
+    pub fn sized(width: f64, height: f64) -> BoundingBox {
+        BoundingBox {
+            x: 0.0,
+            y: 0.0,
+            width: width,
+            height: height,
         }
     }
 
