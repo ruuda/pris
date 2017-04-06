@@ -229,6 +229,8 @@ fn eval_sub<'a>(lhs: Val<'a>, rhs: Val<'a>) -> Result<Val<'a>> {
 fn eval_mul<'a>(lhs: Val<'a>, rhs: Val<'a>) -> Result<Val<'a>> {
     match (lhs, rhs) {
         (Val::Num(x, d), Val::Num(y, e)) => Ok(Val::Num(x * y, d + e)),
+        (Val::Coord(x, y, d), Val::Num(z, e)) => Ok(Val::Coord(x * z, y * z, d + e)),
+        (Val::Num(z, e), Val::Coord(x, y, d)) => Ok(Val::Coord(x * z, y * z, d + e)),
         _ => {
             let msg = "Type error: '*' expects num or len operands, \
                        but found <TODO> and <TODO> instead.";
