@@ -22,12 +22,23 @@ type gboolean = c_int;
 #[allow(non_camel_case_types)]
 type gsize = c_ulong;
 
+#[repr(C)]
+#[allow(non_camel_case_types)]
+#[derive(Copy, Clone)]
+pub struct RsvgDimensionData {
+    width: c_int,
+    height: c_int,
+    em: f64,
+    ex: f64,
+}
+
 #[link(name = "rsvg-2")]
 extern {
     fn rsvg_handle_new() -> *mut RsvgHandle;
     fn rsvg_handle_write(handle: *mut RsvgHandle, buf: *const c_uchar, count: gsize, error: *mut *mut GError) -> gboolean;
     fn rsvg_handle_close(handle: *mut RsvgHandle, error: *mut *mut GError) -> gboolean;
     fn rsvg_handle_render_cairo(handle: *mut RsvgHandle, cr: *mut cairo_t) -> gboolean;
+    fn rsvg_handle_get_dimensions(handle: *mut RsvgHandle, dimension_data: *mut RsvgDimensionData);
 }
 
 #[link(name = "gobject-2.0")]
@@ -101,6 +112,14 @@ impl Svg {
             if rsvg_handle_render_cairo(self.handle, cairo.get_raw_ptr()) != 1 {
                 panic!("Failed to draw svg, rsvg reported an error.");
             }
+        }
+    }
+
+    pub fn size(&self) -> (u32, u32) {
+        unsafe {
+            let mut dims: RsvgDimensionData = mem::uninitialized();
+            rsvg_handle_get_dimensions(self.handle, &mut dims);
+            (dims.width as u32, dims.height as u32)
         }
     }
 }
