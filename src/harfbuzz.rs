@@ -27,6 +27,9 @@ type hb_destroy_func_t = *mut extern fn(*mut c_void);
 #[allow(non_camel_case_types)]
 type hb_direction_t = c_int;
 
+#[allow(non_camel_case_types)]
+type hb_bool_t = c_int;
+
 #[repr(C)]
 #[allow(non_camel_case_types)]
 struct hb_glyph_info_t {
@@ -84,6 +87,7 @@ extern {
     fn hb_shape(font: *mut hb_font_t, buffer: *mut hb_buffer_t, features: *const hb_feature_t, num_features: c_uint);
     fn hb_buffer_get_glyph_infos(buffer: *mut hb_buffer_t, length: *mut c_uint) -> *mut hb_glyph_info_t;
     fn hb_buffer_get_glyph_positions(buffer: *mut hb_buffer_t, length: *mut c_uint) -> *mut hb_glyph_position_t;
+    fn hb_feature_from_string(string: *const c_char, length: c_int, feature: *mut hb_feature_t) -> hb_bool_t;
 }
 
 pub struct Font {
@@ -168,9 +172,22 @@ impl Buffer {
     }
 
     pub fn shape(&mut self, font: &mut Font) {
-        let features = ptr::null();
-        let num_features = 0;
-        unsafe { hb_shape(font.ptr, self.ptr, features, num_features) }
+        // Enable default features (proper kerning).
+        // TODO: This does not appear to do anything; "Yellow" still looks awful
+        // in Cantarell (see background_color example). How do I do kerning with
+        // Harfbuzz?
+        let features = unsafe {
+            let mut fs = [mem::uninitialized()];
+            let feature = b"kern";
+            let parsed_ok = hb_feature_from_string(
+                mem::transmute(feature.as_ptr()),
+                feature.len() as c_int,
+                &mut fs[0]);
+            assert!(parsed_ok == 1);
+            fs
+        };
+
+        unsafe { hb_shape(font.ptr, self.ptr, features.as_ptr(), features.len() as c_uint) }
     }
 
     pub fn glyphs(&mut self) -> Vec<Glyph> {
