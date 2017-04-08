@@ -171,6 +171,7 @@ fn eval_adj<'a>(lhs: Val<'a>, rhs: Val<'a>) -> Result<Val<'a>> {
                 frame.place_element(anchor + pe.position, pe.element.clone());
             }
             frame.set_anchor(anchor + f1.get_anchor());
+            frame.union_bounding_box(&f1.get_bounding_box().offset(anchor));
             Ok(Val::Frame(Rc::new(frame)))
         }
         (lhs, rhs) => {

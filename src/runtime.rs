@@ -152,6 +152,10 @@ impl<'a> Frame<'a> {
         self.anchor = a;
     }
 
+    pub fn get_bounding_box(&self) -> &BoundingBox {
+        &self.bounding_box
+    }
+
     pub fn union_bounding_box(&mut self, bb: &BoundingBox) {
         self.bounding_box = self.bounding_box.union(bb);
     }
@@ -291,6 +295,15 @@ impl BoundingBox {
             y: y0,
             width: x1 - x0,
             height: y1 - y0,
+        }
+    }
+
+    pub fn offset(&self, offset: Vec2) -> BoundingBox {
+        BoundingBox {
+            x: self.x + offset.x,
+            y: self.y + offset.y,
+            width: self.width,
+            height: self.height,
         }
     }
 }
