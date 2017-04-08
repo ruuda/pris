@@ -1,7 +1,20 @@
+hcenter = function(frame)
+{
+  at (frame.width * (0.0 - 0.5), 0.0h) put frame
+}
+
+center = function(frame)
+{
+  at (frame.size * (0.0 - 0.5)) put frame
+}
+
 {
   foo = line((0.5w, 0.0w))
   put foo at (0.25w, 0.4h)
 
   bar = line((foo.width * 0.5, 0.0w))
   put bar at (0.25w + foo.width * 0.25, 0.6h)
+
+  at (0.5w, 0.2h) put center(line((0.1w, 0.0h)))
+  at (0.5w, 0.8h) put hcenter(line((0.1w, 0.0h)))
 }
