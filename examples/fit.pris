@@ -1,0 +1,15 @@
+{
+  at (0w, 0w) put fit(image("examples/image.svg"), (1h, 1h))
+}
+
+{
+  cross =
+  {
+    stroke_width = 0.05w
+    color = #ff0000
+    at (0w, 0w) put line((1w, 1w))
+    at (1w, 0w) put line((0.0w - 1.0w, 1w))
+  }
+
+  at (0.1w, 0.1w) put fit(cross, (0.2w, 0.2w))
+}
