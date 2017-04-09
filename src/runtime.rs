@@ -166,7 +166,6 @@ impl<'a> Frame<'a> {
             element: elem,
         };
         self.elements.push(placed);
-        // TODO: Update bounding box.
     }
 }
 
