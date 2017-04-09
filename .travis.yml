@@ -1,5 +1,10 @@
 language: rust
 
+# Apparently there is no libharfbuzz-dev package for ancient Ubuntu 12.04, opt
+# for the slightly less ancient 14.04 image.
+dist: trusty
+sudo: false
+
 rust:
   - 1.13.0
   - 1.14.0
@@ -8,14 +13,11 @@ rust:
   - beta
   - nightly
 
-os:
-  - linux
-  - osx
-
-# Apparently there is no libharfbuzz-dev package for ancient Ubuntu 12.04, opt
-# for the slightly less ancient 14.04 image.
-dist: trusty
-sudo: false
+# Apart from the above Rust versions on Linux, also test on stable Rust on OS X.
+matrix:
+  include:
+    - os: osx
+      rust: stable
 
 # On Linux, dependencies are installed through Apt.
 addons:
