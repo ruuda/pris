@@ -63,6 +63,7 @@ extern {
     fn cairo_get_matrix(cr: *mut cairo_t, matrix: *mut cairo_matrix_t);
     fn cairo_set_matrix(cr: *mut cairo_t, matrix: *const cairo_matrix_t);
     fn cairo_translate(cr: *mut cairo_t, tx: f64, ty: f64);
+    fn cairo_scale(cr: *mut cairo_t, sx: f64, sy: f64);
 }
 
 pub struct Surface {
@@ -176,6 +177,10 @@ impl Cairo {
 
     pub fn translate(&mut self, tx: f64, ty: f64) {
         unsafe { cairo_translate(self.ptr, tx, ty) }
+    }
+
+    pub fn scale(&mut self, sx: f64, sy: f64) {
+        unsafe { cairo_scale(self.ptr, sx, sy) }
     }
 }
 

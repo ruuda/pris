@@ -26,6 +26,7 @@ pub struct Vec2 {
 pub enum Element {
     Line(Line),
     Text(Text),
+    Scaled(Vec<PlacedElement>, f64),
     Svg(Svg),
 }
 
