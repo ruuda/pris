@@ -49,8 +49,39 @@ pub fn fit<'a>(_fm: &mut FontMap,
         Val::Coord(w, h, 1) => (w, h),
         _ => unreachable!(),
     };
-    println!("TODO: Should fit frame in ({}, {}) and return it as frame.", size.0, size.1);
-    Ok(Val::Frame(frame))
+
+    let bb = frame.get_bounding_box();
+
+    // Avoid division by zero in the aspect ratio computation. Fitting into a
+    // box of which either size has length 0 is nonsense anyway.
+    if size.0 == 0.0 || size.1 == 0.0 {
+        return Err(Error::Other("Cannot fit frame in a box with \
+                                 width or height equal to 0. \
+                                 Simply don't place the frame then.".into()))
+    }
+
+    let scale = if bb.height != 0.0 {
+        if (bb.width / bb.height) > (size.0 / size.1) {
+            // The frame is constrained by width.
+            size.0 / bb.width
+        } else {
+            // The frame is constrained by height.
+            size.1 / bb.height
+        }
+    } else if bb.width != 0.0 {
+        if (bb.height / bb.width) > (size.1 / size.0) {
+            // The frame is constrained by height.
+            size.1 / bb.height
+        } else {
+            // The frame is constrained by width.
+            size.0 / bb.width
+        }
+    } else {
+        return Err(Error::Other("Cannot fit a frame of size (0w, 0w).".into()))
+    };
+
+    println!("TODO: Should scale frame by {} and return it as frame.", scale);
+    Ok(Val::Frame(Rc::new(Frame::new())))
 }
 
 pub fn line<'a>(_fm: &mut FontMap,

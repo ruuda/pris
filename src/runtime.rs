@@ -51,10 +51,10 @@ pub struct Env<'a> {
 
 #[derive(Clone)]
 pub struct BoundingBox {
-    x: f64,
-    y: f64,
-    width: f64,
-    height: f64,
+    pub x: f64,
+    pub y: f64,
+    pub width: f64,
+    pub height: f64,
 }
 
 /// A "builtin" function is a function that takes an environment and a vector of
