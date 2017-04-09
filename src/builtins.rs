@@ -80,10 +80,10 @@ pub fn fit<'a>(_fm: &mut FontMap,
         return Err(Error::Other("Cannot fit a frame of size (0w, 0w).".into()))
     };
 
-    let elements: Vec<_> = frame.get_elements().iter().map(|pe| PlacedElement {
-        position: pe.position * scale,
-        element: pe.element.clone(),
-    }).collect();
+    // As the frame is immutable anyway, it would actually be possible to refer
+    // to the elements in the frame, instead of copying them. If performance
+    // ever becomes a concern, this would be a good place to start.
+    let elements: Vec<_> = frame.get_elements().iter().cloned().collect();
 
     let mut scaled_frame = Frame::from_env(frame.get_env().clone());
     scaled_frame.place_element(Vec2::zero(), Element::Scaled(elements, scale));
