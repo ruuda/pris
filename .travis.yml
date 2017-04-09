@@ -17,6 +17,7 @@ os:
 dist: trusty
 sudo: false
 
+# On Linux, dependencies are installed through Apt.
 addons:
   apt:
     packages:
@@ -25,11 +26,12 @@ addons:
       - libharfbuzz-dev
       - librsvg2-dev
 
+# On OS X, dependencies are installed through Brew.
 before_install:
-  - brew update
-  - brew install cairo fontconfig harfbuzz librsvg
-  - brew tap caskroom/fonts
-  - brew cask install font-cantarell
+  - if [[ "$TRAVIS_OS_NAME" == "osx" ]]; then brew update; fi
+  - if [[ "$TRAVIS_OS_NAME" == "osx" ]]; then brew install cairo fontconfig harfbuzz librsvg; fi
+  - if [[ "$TRAVIS_OS_NAME" == "osx" ]]; then brew tap caskroom/fonts; fi
+  - if [[ "$TRAVIS_OS_NAME" == "osx" ]]; then brew cask install font-cantarell; fi
 
 script:
   - cargo build
