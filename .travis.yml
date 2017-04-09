@@ -25,6 +25,12 @@ addons:
       - libharfbuzz-dev
       - librsvg2-dev
 
+before_install:
+  - brew update
+  - brew install cairo fontconfig harfbuzz librsvg
+  - brew tap caskroom/fonts
+  - brew cask install font-cantarell
+
 script:
   - cargo build
   - cargo test
