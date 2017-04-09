@@ -81,6 +81,17 @@ impl ops::Add<Vec2> for Vec2 {
     }
 }
 
+impl ops::Mul<f64> for Vec2 {
+    type Output = Vec2;
+
+    fn mul(self, rhs: f64) -> Vec2 {
+        Vec2 {
+            x: self.x * rhs,
+            y: self.y * rhs,
+        }
+    }
+}
+
 impl Color {
     pub fn new(r: f64, g: f64, b: f64) -> Color {
         Color { r: r, g: g, b: b }

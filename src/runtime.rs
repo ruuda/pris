@@ -306,6 +306,15 @@ impl BoundingBox {
             height: self.height,
         }
     }
+
+    pub fn scale(&self, scale: f64) -> BoundingBox {
+        BoundingBox {
+            x: self.x * scale,
+            y: self.y * scale,
+            width: self.width * scale,
+            height: self.height * scale,
+        }
+    }
 }
 
 impl Clone for Builtin {

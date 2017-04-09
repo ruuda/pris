@@ -9,7 +9,7 @@ use std::rc::Rc;
 
 use ast::Idents;
 use cairo;
-use elements::{Element, Line, Text, Vec2};
+use elements::{Element, Line, PlacedElement, Text, Vec2};
 use error::{Error, Result};
 use harfbuzz;
 use pretty::Formatter;
@@ -80,8 +80,17 @@ pub fn fit<'a>(_fm: &mut FontMap,
         return Err(Error::Other("Cannot fit a frame of size (0w, 0w).".into()))
     };
 
-    println!("TODO: Should scale frame by {} and return it as frame.", scale);
-    Ok(Val::Frame(Rc::new(Frame::new())))
+    let elements: Vec<_> = frame.get_elements().iter().map(|pe| PlacedElement {
+        position: pe.position * scale,
+        element: pe.element.clone(),
+    }).collect();
+
+    let mut scaled_frame = Frame::from_env(frame.get_env().clone());
+    scaled_frame.place_element(Vec2::zero(), Element::Scaled(elements, scale));
+    scaled_frame.set_anchor(frame.get_anchor() * scale);
+    scaled_frame.union_bounding_box(&frame.get_bounding_box().scale(scale));
+
+    Ok(Val::Frame(Rc::new(scaled_frame)))
 }
 
 pub fn line<'a>(_fm: &mut FontMap,

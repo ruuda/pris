@@ -53,6 +53,7 @@ fn draw_element(fm: &mut FontMap, cr: &mut Cairo, pe: &PlacedElement) {
         Element::Scaled(ref elements, scale) => {
             // Store the current transform so we can restore it later.
             let matrix = cr.get_matrix();
+            cr.translate(pe.position.x, pe.position.y);
             cr.scale(scale, scale);
             for inner_pe in elements {
                 draw_element(fm, cr, inner_pe);
