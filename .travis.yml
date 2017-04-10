@@ -1,9 +1,13 @@
-language: rust
+# Don't spam me please, I'll check Travis manually.
+notifications:
+  email: false
 
 # Apparently there is no libharfbuzz-dev package for ancient Ubuntu 12.04, opt
 # for the slightly less ancient 14.04 image.
 dist: trusty
 sudo: false
+
+language: rust
 
 rust:
   - 1.13.0
