@@ -8,9 +8,9 @@
 use std::ffi::{CStr, CString, OsStr};
 use std::mem;
 use std::os::raw::{c_int, c_char, c_uchar};
-use std::os::unix::ffi::OsStrExt;
 use std::path::PathBuf;
 use std::ptr;
+use std::str;
 
 enum FcConfig {}
 enum FcPattern {}
@@ -92,12 +92,17 @@ pub fn get_font_location(font_query: &str) -> Option<PathBuf> {
 
             // Do the conversion dance: from *mut c_str to PathBuf. PathBuf owns
             // its contents: we make a copy of Fontconfig's string, so we can
-            // free it afterwards. It is an extra copy, but it is far more
-            // convenient than the alternative. Also transmute Fontconfig's
-            // signed character strings once more.
+            // free it afterwards. We could go from *mut c_str -> CStr -> OsStr
+            // -> PathBuf, but that relies on std::os::unix::ffi. Instead, we
+            // assume that Fontconfig returns UTF-8, and we require that the
+            // path is valid UTF-8, so we can go via String. Also transmute
+            // Fontconfig's signed character strings once more.
             let fname_cstr = CStr::from_ptr(mem::transmute(fname_ptr));
-            let fname_osstr = OsStr::from_bytes(fname_cstr.to_bytes());
-            result = Some(PathBuf::from(fname_osstr));
+            let fname_str = match str::from_utf8(fname_cstr.to_bytes()) {
+                Ok(s) => s,
+                Err(..) => panic!("A font file path is not valid UTF-8."),
+            };
+            result = Some(PathBuf::from(fname_str));
         }
 
         FcPatternDestroy(font_match);
