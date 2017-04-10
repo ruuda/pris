@@ -11,4 +11,5 @@ lalrpop-util    = "0.12"
 rustc-serialize = "0.3"
 
 [build-dependencies]
-lalrpop = "0.12"
+lalrpop    = "0.12"
+pkg-config = "0.3"
