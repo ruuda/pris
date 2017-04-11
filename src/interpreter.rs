@@ -64,6 +64,7 @@ fn eval_string<'a>(s: &'a str) -> Val<'a> {
                 match ch {
                     '\\' => { string.push('\\'); st = EscState::Normal; }
                     '"' => { string.push('"'); st = EscState::Normal; }
+                    'n' => { string.push('\n'); st = EscState::Normal; }
                     'u' => { st = EscState::Unicode(0, 6); }
                     _ => panic!("Invalid escape code. TODO: Turn into parse error."),
                 }
