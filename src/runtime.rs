@@ -119,7 +119,7 @@ impl<'a> Frame<'a> {
         // it here on the fly.
         let ro_field = match idents.0[0] {
             "width" => Some(Val::Num(self.bounding_box.width, 1)),
-            "height" => Some(Val::Num(self.bounding_box.width, 1)),
+            "height" => Some(Val::Num(self.bounding_box.height, 1)),
             "size" => Some(Val::Coord(self.bounding_box.width, self.bounding_box.height, 1)),
             _ => None
         };
