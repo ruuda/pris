@@ -269,10 +269,10 @@ pub fn t<'a>(fm: &mut FontMap,
 
     let mut frame = Frame::new();
     frame.place_element(Vec2::zero(), Element::Text(text_elem));
-    frame.set_anchor(Vec2::new(cur_x, cur_y));
+    frame.set_anchor(Vec2::new(cur_x, cur_y - font_size));
 
-    let top_left = Vec2::new(min_offset, cur_y - font_size);
-    let size = Vec2::new(max_width, cur_y + font_size);
+    let top_left = Vec2::new(min_offset, -font_size);
+    let size = Vec2::new(max_width, cur_y);
     frame.union_bounding_box(&BoundingBox::new(top_left, size));
 
     Ok(Val::Frame(Rc::new(frame)))
