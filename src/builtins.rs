@@ -9,12 +9,13 @@ use std::rc::Rc;
 
 use ast::Idents;
 use cairo;
-use elements::{Element, Line, PlacedElement, Text, Vec2};
+use elements::{Element, Line, Text, Vec2};
 use error::{Error, Result};
+use freetype;
 use harfbuzz;
 use pretty::Formatter;
-use runtime::{BoundingBox, Env, FontMap, Frame, Val};
 use rsvg;
+use runtime::{BoundingBox, Env, FontMap, Frame, Val};
 use types::ValType;
 
 fn validate_args<'a>(fn_name: &str,
@@ -133,6 +134,66 @@ pub fn str<'a>(_fm: &mut FontMap,
     Ok(Val::Str(format!("{}", num)))
 }
 
+/// Typesets a single line of text.
+///
+/// Returns the glyphs as well as the width of the line.
+fn typeset_line(ft_face: &mut freetype::Face<'static>,
+                font_size: f64,
+                text: &str)
+                -> (Vec<cairo::Glyph>, f64) {
+    // Shape the text using Harfbuzz: convert the UTF-8 string and input font
+    // into a list of glyphs with offsets.
+    let mut hb_font = harfbuzz::Font::from_ft_face(ft_face);
+
+    let mut hb_buffer = harfbuzz::Buffer::new(harfbuzz::Direction::LeftToRight);
+    hb_buffer.add_str(&text);
+    hb_buffer.shape(&mut hb_font);
+
+    // Position all the glyphs: Harfbuzz gives offsets, but we need absolute
+    // locations. Store them in the representation that Cairo expects.
+    let hb_glyphs = hb_buffer.glyphs();
+    let mut cr_glyphs = Vec::with_capacity(hb_glyphs.len());
+    let (mut cur_x, mut cur_y) = (0.0, 0.0);
+
+    // Compensate for the fixed font size which is set for the Freetype font,
+    // and apply the desired font size.
+    let size_factor = font_size / 1000.0;
+
+    for hg in hb_glyphs {
+        cur_x += hg.x_offset as f64 * size_factor;
+        cur_y += hg.y_offset as f64 * size_factor;
+        let cg = cairo::Glyph::new(hg.codepoint as u64, cur_x, cur_y);
+        cur_x += hg.x_advance as f64 * size_factor;
+        cur_y += hg.y_advance as f64 * size_factor;
+        cr_glyphs.push(cg);
+    }
+
+    (cr_glyphs, cur_x)
+}
+
+/// Split a string on newlines.
+///
+/// Unlike `std::str::lines`, the final newline is not swallowed.
+fn split_lines(text: &str) -> Vec<&str> {
+    // TODO: This might return an iterator instead of a vector.
+    // At this point it is not worth the trouble performance-wise.
+    let mut lines = Vec::new();
+    let mut left = text;
+    while let Some(index) = left.find("\n") {
+        lines.push(&left[0..index]);
+        left = &left[index + 1..];
+    }
+    lines.push(left);
+    lines
+}
+
+#[test]
+fn split_lines_returns_as_many_lines_as_newlines_plus_one() {
+    let text = "\nfoo\nbar\n";
+    let lines = split_lines(text);
+    assert_eq!(&lines, &["", "foo", "bar", ""]);
+}
+
 pub fn t<'a>(fm: &mut FontMap,
              env: &Env<'a>,
              mut args: Vec<Val<'a>>)
@@ -142,6 +203,7 @@ pub fn t<'a>(fm: &mut FontMap,
         Val::Str(s) => s,
         _ => unreachable!(),
     };
+    let text_lines = split_lines(&text);
 
     enum TextAlign { Left, Center, Right }
 
@@ -171,53 +233,46 @@ pub fn t<'a>(fm: &mut FontMap,
         }
     };
 
-    // Shape the text using Harfbuzz: convert the UTF-8 string and input font
-    // into a list of glyphs with offsets.
-    let mut hb_font = harfbuzz::Font::from_ft_face(&mut ft_face);
-    let mut hb_buffer = harfbuzz::Buffer::new(harfbuzz::Direction::LeftToRight);
-    hb_buffer.add_str(&text);
-    hb_buffer.shape(&mut hb_font);
+    let mut glyphs = Vec::new();
+    let mut max_width: f64 = 0.0;
+    let mut min_offset: f64 = 0.0;
+    let mut cur_x = 0.0;
+    let mut cur_y = 0.0;
+    for line in text_lines {
+        let (line_glyphs, width) = typeset_line(ft_face, font_size, line);
 
-    // Position all the glyphs: Harfbuzz gives offsets, but we need absolute
-    // locations. Store them in the representation that Cairo expects.
-    let hb_glyphs = hb_buffer.glyphs();
-    let mut cr_glyphs = Vec::with_capacity(hb_glyphs.len());
-    let (mut cur_x, mut cur_y) = (0.0, 0.0);
-    // Compensate for the fixed font size which is set for the Freetype font,
-    // and apply the desired font size.
-    let size_factor = font_size / 1000.0;
-    for hg in hb_glyphs {
-        cur_x += hg.x_offset as f64 * size_factor;
-        cur_y += hg.y_offset as f64 * size_factor;
-        let cg = cairo::Glyph::new(hg.codepoint as u64, cur_x, cur_y);
-        cur_x += hg.x_advance as f64 * size_factor;
-        cur_y += hg.y_advance as f64 * size_factor;
-        cr_glyphs.push(cg);
+        // Apply x offset to enforce text alignment.
+        let offset = match ta {
+            TextAlign::Left => 0.0,
+            TextAlign::Center => width * -0.5,
+            TextAlign::Right => width * -1.0,
+        };
+
+        for g in line_glyphs {
+            glyphs.push(g.offset(offset, cur_y));
+        }
+
+        max_width = max_width.max(width);
+        min_offset = min_offset.min(offset);
+        // TODO: Add proper line height variable.
+        cur_y += font_size;
+        cur_x = offset + width;
     }
-
-    // Apply x offset to enforce text alignment.
-    let width = cur_x;
-    let offset = match ta {
-        TextAlign::Left => 0.0,
-        TextAlign::Center => width * -0.5,
-        TextAlign::Right => width * -1.0,
-    };
-    cr_glyphs = cr_glyphs.iter().map(|g| g.offset(offset, 0.0)).collect();
 
     let text_elem = Text {
         color: env.lookup_color(&Idents(vec!["color"]))?,
         font_family: font_family,
         font_style: font_style,
         font_size: font_size,
-        glyphs: cr_glyphs,
+        glyphs: glyphs,
     };
 
     let mut frame = Frame::new();
     frame.place_element(Vec2::zero(), Element::Text(text_elem));
-    frame.set_anchor(Vec2::new(offset + width, 0.0));
+    frame.set_anchor(Vec2::new(cur_x, cur_y));
 
-    let top_left = Vec2::new(offset, -font_size);
-    let size = Vec2::new(width, font_size);
+    let top_left = Vec2::new(min_offset, cur_y - font_size);
+    let size = Vec2::new(max_width, cur_y + font_size);
     frame.union_bounding_box(&BoundingBox::new(top_left, size));
 
     Ok(Val::Frame(Rc::new(frame)))
