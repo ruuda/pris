@@ -178,6 +178,7 @@ impl<'a> Env<'a> {
         bindings.insert("font_family", Val::Str("sans".to_string()));
         bindings.insert("font_style", Val::Str("roman".to_string()));
         bindings.insert("text_align", Val::Str("left".to_string()));
+        bindings.insert("line_height", Val::Num(128.0, 1));
         bindings.insert("line_width", Val::Num(10.8, 1));
         bindings.insert("color", Val::Col(Color::new(0.0, 0.0, 0.0)));
         bindings.insert("fit", Val::FnIntrin(Builtin(builtins::fit)));

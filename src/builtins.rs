@@ -208,10 +208,17 @@ pub fn t<'a>(fm: &mut FontMap,
     enum TextAlign { Left, Center, Right }
 
     // Read the font details from the 'font_family' and 'font_style' variables,
-    // and locate the corresponding FreeType face.
+    // and locate the corresponding FreeType face. The line height is a bit of a
+    // problem; we could make it dimensionless and relative to the font size --
+    // which would make it scale automatically -- but then specifying absolute
+    // line heights would be a bit of a hassle. We could make it absolute, but
+    // then it does not scale automatically. Or we could allow both here:
+    // numbers have units, so we could figure out what to do. But my gut feeling
+    // is that dynamic typing will be confusing in the end.
     let font_family = env.lookup_str(&Idents(vec!["font_family"]))?;
     let font_style = env.lookup_str(&Idents(vec!["font_style"]))?;
     let font_size = env.lookup_len(&Idents(vec!["font_size"]))?;
+    let line_height = env.lookup_len(&Idents(vec!["line_height"]))?;
     let text_align = env.lookup_str(&Idents(vec!["text_align"]))?;
     let mut ft_face = match fm.get(&font_family, &font_style) {
         Some(face) => face,
@@ -254,8 +261,7 @@ pub fn t<'a>(fm: &mut FontMap,
 
         max_width = max_width.max(width);
         min_offset = min_offset.min(offset);
-        // TODO: Add proper line height variable.
-        cur_y += font_size;
+        cur_y += line_height;
         cur_x = offset + width;
     }
 
@@ -269,9 +275,9 @@ pub fn t<'a>(fm: &mut FontMap,
 
     let mut frame = Frame::new();
     frame.place_element(Vec2::zero(), Element::Text(text_elem));
-    frame.set_anchor(Vec2::new(cur_x, cur_y - font_size));
+    frame.set_anchor(Vec2::new(cur_x, cur_y - line_height));
 
-    let top_left = Vec2::new(min_offset, -font_size);
+    let top_left = Vec2::new(min_offset, -line_height);
     let size = Vec2::new(max_width, cur_y);
     frame.union_bounding_box(&BoundingBox::new(top_left, size));
 
