@@ -7,8 +7,8 @@
 
 use freetype::freetype_sys::FT_Face;
 use freetype;
-use libc::{c_char, c_int, c_uint, c_void};
 use std::mem;
+use std::os::raw::{c_char, c_int, c_uint, c_void};
 use std::ptr;
 use std::slice;
 

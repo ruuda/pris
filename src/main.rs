@@ -8,7 +8,6 @@
 extern crate docopt;
 extern crate freetype;
 extern crate lalrpop_util;
-extern crate libc;
 extern crate rustc_serialize;
 
 mod ast;

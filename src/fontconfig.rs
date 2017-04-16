@@ -5,9 +5,9 @@
 // it under the terms of the GNU General Public License version 3. A copy
 // of the License is available in the root of the repository.
 
-use libc::{c_int, c_char, c_uchar};
 use std::ffi::{CStr, CString, OsStr};
 use std::mem;
+use std::os::raw::{c_int, c_char, c_uchar};
 use std::os::unix::ffi::OsStrExt;
 use std::path::PathBuf;
 use std::ptr;

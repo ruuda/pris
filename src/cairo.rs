@@ -7,8 +7,8 @@
 
 use freetype;
 use freetype::freetype_sys::FT_Face;
-use libc::{c_char, c_int, c_ulong};
 use std::mem;
+use std::os::raw::{c_char, c_int, c_ulong};
 use std::path::Path;
 
 #[allow(non_camel_case_types)]

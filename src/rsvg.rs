@@ -5,11 +5,11 @@
 // it under the terms of the GNU General Public License version 3. A copy
 // of the License is available in the root of the repository.
 
-use libc::{c_void, c_uchar, c_int, c_ulong};
 use cairo::{Cairo, cairo_t};
 use std::fs;
 use std::io::{BufRead, BufReader};
 use std::mem;
+use std::os::raw::{c_void, c_uchar, c_int, c_ulong};
 use std::path::Path;
 use std::ptr;
 
