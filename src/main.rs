@@ -19,6 +19,7 @@ mod error;
 mod fontconfig;
 mod harfbuzz;
 mod interpreter;
+mod lexer;
 mod parser;
 mod pretty;
 mod rsvg;
