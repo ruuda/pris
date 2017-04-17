@@ -19,6 +19,7 @@ mod error;
 mod fontconfig;
 mod harfbuzz;
 mod interpreter;
+mod parser;
 mod pretty;
 mod rsvg;
 mod runtime;
@@ -163,8 +164,8 @@ fn parse_or_abort<'a>(input: &'a str) -> ast::Document<'a> {
                     report_error(input, location, loc2 - location);
                     println!("extra token (whatever that means).");
                 }
-                ParseError::User { .. } => {
-                    panic!("ProgrammerBehindKeyboardError");
+                ParseError::User { error } => {
+                    println!("Parse error: {}", error);
                 }
             }
             std::process::exit(1)

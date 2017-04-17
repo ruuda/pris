@@ -24,7 +24,7 @@ pub struct Idents<'a>(pub Vec<&'a str>);
 pub struct Assign<'a>(pub &'a str, pub Term<'a>);
 
 pub enum Term<'a> {
-    String(&'a str),
+    String(String),
     Number(Num),
     Color(Color),
     Idents(Idents<'a>),
@@ -141,7 +141,8 @@ impl<'a> Print for Assign<'a> {
 impl<'a> Print for Term<'a> {
     fn print(&self, f: &mut Formatter) {
         match *self {
-            Term::String(string) => f.print(string),
+            // TODO: Should escape strings.
+            Term::String(ref st) => f.print(&st[..]),
             Term::Number(ref nm) => f.print(nm),
             Term::Color(ref col) => f.print(col),
             Term::Idents(ref is) => f.print(is),

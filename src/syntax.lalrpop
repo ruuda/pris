@@ -8,8 +8,14 @@
 use std::str::FromStr;
 use ast::{Assign, BinOp, BinTerm, Block, Color, Coord, Document, FnCall, FnDef};
 use ast::{Idents, Import, Num, PutAt, Return, Stmt, Term, UnOp, UnTerm, Unit};
+use parser::unescape_string_literal;
 
 grammar;
+
+extern {
+    type Location = usize;
+    type Error = String;
+}
 
 pub document: Document<'input> = <statement*> => Document(<>);
 
@@ -76,7 +82,7 @@ unit: Unit = {
   "pt" => Unit::Pt,
 };
 
-string: &'input str = r#""([^"\\]|\\.)*""# => <>;
+string: String = r#""([^"\\]|\\.)*""# =>? unescape_string_literal(<>);
 
 color: Color = <c:r"#[0-9a-f]{6}"> => {
   let r = u8::from_str_radix(&c[1..3], 16).unwrap();
