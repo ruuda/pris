@@ -11,6 +11,7 @@ Points are ordered from highest priority to lowest priority.
 
 ## Near-term
 
+* Add syntax for multiline string literals.
 * Write a custom lexer to support comments.
 * Add support for Opentype features (smcp, onum).
 * Extend the syntax to support string prefixes, define what they mean.
