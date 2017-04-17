@@ -10,7 +10,7 @@ use std::char;
 
 use ast;
 use ast::{Assign, BinOp, BinTerm, Block, Coord, FnCall, FnDef, Idents};
-use ast::{Num, PutAt, Return, Stmt, Term, Unit};
+use ast::{Num, PutAt, Return, Stmt, Term, UnOp, UnTerm, Unit};
 use error::{Error, Result};
 use elements::{Color, Vec2};
 use pretty::Formatter;
@@ -30,6 +30,7 @@ fn eval_expr<'a>(fm: &mut FontMap,
         Term::Idents(ref i) => env.lookup(i),
         Term::Coord(ref co) => eval_coord(fm, env, co),
         Term::BinOp(ref bo) => eval_binop(fm, env, bo),
+        Term::UnOp(ref uop) => eval_unop(fm, env, uop),
         Term::FnCall(ref f) => eval_call(fm, env, f),
         Term::FnDef(ref fd) => Ok(Val::FnExtrin(fd)),
         Term::Block(ref bk) => eval_block(fm, env, bk),
@@ -247,6 +248,27 @@ fn eval_div<'a>(lhs: Val<'a>, rhs: Val<'a>) -> Result<Val<'a>> {
         _ => {
             let msg = "Type error: '/' expects num or len operands, \
                        but found <TODO> and <TODO> instead.";
+            Err(Error::Other(String::from(msg)))
+        }
+    }
+}
+
+fn eval_unop<'a>(fm: &mut FontMap,
+                 env: &Env<'a>,
+                 unop: &'a UnTerm<'a>)
+                 -> Result<Val<'a>> {
+    let rhs = eval_expr(fm, env, &unop.1)?;
+    match unop.0 {
+        UnOp::Neg => eval_neg(rhs),
+    }
+}
+
+fn eval_neg<'a>(rhs: Val<'a>) -> Result<Val<'a>> {
+    match rhs {
+        Val::Num(x, d) => Ok(Val::Num(-x, d)),
+        _ => {
+            let msg = "Type error: '-' expects a num or len operand, \
+                       but found <TODO> instead.";
             Err(Error::Other(String::from(msg)))
         }
     }

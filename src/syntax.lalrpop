@@ -7,7 +7,7 @@
 
 use std::str::FromStr;
 use ast::{Assign, BinOp, BinTerm, Block, Color, Coord, Document, FnCall, FnDef};
-use ast::{Idents, Import, Num, PutAt, Return, Stmt, Term, Unit};
+use ast::{Idents, Import, Num, PutAt, Return, Stmt, Term, UnOp, UnTerm, Unit};
 
 grammar;
 
@@ -50,6 +50,7 @@ expr_mul: Term<'input> = {
 expr_exp: Term<'input> = {
   <term> => <>,
   <lhs:term> "^" <rhs:term> => Term::BinOp(Box::new(BinTerm(lhs, BinOp::Exp, rhs))),
+  "-" <rhs:term> => Term::UnOp(Box::new(UnTerm(UnOp::Neg, rhs))),
 };
 
 term: Term<'input> = {

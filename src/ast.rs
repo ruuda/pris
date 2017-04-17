@@ -30,6 +30,7 @@ pub enum Term<'a> {
     Idents(Idents<'a>),
     Coord(Box<Coord<'a>>),
     BinOp(Box<BinTerm<'a>>),
+    UnOp(Box<UnTerm<'a>>),
     FnCall(Box<FnCall<'a>>),
     FnDef(FnDef<'a>),
     Block(Block<'a>),
@@ -49,16 +50,32 @@ pub struct Color(pub u8, pub u8, pub u8);
 
 pub struct Coord<'a>(pub Term<'a>, pub Term<'a>);
 
+/// A binary operation applied to two terms.
 pub struct BinTerm<'a>(pub Term<'a>, pub BinOp, pub Term<'a>);
 
 #[derive(Copy, Clone)]
 pub enum BinOp {
+    /// Adjoin, '~'.
     Adj,
+    /// Add, '+'.
     Add,
+    /// Subtract, '-'.
     Sub,
+    /// Multiply, '*'.
     Mul,
+    /// Divide, '/'.
     Div,
+    /// Exponentiate, '^'.
     Exp,
+}
+
+/// A unary operation applied to a term.
+pub struct UnTerm<'a>(pub UnOp, pub Term<'a>);
+
+#[derive(Copy, Clone)]
+pub enum UnOp {
+    /// Unary negation, '-'.
+    Neg,
 }
 
 pub struct FnCall<'a>(pub Term<'a>, pub Vec<Term<'a>>);
@@ -130,6 +147,7 @@ impl<'a> Print for Term<'a> {
             Term::Idents(ref is) => f.print(is),
             Term::Coord(ref coo) => f.print(coo),
             Term::BinOp(ref bop) => f.print(bop),
+            Term::UnOp(ref unop) => f.print(unop),
             Term::FnCall(ref fc) => f.print(fc),
             Term::FnDef(ref fdf) => f.print(fdf),
             Term::Block(ref blk) => f.print(blk),
@@ -197,6 +215,23 @@ impl Print for BinOp {
             BinOp::Mul => f.print("*"),
             BinOp::Div => f.print("/"),
             BinOp::Exp => f.print("^"),
+        }
+    }
+}
+
+impl<'a> Print for UnTerm<'a> {
+    fn print(&self, f: &mut Formatter) {
+        f.print("(");
+        f.print(&self.0);
+        f.print(&self.1);
+        f.print(")");
+    }
+}
+
+impl Print for UnOp {
+    fn print(&self, f: &mut Formatter) {
+        match *self {
+            UnOp::Neg => f.print("-"),
         }
     }
 }
