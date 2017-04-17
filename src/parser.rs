@@ -101,3 +101,47 @@ fn char_from_codepoint<'a>(codepoint: u32) -> Result<char, ParseError<'a>> {
         }
     }
 }
+
+#[test]
+fn unescape_string_literal_strips_quotes() {
+    let x = unescape_string_literal("\"\"");
+    assert_eq!(Ok("".into()), x);
+}
+
+#[test]
+fn unescape_string_literal_handles_escaped_quotes() {
+    let x = unescape_string_literal("\"x\\\"y\"");
+    assert_eq!(Ok("x\"y".into()), x);
+}
+
+#[test]
+fn unescape_string_literal_handles_escaped_newlines() {
+    let x = unescape_string_literal("\"\\n\"");
+    assert_eq!(Ok("\n".into()), x);
+}
+
+#[test]
+fn unescape_string_literal_handles_escaped_codepoints() {
+    let x = unescape_string_literal("\"\\u1f574 Unicode 6 was a bad idea.\"");
+    assert_eq!(Ok("\u{1f574} Unicode 6 was a bad idea.".into()), x);
+}
+
+#[test]
+fn unescape_string_literal_handles_escaped_codepoints_at_end() {
+    let x = unescape_string_literal("\"\\u1f574\"");
+    assert_eq!(Ok("\u{1f574}".into()), x);
+}
+
+#[test]
+fn unescape_string_literal_handles_short_escaped_codepoints() {
+    let x = unescape_string_literal("\"\\u0anewline\"");
+    assert_eq!(Ok("\nnewline".into()), x);
+}
+
+#[test]
+fn unescape_string_literal_handles_long_escaped_codepoints() {
+    let x = unescape_string_literal("\"\\u00000afg\"");
+    assert_eq!(Ok("\nfg".into()), x);
+    let y = unescape_string_literal("\"\\u0000afg\"");
+    assert_eq!(Ok("\u{00af}g".into()), y);
+}
