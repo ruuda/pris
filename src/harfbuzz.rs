@@ -19,9 +19,6 @@ enum hb_font_t {}
 enum hb_buffer_t {}
 
 #[allow(non_camel_case_types)]
-enum hb_feature_t {}
-
-#[allow(non_camel_case_types)]
 type hb_destroy_func_t = *mut extern fn(*mut c_void);
 
 #[allow(non_camel_case_types)]
@@ -57,6 +54,18 @@ struct hb_glyph_position_t {
 
     // The glyph position also has this private member, like hb_glyph_info_t.
     _var1: u32,
+}
+
+#[repr(C)]
+#[allow(non_camel_case_types)]
+struct hb_feature_t {
+    // The tag is a hb_tag_t, typedef for uint32_t. It contains the name of an
+    // OpenType feature as ASCII bytes, the first character in the most
+    // significant byte.
+    tag: u32,
+    value: u32,
+    start: c_uint,
+    end: c_uint,
 }
 
 // Note: this is an enum in C. We can define one in Rust, but the underlying
