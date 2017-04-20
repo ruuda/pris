@@ -185,9 +185,10 @@ impl Buffer {
         // TODO: This does not appear to do anything; "Yellow" still looks awful
         // in Cantarell (see background_color example). How do I do kerning with
         // Harfbuzz?
+        // For now, enable old-style numerals by default instead.
         let features = unsafe {
             let mut fs = [mem::uninitialized()];
-            let feature = b"kern";
+            let feature = b"onum";
             let parsed_ok = hb_feature_from_string(
                 mem::transmute(feature.as_ptr()),
                 feature.len() as c_int,
