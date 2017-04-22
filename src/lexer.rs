@@ -19,11 +19,9 @@
 use error::{Error, Result};
 
 enum Token {
-    Comment,
     String,
     RawString,
     Color,
-    Space,
 
     KwAt,
     KwFunction,
@@ -49,13 +47,13 @@ enum Token {
 
 enum State {
     Base,
-    Space,
-    InComment,
-    InString,
-    InRawString,
     InColor,
-    InWord,
+    InComment,
     InNumber,
+    InRawString,
+    InString,
+    InWord,
+    Space,
 }
 
 struct Lexer<'a> {
@@ -95,8 +93,9 @@ impl<'a> Lexer<'a> {
         self.state = state;
     }
 
-    fn lex_base(&mut self, start: usize) -> Result<()> {
-        for i in start..self.input.len() {
+    /// Lex in the base state until a state change occurs.
+    fn lex_base(&mut self) -> Result<()> {
+        for i in self.start..self.input.len() {
             match self.input[i] {
                 // There are two characters that require a brief lookahead:
                 // * '/', to find the start of a comment "//".
@@ -172,6 +171,94 @@ impl<'a> Lexer<'a> {
 
         Ok(())
     }
+
+    /// Lex in the color state until a state change occurs.
+    fn lex_color(&mut self) -> Result<()> {
+        // Skip over the first '#' byte.
+        for i in 1..self.input.len() - self.start {
+            let start = self.start;
+            let start_i = self.start + i;
+            let c = self.input[start_i];
+
+            // A hexadecimal character, as expected.
+            if i < 7 && is_hexadecimal(c) {
+                continue
+            }
+
+            // We expected more hexadecimal digits, but found something else.
+            if i < 7 {
+                let msg = format!("Expected hexadecimal digit, found '{}'.", char::from(c));
+                return Err(Error::parse(start_i, start_i + 1, msg))
+            }
+
+            // We expect at most 6 hexadecimal digits, but if another
+            // alphanumeric character comes after this, we don't want to
+            // terminate the color and switch to identifier; that would lead to
+            // very confusing parse errors later on. Report an error here
+            // instead.
+            if i == 7 && is_hexadecimal(c) {
+                let msg = "Expected only six hexadecimal digits, found one more.";
+                return Err(Error::parse(start, start_i + 1, msg.into()))
+            }
+            if i == 7 && is_alphanumeric_or_underscore(c) {
+                let msg = format!("Expected six hexadecimal digits, found extra '{}'.", char::from(c));
+                return Err(Error::parse(start, start_i + 1, msg))
+            }
+
+            // The end of the color in a non-hexadecimal character, as expected.
+            // Re-inspect the current character from the base state.
+            if i == 7 && !is_hexadecimal(c) {
+                self.change_state(i, State::Base);
+                break
+            }
+
+            assert!(i < self.start + 7, "Would enter infinite loop when lexing color.");
+        }
+
+        Ok(())
+    }
+
+    /// Skip until a newline is found, then switch to the whitespace state.
+    fn lex_comment(&mut self) -> Result<()> {
+        // Skip the first two bytes, because those are the "//" characters.
+        for i in self.start + 2..self.input.len() {
+            if self.input[i] == b'\n' {
+                // Change to the whitespace state, because the last character
+                // we saw was whitespace after all. Continue immediately at
+                // the next byte (i + 1), there is no need to re-inspect the
+                // newline.
+                self.change_state(i + 1, State::Space);
+                break
+            }
+        }
+
+        Ok(())
+    }
+
+    /// Lex in the whitespace state until a state change occurs.
+    fn lex_space(&mut self) -> Result<()> {
+        for i in self.start..self.input.len() {
+            match self.input[i] {
+                b' ' | b'\n' => {
+                    continue
+                }
+                b'\t' | b'\r' => {
+                    // Be very strict about whitespace; report an error for tabs
+                    // and carriage returns. `make_parse_error()` generates a
+                    // specialized error message for these.
+                    return Err(make_parse_error(i, &self.input[i..]))
+                }
+                _ => {
+                    // On anything else we switch back to the base state and
+                    // inspect the current byte again in that state.
+                    self.change_state(i, State::Base);
+                    break
+                }
+            }
+        }
+
+        Ok(())
+    }
 }
 
 /// Check whether a byte of UTF-8 is an ASCII letter.
@@ -192,6 +279,11 @@ fn is_alphanumeric_or_underscore(byte: u8) -> bool {
 /// Check whether a byte of UTF-8 is an ASCII digit.
 fn is_digit(byte: u8) -> bool {
     b'0' <= byte && byte <= b'9'
+}
+
+/// Check whether a byte of UTF-8 is a hexadecimal character.
+fn is_hexadecimal(byte: u8) -> bool {
+    is_digit(byte) || (b'a' <= byte && byte <= b'f') || (b'A' <= byte && byte <= b'F')
 }
 
 /// Detects a few byte order marks and returns an error
