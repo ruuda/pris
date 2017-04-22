@@ -566,6 +566,16 @@ fn lex_handles_a_string_literal_with_escaped_quote() {
 }
 
 #[test]
+fn lex_handles_a_raw_string_literal() {
+    let input = b"foo---bar---baz";
+    let tokens = lex(input).unwrap();
+    assert_eq!(tokens.len(), 3);
+    assert_eq!(tokens[0], (0, Token::Ident, 3));
+    assert_eq!(tokens[1], (3, Token::RawString, 12));
+    assert_eq!(tokens[2], (12, Token::Ident, 15));
+}
+
+#[test]
 fn lex_strips_a_comment() {
     let input = b"foo\n// This is comment\nbar";
     let tokens = lex(input).unwrap();
@@ -575,11 +585,28 @@ fn lex_strips_a_comment() {
 }
 
 #[test]
-fn lex_handles_a_raw_string() {
-    let input = b"foo---bar---baz";
+fn lex_handles_a_color() {
+    let input = b"#f8f8f8 #cfcfcf";
     let tokens = lex(input).unwrap();
-    assert_eq!(tokens.len(), 3);
-    assert_eq!(tokens[0], (0, Token::Ident, 3));
-    assert_eq!(tokens[1], (3, Token::RawString, 12));
-    assert_eq!(tokens[2], (12, Token::Ident, 15));
+    assert_eq!(tokens.len(), 2);
+    assert_eq!(tokens[0], (0, Token::Color, 7));
+    assert_eq!(tokens[1], (8, Token::Color, 15));
+}
+
+#[test]
+fn lex_handles_numbers() {
+    let input = b"31 31.0 2w 2h 2em 2pt 17";
+    let tokens = lex(input).unwrap();
+    assert_eq!(tokens.len(), 11);
+    assert_eq!(tokens[0], (0, Token::Number, 2));
+    assert_eq!(tokens[1], (3, Token::Number, 7));
+    assert_eq!(tokens[2], (8, Token::Number, 9));
+    assert_eq!(tokens[3], (9, Token::UnitW, 10));
+    assert_eq!(tokens[4], (11, Token::Number, 12));
+    assert_eq!(tokens[5], (12, Token::UnitH, 13));
+    assert_eq!(tokens[6], (14, Token::Number, 15));
+    assert_eq!(tokens[7], (15, Token::UnitEm, 17));
+    assert_eq!(tokens[8], (18, Token::Number, 19));
+    assert_eq!(tokens[9], (19, Token::UnitPt, 21));
+    assert_eq!(tokens[10], (22, Token::Number, 24));
 }
