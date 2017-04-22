@@ -23,6 +23,7 @@ enum Token {
     RawString,
     Color,
     Number,
+    Ident,
 
     KwAt,
     KwFunction,
@@ -50,10 +51,10 @@ enum State {
     Base,
     InColor,
     InComment,
+    InIdent,
     InNumber,
     InRawString,
     InString,
-    InWord,
     Space,
 }
 
@@ -128,7 +129,7 @@ impl<'a> Lexer<'a> {
                     break
                 }
                 byte if is_alphabetic_or_underscore(byte) => {
-                    self.change_state(i, State::InWord);
+                    self.change_state(i, State::InIdent);
                     break
                 }
                 byte if is_digit(byte) => {
@@ -175,6 +176,8 @@ impl<'a> Lexer<'a> {
 
     /// Lex in the color state until a state change occurs.
     fn lex_color(&mut self) -> Result<()> {
+        debug_assert!(self.has_at(self.start, b"#"));
+
         // Skip over the first '#' byte.
         for i in 1..self.input.len() - self.start {
             let start = self.start;
@@ -222,7 +225,9 @@ impl<'a> Lexer<'a> {
 
     /// Skip until a newline is found, then switch to the whitespace state.
     fn lex_comment(&mut self) -> Result<()> {
-        // Skip the first two bytes, because those are the "//" characters.
+        debug_assert!(self.has_at(self.start, b"//"));
+
+        // Skip the first two bytes, those are the "//" characters.
         for i in self.start + 2..self.input.len() {
             if self.input[i] == b'\n' {
                 // Change to the whitespace state, because the last character
@@ -237,10 +242,35 @@ impl<'a> Lexer<'a> {
         Ok(())
     }
 
+    /// Lex an identifier untl a state change occurs.
+    fn lex_ident(&mut self) -> Result<()> {
+        debug_assert!(is_alphabetic_or_underscore(self.input[self.start]));
+
+        // Skip the first byte, because we already know that it contains
+        // either an alphabetic character or underscore. For the other
+        // characters, digits are allowed too.
+        for i in self.start + 1..self.input.len() {
+            if !is_alphanumeric_or_underscore(self.input[i]) {
+                // An identifier consists of alphanumeric characters or
+                // underscores, so at the first one that is not one of those,
+                // change to the base state and re-inspect it.
+                self.tokens.push((self.start, Token::Ident, i));
+                self.change_state(i, State::Base);
+                break
+            }
+        }
+
+        Ok(())
+    }
+
     /// Lex in the number state until a state change occurs.
     fn lex_number(&mut self) -> Result<()> {
+        debug_assert!(is_digit(self.input[self.start]));
+
         let mut period_seen = false;
-        for i in self.start..self.input.len() {
+
+        // Skip over the first digit, as we know already that it is a digit.
+        for i in self.start + 1..self.input.len() {
             match self.input[i] {
                 c if is_digit(c) => {
                     continue
@@ -267,6 +297,8 @@ impl<'a> Lexer<'a> {
 
     /// Lex in the raw string state until a "---" is found.
     fn lex_raw_string(&mut self) -> Result<()> {
+        debug_assert!(self.has_at(self.start, b"---"));
+
         // Skip over the first "---" that starts the literal.
         for i in self.start + 3..self.input.len() {
             match self.input[i] {
@@ -286,7 +318,9 @@ impl<'a> Lexer<'a> {
 
     /// Lex in the string state until a closing quote is found.
     fn lex_string(&mut self) -> Result<()> {
-        // Skip over the first quote hat starts the literal.
+        debug_assert!(self.has_at(self.start, b"\""));
+
+        // Skip over the first quote that starts the literal.
         let mut skip_next = false;
         for i in self.start + 1..self.input.len() {
             if skip_next {
