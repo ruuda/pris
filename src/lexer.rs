@@ -18,7 +18,8 @@
 
 use error::{Error, Result};
 
-enum Token {
+#[derive(Copy, Clone, Debug, Eq, PartialEq)]
+pub enum Token {
     String,
     RawString,
     Color,

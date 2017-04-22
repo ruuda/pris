@@ -19,6 +19,7 @@ use types::ValType;
 
 pub type Result<T> = result::Result<T, Error>;
 
+#[derive(Debug)]
 pub enum Error {
     Arity(ArityError),
     MissingFile(MissingFileError),
@@ -29,15 +30,18 @@ pub enum Error {
     Other(String),
 }
 
+#[derive(Debug)]
 pub struct MissingFileError {
     path: String,
 }
 
+#[derive(Debug)]
 pub struct MissingFontError {
     family: String,
     style: String,
 }
 
+#[derive(Debug)]
 pub struct ParseError {
     /// Index of the first byte in the source file that contains the error.
     start: usize,
@@ -46,6 +50,7 @@ pub struct ParseError {
     message: String,
 }
 
+#[derive(Debug)]
 pub struct ArityError {
     #[allow(dead_code)] // Used in tests (TODO).
     expected: u32,
@@ -54,6 +59,7 @@ pub struct ArityError {
     message: String,
 }
 
+#[derive(Debug)]
 pub struct TypeError {
     #[allow(dead_code)] // Used in tests (TODO).
     expected: ValType,
@@ -62,6 +68,7 @@ pub struct TypeError {
     message: String,
 }
 
+#[derive(Debug)]
 pub struct ValueError {
     message: String,
 }
