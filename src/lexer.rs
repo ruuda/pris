@@ -32,6 +32,11 @@ pub enum Token {
     KwPut,
     KwReturn,
 
+    UnitEm,
+    UnitH,
+    UnitW,
+    UnitPt,
+
     Comma,
     Dot,
     Equals,
@@ -311,6 +316,29 @@ impl<'a> Lexer<'a> {
                     // TODO: Enforce that the next byte is a digit; numbers
                     // should not end in a period. (Just for style). But the
                     // lexer is simpler if this is allowed.
+                }
+                // For the various unit suffixes, we emit a separate token,
+                // after emitting the number token. Then switch to the base
+                // state and continue after the suffix.
+                b'e' if self.has_at(i + 1, b"m") => {
+                    self.tokens.push((self.start, Token::Number, i));
+                    self.tokens.push((i, Token::UnitEm, i + 2));
+                    return change_state(i + 2, State::Base)
+                }
+                b'p' if self.has_at(i + 1, b"t") => {
+                    self.tokens.push((self.start, Token::Number, i));
+                    self.tokens.push((i, Token::UnitPt, i + 2));
+                    return change_state(i + 2, State::Base)
+                }
+                b'h' => {
+                    self.tokens.push((self.start, Token::Number, i));
+                    self.push_single(i, Token::UnitH);
+                    return change_state(i + 1, State::Base)
+                }
+                b'w' => {
+                    self.tokens.push((self.start, Token::Number, i));
+                    self.push_single(i, Token::UnitW);
+                    return change_state(i + 1, State::Base)
                 }
                 _ => {
                     // Not a digit or first period, re-inspect this byte in the
