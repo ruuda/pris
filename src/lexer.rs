@@ -22,6 +22,7 @@ enum Token {
     String,
     RawString,
     Color,
+    Number,
 
     KwAt,
     KwFunction,
@@ -208,6 +209,7 @@ impl<'a> Lexer<'a> {
             // The end of the color in a non-hexadecimal character, as expected.
             // Re-inspect the current character from the base state.
             if i == 7 && !is_hexadecimal(c) {
+                self.tokens.push((self.start, Token::Color, i));
                 self.change_state(i, State::Base);
                 break
             }
@@ -229,6 +231,82 @@ impl<'a> Lexer<'a> {
                 // newline.
                 self.change_state(i + 1, State::Space);
                 break
+            }
+        }
+
+        Ok(())
+    }
+
+    /// Lex in the number state until a state change occurs.
+    fn lex_number(&mut self) -> Result<()> {
+        let mut period_seen = false;
+        for i in self.start..self.input.len() {
+            match self.input[i] {
+                c if is_digit(c) => {
+                    continue
+                }
+                b'.' if !period_seen => {
+                    // Allow a single decimal period in the number.
+                    period_seen = true
+                    // TODO: Enforce that the next byte is a digit; numbers
+                    // should not end in a period. (Just for style). But the
+                    // lexer is simpler if this is allowed.
+                }
+                _ => {
+                    // Not a digit or first period, re-inspect this byte in the
+                    // base state.
+                    self.tokens.push((self.start, Token::Number, i));
+                    self.change_state(i, State::Base);
+                    break
+                }
+            }
+        }
+
+        Ok(())
+    }
+
+    /// Lex in the raw string state until a "---" is found.
+    fn lex_raw_string(&mut self) -> Result<()> {
+        // Skip over the first "---" that starts the literal.
+        for i in self.start + 3..self.input.len() {
+            match self.input[i] {
+                b'-' if self.has_at(i + 1, b"--") => {
+                    // Another "---" marks the end of the raw string. Continue
+                    // in the base state after the last dash.
+                    self.tokens.push((self.start, Token::RawString, i + 3));
+                    self.change_state(i + 3, State::Base);
+                    break
+                }
+                _ => continue,
+            }
+        }
+
+        Ok(())
+    }
+
+    /// Lex in the string state until a closing quote is found.
+    fn lex_string(&mut self) -> Result<()> {
+        // Skip over the first quote hat starts the literal.
+        let mut skip_next = false;
+        for i in self.start + 1..self.input.len() {
+            if skip_next {
+                skip_next = false;
+                continue
+            }
+            match self.input[i] {
+                b'\\' => {
+                    // For the lexer, skip over anything after a backslash, even
+                    // if it is not a valid escape code. The parser will handle
+                    // those.
+                    skip_next = true
+                }
+                b'"' => {
+                    // Continue in the base state after the closing quote.
+                    self.tokens.push((self.start, Token::String, i + 1));
+                    self.change_state(i + 1, State::Base);
+                    break
+                }
+                _ => continue,
             }
         }
 
