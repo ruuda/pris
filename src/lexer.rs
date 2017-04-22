@@ -48,8 +48,14 @@ pub enum Token {
     RBrace,
 }
 
+/// Lexes a UTF-8 input file into (start_index, token, past_end_index) tokens.
+pub fn lex(input: &[u8]) -> Result<Vec<(usize, Token, usize)>> {
+    Lexer::new(input).run()
+}
+
 enum State {
     Base,
+    Done,
     InColor,
     InComment,
     InIdent,
@@ -67,6 +73,39 @@ struct Lexer<'a> {
 }
 
 impl<'a> Lexer<'a> {
+    fn new(input: &'a [u8]) -> Lexer<'a> {
+        Lexer {
+            input: input,
+            start: 0,
+            state: State::Base,
+            tokens: Vec::new(),
+        }
+    }
+
+    /// Run the lexer on the full input and return the tokens.
+    ///
+    /// Returns tuples of (start_index, token, past_end_index).
+    fn run(mut self) -> Result<Vec<(usize, Token, usize)>> {
+        loop {
+            let (start, state) = match self.state {
+                State::Base => self.lex_base()?,
+                State::InColor => self.lex_color()?,
+                State::InComment => self.lex_comment()?,
+                State::InIdent => self.lex_ident()?,
+                State::InNumber => self.lex_number()?,
+                State::InRawString => self.lex_raw_string()?,
+                State::InString => self.lex_string()?,
+                State::Space => self.lex_space()?,
+                State::Done => break,
+            };
+            self.start = start;
+            self.state = state;
+        }
+
+        Ok(self.tokens)
+    }
+
+    /// Check whether the byte sequence occurs at an index.
     fn has_at(&self, at: usize, expected: &[u8]) -> bool {
         // There must at least be sufficient bytes left to match the entire
         // expected string.
@@ -90,14 +129,10 @@ impl<'a> Lexer<'a> {
         self.start = at + 1;
     }
 
-    /// Change to a different state, starting at the given byte.
-    fn change_state(&mut self, at: usize, state: State) {
-        self.start = at;
-        self.state = state;
-    }
-
     /// Lex in the base state until a state change occurs.
-    fn lex_base(&mut self) -> Result<()> {
+    ///
+    /// Returns new values for `self.start` and `self.state`.
+    fn lex_base(&mut self) -> Result<(usize, State)> {
         for i in self.start..self.input.len() {
             match self.input[i] {
                 // There are two characters that require a brief lookahead:
@@ -106,36 +141,29 @@ impl<'a> Lexer<'a> {
                 // If the lookahead does not match, these characters are matched
                 // again as single-character tokens further below.
                 b'/' if self.has_at(i + 1, b"/") => {
-                    self.change_state(i, State::InComment);
-                    break
+                    return change_state(i, State::InComment)
                 }
                 b'-' if self.has_at(i + 1, b"--") => {
-                    self.change_state(i, State::InRawString);
-                    break
+                    return change_state(i, State::InRawString)
                 }
 
                 // A few characters signal a change of state immediately. Note
                 // that only spaces and newlines are considered whitespace.
                 // No tabs or carriage returns please.
                 b'"' => {
-                    self.change_state(i, State::InString);
-                    break
+                    return change_state(i, State::InString)
                 }
                 b' ' | b'\n' => {
-                    self.change_state(i, State::Space);
-                    break
+                    return change_state(i, State::Space)
                 }
                 b'#' => {
-                    self.change_state(i, State::InColor);
-                    break
+                    return change_state(i, State::InColor)
                 }
                 byte if is_alphabetic_or_underscore(byte) => {
-                    self.change_state(i, State::InIdent);
-                    break
+                    return change_state(i, State::InIdent)
                 }
                 byte if is_digit(byte) => {
-                    self.change_state(i, State::InNumber);
-                    break
+                    return change_state(i, State::InNumber)
                 }
 
                 // A number of punctuation characters are tokens themselves. For
@@ -172,11 +200,11 @@ impl<'a> Lexer<'a> {
             }
         }
 
-        Ok(())
+        done_at_end_of_input()
     }
 
     /// Lex in the color state until a state change occurs.
-    fn lex_color(&mut self) -> Result<()> {
+    fn lex_color(&mut self) -> Result<(usize, State)> {
         debug_assert!(self.has_at(self.start, b"#"));
 
         // Skip over the first '#' byte.
@@ -214,18 +242,19 @@ impl<'a> Lexer<'a> {
             // Re-inspect the current character from the base state.
             if i == 7 && !is_hexadecimal(c) {
                 self.tokens.push((self.start, Token::Color, i));
-                self.change_state(i, State::Base);
-                break
+                return change_state(i, State::Base)
             }
 
             assert!(i < self.start + 7, "Would enter infinite loop when lexing color.");
         }
 
-        Ok(())
+        // The input ends in a color.
+        self.tokens.push((self.start, Token::Color, self.input.len()));
+        done_at_end_of_input()
     }
 
     /// Skip until a newline is found, then switch to the whitespace state.
-    fn lex_comment(&mut self) -> Result<()> {
+    fn lex_comment(&mut self) -> Result<(usize, State)> {
         debug_assert!(self.has_at(self.start, b"//"));
 
         // Skip the first two bytes, those are the "//" characters.
@@ -235,16 +264,15 @@ impl<'a> Lexer<'a> {
                 // we saw was whitespace after all. Continue immediately at
                 // the next byte (i + 1), there is no need to re-inspect the
                 // newline.
-                self.change_state(i + 1, State::Space);
-                break
+                return change_state(i + 1, State::Space)
             }
         }
 
-        Ok(())
+        done_at_end_of_input()
     }
 
     /// Lex an identifier untl a state change occurs.
-    fn lex_ident(&mut self) -> Result<()> {
+    fn lex_ident(&mut self) -> Result<(usize, State)> {
         debug_assert!(is_alphabetic_or_underscore(self.input[self.start]));
 
         // Skip the first byte, because we already know that it contains
@@ -256,16 +284,17 @@ impl<'a> Lexer<'a> {
                 // underscores, so at the first one that is not one of those,
                 // change to the base state and re-inspect it.
                 self.tokens.push((self.start, Token::Ident, i));
-                self.change_state(i, State::Base);
-                break
+                return change_state(i, State::Base)
             }
         }
 
-        Ok(())
+        // The input ended in an identifier.
+        self.tokens.push((self.start, Token::Ident, self.input.len()));
+        done_at_end_of_input()
     }
 
     /// Lex in the number state until a state change occurs.
-    fn lex_number(&mut self) -> Result<()> {
+    fn lex_number(&mut self) -> Result<(usize, State)> {
         debug_assert!(is_digit(self.input[self.start]));
 
         let mut period_seen = false;
@@ -287,17 +316,18 @@ impl<'a> Lexer<'a> {
                     // Not a digit or first period, re-inspect this byte in the
                     // base state.
                     self.tokens.push((self.start, Token::Number, i));
-                    self.change_state(i, State::Base);
-                    break
+                    return change_state(i, State::Base)
                 }
             }
         }
 
-        Ok(())
+        // The input ended in a number.
+        self.tokens.push((self.start, Token::Number, self.input.len()));
+        done_at_end_of_input()
     }
 
     /// Lex in the raw string state until a "---" is found.
-    fn lex_raw_string(&mut self) -> Result<()> {
+    fn lex_raw_string(&mut self) -> Result<(usize, State)> {
         debug_assert!(self.has_at(self.start, b"---"));
 
         // Skip over the first "---" that starts the literal.
@@ -307,18 +337,19 @@ impl<'a> Lexer<'a> {
                     // Another "---" marks the end of the raw string. Continue
                     // in the base state after the last dash.
                     self.tokens.push((self.start, Token::RawString, i + 3));
-                    self.change_state(i + 3, State::Base);
-                    break
+                    return change_state(i + 3, State::Base)
                 }
                 _ => continue,
             }
         }
 
-        Ok(())
+        // If we reach end of input inside a raw string, that's an error.
+        let msg = "Raw string was not closed with '---' before end of input.";
+        Err(Error::parse(self.start, self.start + 3, msg.into()))
     }
 
     /// Lex in the string state until a closing quote is found.
-    fn lex_string(&mut self) -> Result<()> {
+    fn lex_string(&mut self) -> Result<(usize, State)> {
         debug_assert!(self.has_at(self.start, b"\""));
 
         // Skip over the first quote that starts the literal.
@@ -338,18 +369,19 @@ impl<'a> Lexer<'a> {
                 b'"' => {
                     // Continue in the base state after the closing quote.
                     self.tokens.push((self.start, Token::String, i + 1));
-                    self.change_state(i + 1, State::Base);
-                    break
+                    return change_state(i + 1, State::Base)
                 }
                 _ => continue,
             }
         }
 
-        Ok(())
+        // If we reach end of input inside a string, that's an error.
+        let msg = "String was not closed with '\"' before end of input.";
+        Err(Error::parse(self.start, self.start + 1, msg.into()))
     }
 
     /// Lex in the whitespace state until a state change occurs.
-    fn lex_space(&mut self) -> Result<()> {
+    fn lex_space(&mut self) -> Result<(usize, State)> {
         for i in self.start..self.input.len() {
             match self.input[i] {
                 b' ' | b'\n' => {
@@ -364,14 +396,29 @@ impl<'a> Lexer<'a> {
                 _ => {
                     // On anything else we switch back to the base state and
                     // inspect the current byte again in that state.
-                    self.change_state(i, State::Base);
-                    break
+                    return change_state(i, State::Base)
                 }
             }
         }
 
-        Ok(())
+        done_at_end_of_input()
     }
+}
+
+/// Make `Lexer::run()` change to a different state, starting at the given byte.
+///
+/// This is only a helper function to make the lexer code a bit more readable,
+/// the logic is in `Lexer::run()`.
+fn change_state(at: usize, state: State) -> Result<(usize, State)> {
+    Ok((at, state))
+}
+
+/// Signal end of input to the `Lexer::run()` method.
+///
+/// This is only a helper function to make the lexer code a bit more readable,
+/// the logic is in `Lexer::run()`.
+fn done_at_end_of_input() -> Result<(usize, State)> {
+    Ok((0, State::Done))
 }
 
 /// Check whether a byte of UTF-8 is an ASCII letter.
@@ -464,200 +511,47 @@ fn make_parse_error(at: usize, input: &[u8]) -> Error {
     Error::parse(at, at + 1, message)
 }
 
-#[derive(Copy, Clone, Debug, Eq, PartialEq)]
-enum PreToken {
-    Normal,
-    Comment,
-    String,
-    RawString,
-}
-
-/// Do a very rough lexing pass to separate comments and strings from the rest.
-///
-/// Returned tuples are (start_index, token, past_end_index).
-fn prelex(input: &str) -> Vec<(usize, PreToken, usize)> {
-    #[derive(Copy, Clone)]
-    enum State {
-        Normal,
-        NormalAfterSlash,
-        NormalAfterDash1,
-        NormalAfterDash2,
-        InComment,
-        InString,
-        InStringAfterBackslash,
-        InRawString,
-        InRawStringAfterDash1,
-        InRawStringAfterDash2,
-    }
-
-    let mut tokens = Vec::new();
-    let mut state = State::Normal;
-    let mut start = 0;
-
-    // The input string is encoded as UTF-8, so we can iterate over the bytes,
-    // because the only characters interesting to the parser are ASCII
-    // characters, and non-ASCII characters are never encoded as an ASCII one.
-    for (i, ch) in input.bytes().enumerate() {
-        loop {
-            match (ch, state) {
-                // Two slashes to start a comment.
-                (b'/', State::Normal) => {
-                    state = State::NormalAfterSlash;
-                }
-                (b'/', State::NormalAfterSlash) => {
-                    if start != i - 1 {
-                        // Push the preceding normal token if it was non-empty.
-                        tokens.push((start, PreToken::Normal, i - 1));
-                    }
-                    start = i - 1;
-                    state = State::InComment;
-                }
-                (_, State::NormalAfterSlash) => {
-                    state = State::Normal;
-                    continue;
-                }
-                (b'\n', State::InComment) => {
-                    tokens.push((start, PreToken::Comment, i));
-                    start = i;
-                    state = State::Normal;
-                }
-                (_, State::InComment) => {
-                    // Nothing interesting until the newline.
-                }
-                // Triple dashes to start a raw string.
-                (b'-', State::Normal) => {
-                    state = State::NormalAfterDash1;
-                }
-                (b'-', State::NormalAfterDash1) => {
-                    state = State::NormalAfterDash2;
-                }
-                (b'-', State::NormalAfterDash2) => {
-                    if start != i - 2 {
-                        // Push the preceding normal token if it was non-empty.
-                        tokens.push((start, PreToken::Normal, i - 2));
-                    }
-                    start = i - 2;
-                    state = State::InRawString;
-                }
-                (_, State::NormalAfterDash1) => {
-                    state = State::Normal;
-                    continue;
-                }
-                (_, State::NormalAfterDash2) => {
-                    state = State::Normal;
-                    continue;
-                }
-                (b'-', State::InRawString) => {
-                    state = State::InRawStringAfterDash1;
-                }
-                (b'-', State::InRawStringAfterDash1) => {
-                    state = State::InRawStringAfterDash2;
-                }
-                (b'-', State::InRawStringAfterDash2) => {
-                    tokens.push((start, PreToken::RawString, i + 1));
-                    start = i + 1;
-                    state = State::Normal;
-                }
-                (_, State::InRawStringAfterDash1) => {
-                    state = State::InRawString;
-                }
-                (_, State::InRawStringAfterDash2) => {
-                    state = State::InRawString;
-                }
-                (_, State::InRawString) => {
-                    // Nothing interesting until a dash.
-                }
-                // A double quote starts a regular string.
-                (b'"', State::Normal) => {
-                    if start != i {
-                        // Push the preceding normal token if it was non-empty.
-                        tokens.push((start, PreToken::Normal, i));
-                    }
-                    start = i;
-                    state = State::InString;
-                }
-                (b'\\', State::InString) => {
-                    state = State::InStringAfterBackslash;
-                }
-                (_, State::InStringAfterBackslash) => {
-                    state = State::InString;
-                }
-                (b'"', State::InString) => {
-                    tokens.push((start, PreToken::String, i + 1));
-                    start = i + 1;
-                    state = State::Normal;
-                }
-                (_, State::InString) => {
-                    // Continue inside the string.
-                }
-                (_, State::Normal) => {
-                    // Continue lexing outside of a string and comment.
-                }
-            }
-            break;
-        }
-    }
-
-    let final_token = match state {
-        State::Normal => PreToken::Normal,
-        State::NormalAfterSlash => PreToken::Normal,
-        State::NormalAfterDash1 => PreToken::Normal,
-        State::NormalAfterDash2 => PreToken::Normal,
-        State::InComment => PreToken::Comment,
-        State::InString => PreToken::String,
-        State::InStringAfterBackslash => PreToken::String,
-        State::InRawString => PreToken::RawString,
-        State::InRawStringAfterDash1 => PreToken::RawString,
-        State::InRawStringAfterDash2 => PreToken::RawString,
-    };
-    if start != input.len() {
-        tokens.push((start, final_token, input.len()));
-    }
-
-    tokens
-}
-
 #[test]
-fn prelex_handles_a_simple_input() {
-    let input = "foo bar";
-    let tokens = prelex(input);
-    assert_eq!(tokens.len(), 1);
-    assert_eq!(tokens[0], (0, PreToken::Normal, 7));
-}
-
-#[test]
-fn prelex_handles_a_string_literal() {
-    let input = r#"foo "bar""#;
-    let tokens = prelex(input);
+fn lex_handles_a_simple_input() {
+    let input = b"foo bar";
+    let tokens = lex(input).unwrap();
     assert_eq!(tokens.len(), 2);
-    assert_eq!(tokens[0], (0, PreToken::Normal, 4));
-    assert_eq!(tokens[1], (4, PreToken::String, 9));
+    assert_eq!(tokens[0], (0, Token::Ident, 3));
+    assert_eq!(tokens[1], (4, Token::Ident, 7));
 }
 
 #[test]
-fn prelex_handles_a_string_literal_with_escaped_quote() {
-    let input = r#""bar\"baz""#;
-    let tokens = prelex(input);
+fn lex_handles_a_string_literal() {
+    let input = br#"foo "bar""#;
+    let tokens = lex(input).unwrap();
+    assert_eq!(tokens.len(), 2);
+    assert_eq!(tokens[0], (0, Token::Ident, 3));
+    assert_eq!(tokens[1], (4, Token::String, 9));
+}
+
+#[test]
+fn lex_handles_a_string_literal_with_escaped_quote() {
+    let input = br#""bar\"baz""#;
+    let tokens = lex(input).unwrap();
     assert_eq!(tokens.len(), 1);
-    assert_eq!(tokens[0], (0, PreToken::String, 10));
+    assert_eq!(tokens[0], (0, Token::String, 10));
 }
 
 #[test]
-fn prelex_handles_a_comment() {
-    let input = "foo\n// This is comment\nbar";
-    let tokens = prelex(input);
-    assert_eq!(tokens.len(), 3);
-    assert_eq!(tokens[0], (0, PreToken::Normal, 4));
-    assert_eq!(tokens[1], (4, PreToken::Comment, 22));
-    assert_eq!(tokens[2], (22, PreToken::Normal, 26));
+fn lex_strips_a_comment() {
+    let input = b"foo\n// This is comment\nbar";
+    let tokens = lex(input).unwrap();
+    assert_eq!(tokens.len(), 2);
+    assert_eq!(tokens[0], (0, Token::Ident, 3));
+    assert_eq!(tokens[1], (23, Token::Ident, 26));
 }
 
 #[test]
-fn prelex_handles_a_raw_string() {
-    let input = "foo---bar---baz";
-    let tokens = prelex(input);
+fn lex_handles_a_raw_string() {
+    let input = b"foo---bar---baz";
+    let tokens = lex(input).unwrap();
     assert_eq!(tokens.len(), 3);
-    assert_eq!(tokens[0], (0, PreToken::Normal, 3));
-    assert_eq!(tokens[1], (3, PreToken::RawString, 12));
-    assert_eq!(tokens[2], (12, PreToken::Normal, 15));
+    assert_eq!(tokens[0], (0, Token::Ident, 3));
+    assert_eq!(tokens[1], (3, Token::RawString, 12));
+    assert_eq!(tokens[2], (12, Token::Ident, 15));
 }
