@@ -21,11 +21,29 @@ pub type Result<T> = result::Result<T, Error>;
 
 pub enum Error {
     Arity(ArityError),
+    MissingFile(MissingFileError),
+    MissingFont(MissingFontError),
+    Parse(ParseError),
     Type(TypeError),
     Value(ValueError),
-    MissingFont(MissingFontError),
-    MissingFile(MissingFileError),
     Other(String),
+}
+
+pub struct MissingFileError {
+    path: String,
+}
+
+pub struct MissingFontError {
+    family: String,
+    style: String,
+}
+
+pub struct ParseError {
+    /// Index of the first byte in the source file that contains the error.
+    start: usize,
+    /// Index of the first byte after the error.
+    end: usize,
+    message: String,
 }
 
 pub struct ArityError {
@@ -46,15 +64,6 @@ pub struct TypeError {
 
 pub struct ValueError {
     message: String,
-}
-
-pub struct MissingFontError {
-    family: String,
-    style: String,
-}
-
-pub struct MissingFileError {
-    path: String,
 }
 
 impl Error {
@@ -178,15 +187,26 @@ impl Error {
         Error::MissingFile(err)
     }
 
+    pub fn parse(start: usize, end: usize, message: String) -> Error {
+        let err = ParseError {
+            start: start,
+            end: end,
+            message: message,
+        };
+        Error::Parse(err)
+    }
+
     pub fn print(&self) {
+        // Print in red using ANSI escape codes.
         print!("\x1b[31;1mError: \x1b[0m");
         match *self {
             Error::Arity(ref ae) => println!("{}\n", ae.message),
+            Error::MissingFile(ref mf) => println!("The file '{}' does not exist.\n", mf.path),
+            Error::MissingFont(ref mf) => println!("The font '{} {}' cannot be found.\n", mf.family, mf.style),
+            Error::Other(ref ot) => println!("{}\n", ot),
+            Error::Parse(ref pe) => println!("{}\n", pe.message),
             Error::Type(ref tye) => println!("{}\n", tye.message),
             Error::Value(ref ve) => println!("{}\n", ve.message),
-            Error::MissingFont(ref mf) => println!("The font '{} {}' cannot be found.\n", mf.family, mf.style),
-            Error::MissingFile(ref mf) => println!("The file '{}' does not exist.\n", mf.path),
-            Error::Other(ref ot) => println!("{}\n", ot),
         }
     }
 }

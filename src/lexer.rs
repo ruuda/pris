@@ -16,6 +16,249 @@
 //! for non-greedy triple quoted strings, which cannot be expressed in as regex
 //! without support for non-greedy matching.
 
+use error::{Error, Result};
+
+enum Token {
+    Comment,
+    String,
+    RawString,
+    Color,
+    Space,
+
+    KwAt,
+    KwFunction,
+    KwImport,
+    KwPut,
+    KwReturn,
+
+    Comma,
+    Dot,
+    Equals,
+    Hat,
+    Minus,
+    Plus,
+    Slash,
+    Star,
+    Tilde,
+
+    LParen,
+    RParen,
+    LBrace,
+    RBrace,
+}
+
+enum State {
+    Base,
+    Space,
+    InComment,
+    InString,
+    InRawString,
+    InColor,
+    InWord,
+    InNumber,
+}
+
+struct Lexer<'a> {
+    input: &'a [u8],
+    start: usize,
+    state: State,
+    tokens: Vec<(usize, Token, usize)>,
+}
+
+impl<'a> Lexer<'a> {
+    fn has_at(&self, at: usize, expected: &[u8]) -> bool {
+        // There must at least be sufficient bytes left to match the entire
+        // expected string.
+        if at + expected.len() > self.input.len() {
+            return false
+        }
+
+        // Then check that every byte matches.
+        for (a, e) in self.input[at..].iter().zip(expected) {
+            if a != e {
+                return false
+            }
+        }
+
+        true
+    }
+
+    /// Push a single-byte token, and set the start of the next token past it.
+    fn push_single(&mut self, at: usize, tok: Token) {
+        self.tokens.push((at, tok, at + 1));
+        self.start = at + 1;
+    }
+
+    /// Change to a different state, starting at the given byte.
+    fn change_state(&mut self, at: usize, state: State) {
+        self.start = at;
+        self.state = state;
+    }
+
+    fn lex_base(&mut self, start: usize) -> Result<()> {
+        for i in start..self.input.len() {
+            match self.input[i] {
+                // There are two characters that require a brief lookahead:
+                // * '/', to find the start of a comment "//".
+                // * '-', to find the start of a raw string "---".
+                // If the lookahead does not match, these characters are matched
+                // again as single-character tokens further below.
+                b'/' if self.has_at(i + 1, b"/") => {
+                    self.change_state(i, State::InComment);
+                    break
+                }
+                b'-' if self.has_at(i + 1, b"--") => {
+                    self.change_state(i, State::InRawString);
+                    break
+                }
+
+                // A few characters signal a change of state immediately. Note
+                // that only spaces and newlines are considered whitespace.
+                // No tabs or carriage returns please.
+                b'"' => {
+                    self.change_state(i, State::InString);
+                    break
+                }
+                b' ' | b'\n' => {
+                    self.change_state(i, State::Space);
+                    break
+                }
+                b'#' => {
+                    self.change_state(i, State::InColor);
+                    break
+                }
+                byte if is_alphabetic_or_underscore(byte) => {
+                    self.change_state(i, State::InWord);
+                    break
+                }
+                byte if is_digit(byte) => {
+                    self.change_state(i, State::InNumber);
+                    break
+                }
+
+                // A number of punctuation characters are tokens themselves. For
+                // these we push a single-byte token and continue after without
+                // changing state. Pushing a single token does reset the start
+                // counter.
+                b',' => self.push_single(i, Token::Comma),
+                b'.' => self.push_single(i, Token::Dot),
+                b'=' => self.push_single(i, Token::Equals),
+                b'^' => self.push_single(i, Token::Hat),
+                b'-' => self.push_single(i, Token::Minus),
+                b'+' => self.push_single(i, Token::Plus),
+                b'/' => self.push_single(i, Token::Slash),
+                b'*' => self.push_single(i, Token::Star),
+                b'~' => self.push_single(i, Token::Tilde),
+                b'(' => self.push_single(i, Token::LParen),
+                b')' => self.push_single(i, Token::RParen),
+                b'{' => self.push_single(i, Token::LBrace),
+                b'}' => self.push_single(i, Token::RBrace),
+
+                // If we detect the start of a byte order mark, complain about a
+                // wrong encoding. (No BOMs for UTF-8 either, please.)
+                0xef | 0xfe | 0xff | 0x00 => {
+                    return Err(make_encoding_error(i, &self.input[i..]))
+                }
+
+                // Anything else is invalid. Please, no tabs or carriage
+                // returns. And *definitely* no levitating men in business
+                // suits. (Note that all of those are fine in comments and
+                // strings, so you can still document everything in a non-Latin
+                // language, or make slides for that. Just keep the source clean
+                // please.)
+                byte => return Err(make_parse_error(i, &self.input[i..])),
+            }
+        }
+
+        Ok(())
+    }
+}
+
+/// Check whether a byte of UTF-8 is an ASCII letter.
+fn is_alphabetic(byte: u8) -> bool {
+    (b'a' <= byte && byte <= b'z') || (b'A' <= byte && byte <= b'Z')
+}
+
+/// Check whether a byte of UTF-8 is an ASCII letter or underscore.
+fn is_alphabetic_or_underscore(byte: u8) -> bool {
+    is_alphabetic(byte) || (byte == b'_')
+}
+
+/// Check whether a byte of UTF-8 is an ASCII letter, digit, or underscore.
+fn is_alphanumeric_or_underscore(byte: u8) -> bool {
+    is_alphabetic_or_underscore(byte) || (b'0' <= byte && byte <= b'9')
+}
+
+/// Check whether a byte of UTF-8 is an ASCII digit.
+fn is_digit(byte: u8) -> bool {
+    b'0' <= byte && byte <= b'9'
+}
+
+/// Detects a few byte order marks and returns an error
+fn make_encoding_error(at: usize, input: &[u8]) -> Error {
+    let (message, count) = if input.starts_with(&[0xef, 0xbb, 0xbf]) {
+        // There is a special place in hell for people who use byte order marks
+        // in UTF-8.
+        ("Found UTF-8 byte order mark. Please remove it.", 3)
+    } else if input.starts_with(&[0xfe, 0xff]) ||
+              input.starts_with(&[0xff, 0xfe]) {
+        ("Expected UTF-8 encoded file, but found UTF-16 byte order mark.", 2)
+    } else if input.starts_with(&[0x00, 0x00, 0xfe, 0xff]) ||
+              input.starts_with(&[0xff, 0xfe, 0x00, 0x00]) {
+        ("Expected UTF-8 encoded file, but found UTF-32 byte order mark.", 4)
+    } else {
+        // If it was not a known byte order mark after all, complain about the
+        // character as a normal parse error.
+        return make_parse_error(at, input)
+    };
+
+    Error::parse(at, at + count, message.into())
+}
+
+fn make_parse_error(at: usize, input: &[u8]) -> Error {
+    let message = match input[0] {
+        b'\t' => {
+            "Found tab character. Please use spaces instead.".into()
+        }
+        b'\r' => {
+            "Found carriage return. Please use Unix line endings instead.".into()
+        }
+        x if x < 0x20 || x == 0x7f => {
+            // An ASCII control character. In this case the character is likely
+            // not printable as-is, so we include the byte in the message, and
+            // an encoding hint.
+            format!("Found unexpected control character 0x{:x}. ", x) +
+            "Note that Pris expects UTF-8 encoded files."
+        }
+        x if x < 0x7f => {
+            // A regular ASCII character, but apparently not one we expected at
+            // this place.
+            format!("Found unexpected character '{}'.", char::from(x))
+        }
+        x => {
+            // If we find a non-ASCII byte, try to decode the next few bytes as
+            // UTF-8. If that succeeds, complain about non-ASCII identifiers.
+            // Otherwise complain about the encoding. Note that the unwrap will
+            // succeed, as we have at least one byte in the input.
+            match String::from_utf8_lossy(&input[..8]).chars().next().unwrap() {
+                '\u{fffd}' => {
+                    // U+FFFD is generated when decoding UTF-8 fails.
+                    format!("Found unexpected byte 0x{:x}. ", x) +
+                    "Note that Pris expects UTF-8 encoded files."
+                }
+                c => {
+                    format!("Found unexpected character '{}'. ", c) +
+                    "Note that identifiers must be ASCII."
+                }
+            }
+        }
+    };
+
+    // The end index is not entirely correct for the non-ASCII but valid UTF-8
+    // case, but meh.
+    Error::parse(at, at + 1, message)
+}
+
 #[derive(Copy, Clone, Debug, Eq, PartialEq)]
 enum PreToken {
     Normal,
