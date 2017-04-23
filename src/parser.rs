@@ -43,6 +43,13 @@ pub fn unescape_raw_string_literal<'a>(literal: &'a str) -> String {
     // Iterate over lines manually because the std::str::lines() iterator
     // silently drops trailing newlines.
     while let Some(index) = left.find('\n') {
+        // Do allow completely empty lines, because otherwise these would be
+        // required to have trailing whitespace.
+        if index == 0 {
+            string.push('\n');
+            left = &left[1..];
+            continue;
+        }
         // TODO: Proper error handling with Result.
         assert!(index > indent, "Newline in indent of raw string literal.");
         assert!(left.chars().take(indent).all(|x| x == ' '),
@@ -167,6 +174,12 @@ fn unescape_raw_string_literal_strips_indent() {
 fn unescape_raw_string_literal_preserves_newlines() {
     let x = unescape_raw_string_literal("---\n  hi\n    there\n  ---");
     assert_eq!("hi\n  there", &x);
+}
+
+#[test]
+fn unescape_raw_string_literal_allows_blank_lines() {
+    let x = unescape_raw_string_literal("---\n  hi\n\n  there\n  ---");
+    assert_eq!("hi\n\nthere", &x);
 }
 
 #[test]
