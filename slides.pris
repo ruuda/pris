@@ -69,7 +69,7 @@ ax = std.anchors
   // How to do text formatting? Maybe promoting string literals to boxes is not
   // such a good idea after all; explicit is better than implicit? And ~ for
   // boxes would mean to put them adjacent, origin to width?
-  at (0.5w, 0.5h) put text("Hello ") ~ emph("world)
+  at (0.5w, 0.5h) put text("Hello ") ~ emph("world")
 
   // Or, at the other extreme, embed markup in string literals:
   at ax.center put "Hello <em>world</em>"
@@ -108,7 +108,7 @@ ax = std.anchors
   sc_style = function()
   {
     font_family = "Zhe Font Smcp"             // When it is a separate font
-    font_features = font_features ++ ["smcp"] // When the font supports it.
+    // font_features = font_features ++ ["smcp"] // When the font supports it.
     // Double ++ for list and string concat perhaps?
     // Yes, because it is simpler: ++ concatenates, + is for coordinates.
   }
