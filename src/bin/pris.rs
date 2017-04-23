@@ -6,35 +6,27 @@
 // of the License is available in the root of the repository.
 
 extern crate docopt;
-extern crate freetype;
 extern crate lalrpop_util;
 extern crate rustc_serialize;
+extern crate pris;
 
-mod ast;
-mod builtins;
-mod cairo;
-mod driver;
-mod elements;
-mod error;
-mod fontconfig;
-mod harfbuzz;
-mod interpreter;
-mod lexer;
-mod parser;
-mod pretty;
-mod rsvg;
-mod runtime;
-mod syntax;
-mod types;
-
-use docopt::Docopt;
-use error::Error;
-use lalrpop_util::ParseError;
 use std::fs::File;
 use std::io::BufReader;
 use std::io::Read;
 use std::io;
 use std::path::{Path, PathBuf};
+
+use docopt::Docopt;
+use lalrpop_util::ParseError;
+
+use pris::ast;
+use pris::cairo;
+use pris::driver;
+use pris::interpreter;
+use pris::error::Error;
+use pris::lexer;
+use pris::syntax;
+use pris::runtime;
 
 const USAGE: &'static str = "
 Pris, a language for designing slides.
