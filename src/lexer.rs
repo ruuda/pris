@@ -302,14 +302,14 @@ impl<'a> Lexer<'a> {
                 // underscores, so at the first one that is not one of those,
                 // change to the base state and re-inspect it.
                 let inner = self.parse_utf8_str(self.start, i).unwrap();
-                self.tokens.push((self.start, Token::Ident(inner), i));
+                self.tokens.push((self.start, make_keyword_or_ident(inner), i));
                 return change_state(i, State::Base)
             }
         }
 
         // The input ended in an identifier.
         let inner = self.parse_utf8_str(self.start, self.input.len()).unwrap();
-        self.tokens.push((self.start, Token::Ident(inner), self.input.len()));
+        self.tokens.push((self.start, make_keyword_or_ident(inner), self.input.len()));
         done_at_end_of_input()
     }
 
@@ -508,6 +508,18 @@ fn is_hexadecimal(byte: u8) -> bool {
     is_digit(byte) || (b'a' <= byte && byte <= b'f') || (b'A' <= byte && byte <= b'F')
 }
 
+/// Returns either a keyword if one matches, or an identifier token otherwise.
+fn make_keyword_or_ident(ident: &str) -> Token {
+    match ident {
+        "at" => Token::KwAt,
+        "function" => Token::KwFunction,
+        "import" => Token::KwImport,
+        "put" => Token::KwPut,
+        "return" => Token::KwReturn,
+        other => Token::Ident(ident),
+    }
+}
+
 /// Detects a few byte order marks and returns an error
 fn make_encoding_error(at: usize, input: &[u8]) -> Error {
     let (message, count) = if input.starts_with(&[0xef, 0xbb, 0xbf]) {
@@ -652,4 +664,18 @@ fn lex_handles_braces() {
     assert_eq!(tokens.len(), 2);
     assert_eq!(tokens[0], (0, Token::LBrace, 1));
     assert_eq!(tokens[1], (2, Token::RBrace, 3));
+}
+
+#[test]
+fn lex_handles_keywords() {
+    let input = b"return the function put at the import";
+    let tokens = lex(input).unwrap();
+    assert_eq!(tokens.len(), 7);
+    assert_eq!(tokens[0], (0, Token::KwReturn, 6));
+    assert_eq!(tokens[1], (7, Token::Ident("the"), 10));
+    assert_eq!(tokens[2], (11, Token::KwFunction, 19));
+    assert_eq!(tokens[3], (20, Token::KwPut, 23));
+    assert_eq!(tokens[4], (24, Token::KwAt, 26));
+    assert_eq!(tokens[5], (27, Token::Ident("the"), 30));
+    assert_eq!(tokens[6], (31, Token::KwImport, 37));
 }
