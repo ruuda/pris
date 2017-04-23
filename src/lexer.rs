@@ -58,6 +58,7 @@ pub fn lex(input: &[u8]) -> Result<Vec<(usize, Token, usize)>> {
     Lexer::new(input).run()
 }
 
+#[derive(Debug)]
 enum State {
     Base,
     Done,
@@ -103,6 +104,11 @@ impl<'a> Lexer<'a> {
                 State::Space => self.lex_space()?,
                 State::Done => break,
             };
+
+            debug_assert!(start >= self.start,
+                          "Lexer cursor decrement from {} to {} after {:?} -> {:?}.",
+                          self.start, start, self.state, state);
+
             self.start = start;
             self.state = state;
         }
@@ -213,20 +219,18 @@ impl<'a> Lexer<'a> {
         debug_assert!(self.has_at(self.start, b"#"));
 
         // Skip over the first '#' byte.
-        for i in 1..self.input.len() - self.start {
-            let start = self.start;
-            let start_i = self.start + i;
-            let c = self.input[start_i];
+        for i in self.start + 1..self.input.len() {
+            let c = self.input[i];
 
             // A hexadecimal character, as expected.
-            if i < 7 && is_hexadecimal(c) {
+            if i < self.start + 7 && is_hexadecimal(c) {
                 continue
             }
 
             // We expected more hexadecimal digits, but found something else.
-            if i < 7 {
+            if i < self.start + 7 {
                 let msg = format!("Expected hexadecimal digit, found '{}'.", char::from(c));
-                return Err(Error::parse(start_i, start_i + 1, msg))
+                return Err(Error::parse(self.start, i + 1, msg))
             }
 
             // We expect at most 6 hexadecimal digits, but if another
@@ -234,20 +238,20 @@ impl<'a> Lexer<'a> {
             // terminate the color and switch to identifier; that would lead to
             // very confusing parse errors later on. Report an error here
             // instead.
-            if i == 7 && is_hexadecimal(c) {
+            if i == self.start + 7 && is_hexadecimal(c) {
                 let msg = "Expected only six hexadecimal digits, found one more.";
-                return Err(Error::parse(start, start_i + 1, msg.into()))
+                return Err(Error::parse(self.start, i + 1, msg.into()))
             }
-            if i == 7 && is_alphanumeric_or_underscore(c) {
+            if i == self.start + 7 && is_alphanumeric_or_underscore(c) {
                 let msg = format!("Expected six hexadecimal digits, found extra '{}'.", char::from(c));
-                return Err(Error::parse(start, start_i + 1, msg))
+                return Err(Error::parse(self.start, i + 1, msg))
             }
 
             // The end of the color in a non-hexadecimal character, as expected.
             // Re-inspect the current character from the base state.
-            if i == 7 && !is_hexadecimal(c) {
+            if i == self.start + 7 && !is_hexadecimal(c) {
                 // Include the contents in the token too for lalrpop.
-                let inner = self.parse_utf8_str(start, start_i).unwrap();
+                let inner = self.parse_utf8_str(self.start, i).unwrap();
                 self.tokens.push((self.start, Token::Color(inner), i));
                 return change_state(i, State::Base)
             }
