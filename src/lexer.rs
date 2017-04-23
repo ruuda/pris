@@ -58,7 +58,7 @@ pub fn lex(input: &[u8]) -> Result<Vec<(usize, Token, usize)>> {
     Lexer::new(input).run()
 }
 
-#[derive(Debug)]
+#[derive(Debug, Eq, PartialEq)]
 enum State {
     Base,
     Done,
@@ -105,7 +105,7 @@ impl<'a> Lexer<'a> {
                 State::Done => break,
             };
 
-            debug_assert!(start >= self.start,
+            debug_assert!(start >= self.start || state == State::Done,
                           "Lexer cursor decrement from {} to {} after {:?} -> {:?}.",
                           self.start, start, self.state, state);
 
@@ -541,13 +541,13 @@ fn make_parse_error(at: usize, input: &[u8]) -> Error {
             // An ASCII control character. In this case the character is likely
             // not printable as-is, so we include the byte in the message, and
             // an encoding hint.
-            format!("Found unexpected control character 0x{:x}. ", x) +
+            format!("Unexpected control character 0x{:x}. ", x) +
             "Note that Pris expects UTF-8 encoded files."
         }
         x if x < 0x7f => {
             // A regular ASCII character, but apparently not one we expected at
             // this place.
-            format!("Found unexpected character '{}'.", char::from(x))
+            format!("Unexpected character '{}'.", char::from(x))
         }
         x => {
             // If we find a non-ASCII byte, try to decode the next few bytes as
@@ -557,11 +557,11 @@ fn make_parse_error(at: usize, input: &[u8]) -> Error {
             match String::from_utf8_lossy(&input[..8]).chars().next().unwrap() {
                 '\u{fffd}' => {
                     // U+FFFD is generated when decoding UTF-8 fails.
-                    format!("Found unexpected byte 0x{:x}. ", x) +
+                    format!("Unexpected byte 0x{:x}. ", x) +
                     "Note that Pris expects UTF-8 encoded files."
                 }
                 c => {
-                    format!("Found unexpected character '{}'. ", c) +
+                    format!("Unexpected character '{}'. ", c) +
                     "Note that identifiers must be ASCII."
                 }
             }
