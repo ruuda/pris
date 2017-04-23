@@ -15,9 +15,51 @@ use std::char;
 type ParseError<'a> = lalrpop_util::ParseError<usize, Token<'a>, String>;
 
 /// Strips the '---' of a raw string literal and corrects its indentation.
-pub fn unescape_raw_string_literal<'a>(s: &'a str) -> String {
-    // TODO: Correct indentation.
-    String::from(&s[3..s.len() - 3])
+pub fn unescape_raw_string_literal<'a>(literal: &'a str) -> String {
+    debug_assert!(literal.len() >= 6,
+                  "Raw string literal must include two '---' delimiters.");
+
+    // The string literal without '---' is the maximum size we are going to
+    // need, so reserve that much. We also strip at least one newline.
+    let mut string = String::with_capacity(literal.len() - 7);
+    let sliced = &literal[3..literal.len() - 3];
+
+    // Find the last newline in the string. Everything after that should be
+    // whitespace (because the closing '---' should go on its own line) and that
+    // is the whitespace to be stripped.
+    // TODO: Turn into proper error.
+    let last_newline = sliced.rfind('\n').expect("Raw string literal must contain newline");
+    let indent = sliced.len() - last_newline - 1;
+
+    // TODO: Turn into proper error.
+    assert_eq!(sliced.chars().next(), Some('\n'),
+      "Raw string literal must have newline after opening '---'.");
+
+    // Drop the starting newline and the final newline; these are the additional
+    // newlines due to '---' being on their own line. Then iterate over the
+    // inner parts to append every line, with indentation stripped.
+    let mut left = &sliced[1..last_newline];
+
+    // Iterate over lines manually because the std::str::lines() iterator
+    // silently drops trailing newlines.
+    while let Some(index) = left.find('\n') {
+        // TODO: Proper error handling with Result.
+        assert!(index > indent, "Newline in indent of raw string literal.");
+        assert!(left.chars().take(indent).all(|x| x == ' '),
+                "Non-space character in indent of raw string literal.");
+        string.push_str(&left[indent..index + 1]);
+        left = &left[index + 1..];
+    }
+
+    // And the final line.
+    assert!(left.chars().take(indent).all(|x| x == ' '),
+            "Non-space character in indent of raw string literal.");
+    string.push_str(&left[indent..]);
+
+    // We should not have allocated accidentally.
+    debug_assert_eq!(string.capacity(), literal.len() - 7);
+
+    string
 }
 
 /// Turns a string literal into the string it represents.
@@ -107,6 +149,24 @@ fn char_from_codepoint<'a>(codepoint: u32) -> Result<char, ParseError<'a>> {
             Err(err)
         }
     }
+}
+
+#[test]
+fn unescape_raw_string_literal_strips_dashes() {
+    let x = unescape_raw_string_literal("---\nhi\n---");
+    assert_eq!("hi", &x);
+}
+
+#[test]
+fn unescape_raw_string_literal_strips_indent() {
+    let x = unescape_raw_string_literal("---\n  hi\n  ---");
+    assert_eq!("hi", &x);
+}
+
+#[test]
+fn unescape_raw_string_literal_preserves_newlines() {
+    let x = unescape_raw_string_literal("---\n  hi\n    there\n  ---");
+    assert_eq!("hi\n  there", &x);
 }
 
 #[test]
