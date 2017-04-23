@@ -19,12 +19,12 @@
 use error::{Error, Result};
 
 #[derive(Copy, Clone, Debug, Eq, PartialEq)]
-pub enum Token {
-    String,
-    RawString,
-    Color,
-    Number,
-    Ident,
+pub enum Token<'a> {
+    String(&'a str),
+    RawString(&'a str),
+    Color(&'a str),
+    Number(&'a str),
+    Ident(&'a str),
 
     KwAt,
     KwFunction,
@@ -74,7 +74,7 @@ struct Lexer<'a> {
     input: &'a [u8],
     start: usize,
     state: State,
-    tokens: Vec<(usize, Token, usize)>,
+    tokens: Vec<(usize, Token<'a>, usize)>,
 }
 
 impl<'a> Lexer<'a> {
@@ -90,7 +90,7 @@ impl<'a> Lexer<'a> {
     /// Run the lexer on the full input and return the tokens.
     ///
     /// Returns tuples of (start_index, token, past_end_index).
-    fn run(mut self) -> Result<Vec<(usize, Token, usize)>> {
+    fn run(mut self) -> Result<Vec<(usize, Token<'a>, usize)>> {
         loop {
             let (start, state) = match self.state {
                 State::Base => self.lex_base()?,
@@ -129,7 +129,7 @@ impl<'a> Lexer<'a> {
     }
 
     /// Push a single-byte token, and set the start of the next token past it.
-    fn push_single(&mut self, at: usize, tok: Token) {
+    fn push_single(&mut self, at: usize, tok: Token<'a>) {
         self.tokens.push((at, tok, at + 1));
         self.start = at + 1;
     }
@@ -246,16 +246,18 @@ impl<'a> Lexer<'a> {
             // The end of the color in a non-hexadecimal character, as expected.
             // Re-inspect the current character from the base state.
             if i == 7 && !is_hexadecimal(c) {
-                self.tokens.push((self.start, Token::Color, i));
+                // Include the contents in the token too for lalrpop.
+                let inner = self.parse_utf8_str(start, start_i).unwrap();
+                self.tokens.push((self.start, Token::Color(inner), i));
                 return change_state(i, State::Base)
             }
 
             assert!(i < self.start + 7, "Would enter infinite loop when lexing color.");
         }
 
-        // The input ends in a color.
-        self.tokens.push((self.start, Token::Color, self.input.len()));
-        done_at_end_of_input()
+        // The input ends in a color, but we were still expecting digits.
+        let msg = "Expected six hexadecimal digits, but input ended.";
+        Err(Error::parse(self.start, self.input.len(), msg.into()))
     }
 
     /// Skip until a newline is found, then switch to the whitespace state.
@@ -288,13 +290,15 @@ impl<'a> Lexer<'a> {
                 // An identifier consists of alphanumeric characters or
                 // underscores, so at the first one that is not one of those,
                 // change to the base state and re-inspect it.
-                self.tokens.push((self.start, Token::Ident, i));
+                let inner = self.parse_utf8_str(self.start, i).unwrap();
+                self.tokens.push((self.start, Token::Ident(inner), i));
                 return change_state(i, State::Base)
             }
         }
 
         // The input ended in an identifier.
-        self.tokens.push((self.start, Token::Ident, self.input.len()));
+        let inner = self.parse_utf8_str(self.start, self.input.len()).unwrap();
+        self.tokens.push((self.start, Token::Ident(inner), self.input.len()));
         done_at_end_of_input()
     }
 
@@ -321,36 +325,42 @@ impl<'a> Lexer<'a> {
                 // after emitting the number token. Then switch to the base
                 // state and continue after the suffix.
                 b'e' if self.has_at(i + 1, b"m") => {
-                    self.tokens.push((self.start, Token::Number, i));
+                    let inner = self.parse_utf8_str(self.start, i).unwrap();
+                    self.tokens.push((self.start, Token::Number(inner), i));
                     self.tokens.push((i, Token::UnitEm, i + 2));
                     return change_state(i + 2, State::Base)
                 }
                 b'p' if self.has_at(i + 1, b"t") => {
-                    self.tokens.push((self.start, Token::Number, i));
+                    let inner = self.parse_utf8_str(self.start, i).unwrap();
+                    self.tokens.push((self.start, Token::Number(inner), i));
                     self.tokens.push((i, Token::UnitPt, i + 2));
                     return change_state(i + 2, State::Base)
                 }
                 b'h' => {
-                    self.tokens.push((self.start, Token::Number, i));
+                    let inner = self.parse_utf8_str(self.start, i).unwrap();
+                    self.tokens.push((self.start, Token::Number(inner), i));
                     self.push_single(i, Token::UnitH);
                     return change_state(i + 1, State::Base)
                 }
                 b'w' => {
-                    self.tokens.push((self.start, Token::Number, i));
+                    let inner = self.parse_utf8_str(self.start, i).unwrap();
+                    self.tokens.push((self.start, Token::Number(inner), i));
                     self.push_single(i, Token::UnitW);
                     return change_state(i + 1, State::Base)
                 }
                 _ => {
                     // Not a digit or first period, re-inspect this byte in the
                     // base state.
-                    self.tokens.push((self.start, Token::Number, i));
+                    let inner = self.parse_utf8_str(self.start, i).unwrap();
+                    self.tokens.push((self.start, Token::Number(inner), i));
                     return change_state(i, State::Base)
                 }
             }
         }
 
         // The input ended in a number.
-        self.tokens.push((self.start, Token::Number, self.input.len()));
+        let inner = self.parse_utf8_str(self.start, self.input.len()).unwrap();
+        self.tokens.push((self.start, Token::Number(inner), self.input.len()));
         done_at_end_of_input()
     }
 
@@ -364,7 +374,8 @@ impl<'a> Lexer<'a> {
                 b'-' if self.has_at(i + 1, b"--") => {
                     // Another "---" marks the end of the raw string. Continue
                     // in the base state after the last dash.
-                    self.tokens.push((self.start, Token::RawString, i + 3));
+                    let inner = self.parse_utf8_str(self.start, i + 3)?;
+                    self.tokens.push((self.start, Token::RawString(inner), i + 3));
                     return change_state(i + 3, State::Base)
                 }
                 _ => continue,
@@ -395,8 +406,9 @@ impl<'a> Lexer<'a> {
                     skip_next = true
                 }
                 b'"' => {
+                    let inner = self.parse_utf8_str(self.start, i + 1)?;
+                    self.tokens.push((self.start, Token::String(inner), i + 1));
                     // Continue in the base state after the closing quote.
-                    self.tokens.push((self.start, Token::String, i + 1));
                     return change_state(i + 1, State::Base)
                 }
                 _ => continue,
@@ -430,6 +442,17 @@ impl<'a> Lexer<'a> {
         }
 
         done_at_end_of_input()
+    }
+
+    /// Extract a string literal as `&str`, or fail.
+    fn parse_utf8_str(&self, start: usize, past_end: usize) -> Result<&'a str> {
+        use std::str;
+        let inner_slice = &self.input[self.start..past_end];
+        str::from_utf8(inner_slice).map_err(|e| {
+            let msg = "String literal contains invalid UTF-8.".into();
+            let off = e.valid_up_to();
+            Error::parse(start + off, past_end, msg)
+        })
     }
 }
 
