@@ -1,0 +1,20 @@
+{
+  font_family = "monospace"
+  font_size = 0.055h
+  line_height = 1.3em
+
+  background_color = #5c415d
+  color = #efcb68
+
+  raw_string =
+  ---
+  // The multiline string literal
+  // that does not look illegible in your source.
+
+  fn foo() -> &'static str {
+    "\"foo\"\n"
+  }
+  ---
+
+  at (1em, 2em) put t(raw_string)
+}
