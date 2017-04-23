@@ -15,6 +15,15 @@
 //! deal with comments that span to the end of the line. It also enables support
 //! for non-greedy triple quoted strings, which cannot be expressed in as regex
 //! without support for non-greedy matching.
+//!
+//! The lexer is a state machine with only a few states (the `State` enum). To
+//! avoid an explosion of states, the handler for every state can do a bit of
+//! finite lookahead. This ensures that e.g. the start of a comment can be
+//! detected fully from the base state. There is no need to make '/' switch to
+//! an "after slash" state which would then go to comment, or back to the base
+//! state. Instead, when a '/' is encountered in the base state, it will look
+//! ahead one character. If there is another slash, switch to the comment state.
+//! If there is not, handle the slash as is.
 
 use error::{Error, Result};
 
