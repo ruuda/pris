@@ -51,12 +51,12 @@ fn main() {
                             .and_then(|d| d.decode())
                             .unwrap_or_else(|e| e.exit());
 
-    let mut input = String::new();
+    let mut input = Vec::new();
     let outfile;
 
     // Allow reading from stdin by passing "-" as the input filename.
     if &args.arg_infile == "-" {
-        io::stdin().read_to_string(&mut input).unwrap();
+        io::stdin().read_to_end(&mut input).unwrap();
 
         if let Some(fname) = args.flag_output {
             outfile = PathBuf::from(fname);
@@ -67,7 +67,7 @@ fn main() {
         let infile = Path::new(&args.arg_infile);
         let f = File::open(infile)
             .expect("Failed to open input file");
-        BufReader::new(f).read_to_string(&mut input)
+        BufReader::new(f).read_to_end(&mut input)
             .expect("Failed to read input file");
 
         outfile = if let Some(fname) = args.flag_output {
@@ -107,29 +107,40 @@ fn main() {
     println!("Document written to {}.", outfile.to_str().unwrap());
 }
 
-fn report_error(input: &str, location: usize, len: usize) {
+fn report_error(input: &[u8], location: usize, len: usize) {
+    // Locate the line that contains the error.
+    // TODO: Deal with errors that span multiple lines.
     let mut line = 1;
     let mut start = 0;
-    for (c, i) in input.chars().zip(0..) {
+    let mut end = 0;
+    for (&c, i) in input.iter().zip(0..) {
         if i == location { break; }
-        if c == '\n' {
+        if c == b'\n' {
             line += 1;
             start = i + 1;
         }
     }
-    let line_content = &input[start..].lines().next().unwrap();
+    for (&c, i) in input[start..].iter().zip(start..) {
+        if c == b'\n' {
+            end = i;
+        }
+    }
+
+    // Try as best as we can to report the error. However, if the parse failed
+    // because the input was invalid UTF-8, there is little we can do.
+    let line_content = String::from_utf8_lossy(&input[start..end]);
+
     println!("Parse error at line {}:\n", line);
     println!("{}", line_content);
     for _ in 0..location - start { print!(" "); }
     print!("^");
     for _ in 1..len { print!("~"); }
     print!("\n");
-
 }
 
-fn parse_or_abort<'a>(input: &'a str) -> ast::Document<'a> {
-    // TODO: Take byte input immediately, convert to str only later.
-    let tokens = match lexer::lex(input.as_bytes()) {
+fn parse_or_abort<'a>(input: &'a [u8]) -> ast::Document<'a> {
+    use std::str;
+    let tokens = match lexer::lex(input) {
         Ok(ts) => ts,
         Err(Error::Parse(e)) => {
             report_error(input, e.start, e.end - e.start);
@@ -138,7 +149,17 @@ fn parse_or_abort<'a>(input: &'a str) -> ast::Document<'a> {
         }
         _ => unreachable!(),
     };
-    match syntax::parse_document(&input, tokens) {
+    let input_str = match str::from_utf8(input) {
+        Ok(s) => s,
+        Err(..) => {
+            // TODO: This should not occur any more when the lexer verifies its
+            // slices properly at all times. Currently it does verify string
+            // literals, but it skips over comments. Which is actually fine, it
+            // is just that Lalrpop insists on string slices.
+            panic!("Input is not valid UTF-8.");
+        }
+    };
+    match syntax::parse_document(input_str, tokens) {
         Ok(doc) => return doc,
         Err(err) => {
             match err {
