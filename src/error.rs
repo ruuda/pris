@@ -44,9 +44,9 @@ pub struct MissingFontError {
 #[derive(Debug)]
 pub struct ParseError {
     /// Index of the first byte in the source file that contains the error.
-    start: usize,
+    pub start: usize,
     /// Index of the first byte after the error.
-    end: usize,
+    pub end: usize,
     message: String,
 }
 

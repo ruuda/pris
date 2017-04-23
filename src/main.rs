@@ -28,6 +28,7 @@ mod syntax;
 mod types;
 
 use docopt::Docopt;
+use error::Error;
 use lalrpop_util::ParseError;
 use std::fs::File;
 use std::io::BufReader;
@@ -130,7 +131,7 @@ fn report_error(input: &str, location: usize, len: usize) {
     for _ in 0..location - start { print!(" "); }
     print!("^");
     for _ in 1..len { print!("~"); }
-    print!("\n\nError: ");
+    print!("\n");
 
 }
 
@@ -138,10 +139,12 @@ fn parse_or_abort<'a>(input: &'a str) -> ast::Document<'a> {
     // TODO: Take byte input immediately, convert to str only later.
     let tokens = match lexer::lex(input.as_bytes()) {
         Ok(ts) => ts,
-        Err(e) => {
-            e.print();
+        Err(Error::Parse(e)) => {
+            report_error(input, e.start, e.end - e.start);
+            Error::Parse(e).print();
             panic!("Aborting due to parse error.");
         }
+        _ => unreachable!(),
     };
     match syntax::parse_document(&input, tokens) {
         Ok(doc) => return doc,
