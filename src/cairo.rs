@@ -77,6 +77,7 @@ pub struct Cairo {
 pub struct FontFace {
     ptr: *mut cairo_font_face_t,
     // Own the FreeType face to keep it alive.
+    #[allow(dead_code)]
     ft_face: freetype::Face<'static>,
 }
 

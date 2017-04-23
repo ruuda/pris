@@ -6,7 +6,6 @@
 // of the License is available in the root of the repository.
 
 use std::rc::Rc;
-use std::char;
 
 use ast;
 use ast::{Assign, BinOp, BinTerm, Block, Coord, FnCall, FnDef, Idents};

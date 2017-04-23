@@ -216,7 +216,7 @@ impl<'a> Lexer<'a> {
                 // strings, so you can still document everything in a non-Latin
                 // language, or make slides for that. Just keep the source clean
                 // please.)
-                byte => return Err(make_parse_error(i, &self.input[i..])),
+                _ => return Err(make_parse_error(i, &self.input[i..])),
             }
         }
 
@@ -525,7 +525,7 @@ fn make_keyword_or_ident(ident: &str) -> Token {
         "import" => Token::KwImport,
         "put" => Token::KwPut,
         "return" => Token::KwReturn,
-        other => Token::Ident(ident),
+        _ => Token::Ident(ident),
     }
 }
 
