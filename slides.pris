@@ -31,7 +31,7 @@ ax = std.anchors
   // Load 'logo.png', resize it (preserving aspect ratio) to fit in a
   // 5em x 5em box, and put it (with the box center) 5em above ax.center.
   image_origin = (0.5, 0.5)
-  at (ax.center - (0, 5em)) put (image("logo.png") fit (5em, 5em))
+  at (ax.center - (0, 5em)) put fit(image("logo.png"), (5em, 5em))
 
   font_size = 2em
   font_weight = bold
@@ -78,7 +78,7 @@ ax = std.anchors
   at ax.center put "Hello ${font_style = italic}world"
 
   // Or perhaps suffixes?
-  at ax.center put "Hello " ~ "world"i
+  // at ax.center put "Hello " ~ "world"i
 
   // Or prefixes?
   at ax.center put b"Hello, " ~ "world"
