@@ -575,7 +575,8 @@ fn make_parse_error(at: usize, input: &[u8]) -> Error {
             // UTF-8. If that succeeds, complain about non-ASCII identifiers.
             // Otherwise complain about the encoding. Note that the unwrap will
             // succeed, as we have at least one byte in the input.
-            match String::from_utf8_lossy(&input[..8]).chars().next().unwrap() {
+            let to = if input.len() < 8 { input.len() } else { 8 };
+            match String::from_utf8_lossy(&input[..to]).chars().next().unwrap() {
                 '\u{fffd}' => {
                     // U+FFFD is generated when decoding UTF-8 fails.
                     format!("Unexpected byte 0x{:x}. ", x) +
@@ -687,4 +688,11 @@ fn lex_handles_keywords() {
     assert_eq!(tokens[4], (24, Token::KwAt, 26));
     assert_eq!(tokens[5], (27, Token::Ident("the"), 30));
     assert_eq!(tokens[6], (31, Token::KwImport, 37));
+}
+
+#[test]
+fn lex_handles_invalid_utf8() {
+    let input = [0x2a, 0xac];
+    let tokens = lex(&input);
+    assert!(tokens.is_err());
 }
