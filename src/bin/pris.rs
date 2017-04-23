@@ -114,7 +114,7 @@ fn report_error(input: &[u8], location: usize, len: usize) {
     let mut start = 0;
     let mut end = 0;
     for (&c, i) in input.iter().zip(0..) {
-        if i == location { break; }
+        if i == location { break }
         if c == b'\n' {
             line += 1;
             start = i + 1;
@@ -123,6 +123,7 @@ fn report_error(input: &[u8], location: usize, len: usize) {
     for (&c, i) in input[start..].iter().zip(start..) {
         if c == b'\n' {
             end = i;
+            break
         }
     }
 
