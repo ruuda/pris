@@ -7,7 +7,7 @@
 
 use ast::Idents;
 use cairo::{Cairo, FontFace};
-use elements::{Color, Element, PlacedElement};
+use elements::{Color, Element, PlacedElement, Vec2};
 use runtime::{FontMap, Frame};
 
 fn draw_background(cr: &mut Cairo, color: Color) {
@@ -17,15 +17,39 @@ fn draw_background(cr: &mut Cairo, color: Color) {
     cr.fill();
 }
 
+/// Draw the lines for a polygon, but don't stroke or fill it yet.
+fn draw_polygon(cr: &mut Cairo, vertices: &[Vec2], close: bool) {
+    debug_assert!(vertices.len() >= 2, "Polygon must have at least one line segment.");
+
+    let v0 = vertices[0];
+    cr.move_to(v0.x, v0.y);
+
+    for v in &vertices[1..] {
+        cr.line_to(v.x, v.y);
+    }
+
+    if close {
+        panic!("TODO: Implement cairo_close_path().");
+    }
+}
+
 fn draw_element(fm: &mut FontMap, cr: &mut Cairo, pe: &PlacedElement) {
     match pe.element {
-        Element::Line(ref line) => {
-            cr.move_to(pe.position.x, pe.position.y);
-            cr.set_source_rgb(line.color.r, line.color.g, line.color.b);
-            cr.set_line_width(line.line_width);
-            let to = pe.position + line.offset;
-            cr.line_to(to.x, to.y);
+        Element::StrokePolygon(ref polygon) => {
+            let matrix = cr.get_matrix();
+            cr.translate(pe.position.x, pe.position.y);
+
+            draw_polygon(cr, &polygon.vertices, polygon.close);
+
+            cr.set_source_rgb(polygon.color.r, polygon.color.g, polygon.color.b);
+            cr.set_line_width(polygon.line_width);
             cr.stroke();
+
+            cr.set_matrix(&matrix);
+        }
+
+        Element::FillPolygon(ref _polygon) => {
+            panic!("TODO: Implement FillPolygon.");
         }
 
         Element::Text(ref text) => {

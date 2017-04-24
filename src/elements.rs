@@ -24,17 +24,25 @@ pub struct Vec2 {
 
 #[derive(Clone)]
 pub enum Element {
-    Line(Line),
+    FillPolygon(FillPolygon),
+    StrokePolygon(StrokePolygon),
     Text(Text),
-    Scaled(Vec<PlacedElement>, f64),
     Svg(Svg),
+    Scaled(Vec<PlacedElement>, f64),
 }
 
 #[derive(Clone)]
-pub struct Line {
+pub struct FillPolygon {
+    pub color: Color,
+    pub vertices: Vec<Vec2>,
+}
+
+#[derive(Clone)]
+pub struct StrokePolygon {
     pub color: Color,
     pub line_width: f64,
-    pub offset: Vec2,
+    pub close: bool,
+    pub vertices: Vec<Vec2>,
 }
 
 // TODO: What color space is this? A linear RGB space would be nice.

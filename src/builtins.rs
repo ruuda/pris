@@ -9,7 +9,7 @@ use std::rc::Rc;
 
 use ast::Idents;
 use cairo;
-use elements::{Element, Line, Text, Vec2};
+use elements::{Element, StrokePolygon, Text, Vec2};
 use error::{Error, Result};
 use freetype;
 use harfbuzz;
@@ -104,15 +104,16 @@ pub fn line<'a>(_fm: &mut FontMap,
         _ => unreachable!(),
     };
 
-    let line = Line {
+    let line = StrokePolygon {
         // TODO: Better idents type for non-ast use?
         color: env.lookup_color(&Idents(vec!["color"]))?,
         line_width: env.lookup_len(&Idents(vec!["line_width"]))?,
-        offset: offset,
+        close: false,
+        vertices: vec![Vec2::zero(), offset],
     };
 
     let mut frame = Frame::new();
-    frame.place_element(Vec2::zero(), Element::Line(line));
+    frame.place_element(Vec2::zero(), Element::StrokePolygon(line));
     frame.set_anchor(offset);
     // TODO: Make bounding box take Vec2.
     frame.union_bounding_box(&BoundingBox::sized(offset.x, offset.y));
