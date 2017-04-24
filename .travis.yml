@@ -42,4 +42,4 @@ script:
   - cargo build
   - cargo test
   - tests/compile_examples.py
-  - sha256sum examples/*.pdf
+  - shasum examples/*.pdf
