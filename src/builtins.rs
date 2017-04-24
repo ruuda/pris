@@ -9,7 +9,7 @@ use std::rc::Rc;
 
 use ast::Idents;
 use cairo;
-use elements::{Element, StrokePolygon, Text, Vec2};
+use elements::{Element, FillPolygon, StrokePolygon, Text, Vec2};
 use error::{Error, Result};
 use freetype;
 use harfbuzz;
@@ -117,6 +117,36 @@ pub fn line<'a>(_fm: &mut FontMap,
     frame.set_anchor(offset);
     // TODO: Make bounding box take Vec2.
     frame.union_bounding_box(&BoundingBox::sized(offset.x, offset.y));
+
+    Ok(Val::Frame(Rc::new(frame)))
+}
+
+pub fn fill_rectangle<'a>(_fm: &mut FontMap,
+                          env: &Env<'a>,
+                          mut args: Vec<Val<'a>>)
+                          -> Result<Val<'a>> {
+    validate_args("fill_rectangle", &[ValType::Coord(1)], &args)?;
+    let (w, h) = match args.remove(0) {
+        Val::Coord(x, y, 1) => (x, y),
+        _ => unreachable!(),
+    };
+
+    let rect = FillPolygon {
+        // TODO: Better idents type for non-ast use?
+        color: env.lookup_color(&Idents(vec!["color"]))?,
+        vertices: vec![
+            Vec2::zero(),
+            Vec2::new(0.0, h),
+            Vec2::new(w, h),
+            Vec2::new(w, 0.0),
+        ],
+    };
+
+    let mut frame = Frame::new();
+    frame.place_element(Vec2::zero(), Element::FillPolygon(rect));
+    frame.set_anchor(Vec2::new(w, h));
+    // TODO: Make bounding box take Vec2.
+    frame.union_bounding_box(&BoundingBox::sized(w, h));
 
     Ok(Val::Frame(Rc::new(frame)))
 }

@@ -177,6 +177,7 @@ impl<'a> Env<'a> {
         // The default font is "sans roman", which is usually DejaVu Sans Book.
         bindings.insert("font_family", Val::Str("sans".to_string()));
         bindings.insert("font_style", Val::Str("roman".to_string()));
+        bindings.insert("fill_rectangle", Val::FnIntrin(Builtin(builtins::fill_rectangle)));
         bindings.insert("text_align", Val::Str("left".to_string()));
         bindings.insert("line_height", Val::Num(128.0, 1));
         bindings.insert("line_width", Val::Num(10.8, 1));

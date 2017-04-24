@@ -29,7 +29,7 @@ fn draw_polygon(cr: &mut Cairo, vertices: &[Vec2], close: bool) {
     }
 
     if close {
-        panic!("TODO: Implement cairo_close_path().");
+        cr.close_path();
     }
 }
 
@@ -48,8 +48,17 @@ fn draw_element(fm: &mut FontMap, cr: &mut Cairo, pe: &PlacedElement) {
             cr.set_matrix(&matrix);
         }
 
-        Element::FillPolygon(ref _polygon) => {
-            panic!("TODO: Implement FillPolygon.");
+        Element::FillPolygon(ref polygon) => {
+            let matrix = cr.get_matrix();
+            cr.translate(pe.position.x, pe.position.y);
+
+            let close = true;
+            draw_polygon(cr, &polygon.vertices, close);
+
+            cr.set_source_rgb(polygon.color.r, polygon.color.g, polygon.color.b);
+            cr.fill();
+
+            cr.set_matrix(&matrix);
         }
 
         Element::Text(ref text) => {

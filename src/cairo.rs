@@ -49,6 +49,7 @@ extern {
     fn cairo_set_line_width(cr: *mut cairo_t, width: f64);
     fn cairo_move_to(cr: *mut cairo_t, x: f64, y: f64);
     fn cairo_line_to(cr: *mut cairo_t, x: f64, y: f64);
+    fn cairo_close_path(cr: *mut cairo_t);
     fn cairo_rectangle(cr: *mut cairo_t, x: f64, y: f64, w: f64, h: f64);
     fn cairo_stroke(cr: *mut cairo_t);
     fn cairo_fill(cr: *mut cairo_t);
@@ -130,6 +131,10 @@ impl Cairo {
 
     pub fn line_to(&mut self, x: f64, y: f64) {
         unsafe { cairo_line_to(self.ptr, x, y) }
+    }
+
+    pub fn close_path(&mut self) {
+        unsafe { cairo_close_path(self.ptr) }
     }
 
     pub fn rectangle(&mut self, x: f64, y: f64, w: f64, h: f64) {
