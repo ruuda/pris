@@ -13,4 +13,7 @@ install:
   - cargo --version
 
 build_script:
+  # The MSYS shell will cd to $HOME when it starts. But we want to stay in the
+  # current working directory. So set home to here.
+  - ps: $env:HOME = (Get-Location).path
   - C:\msys64\usr\bin\sh.exe --login /c/projects/pris/build_msys.sh
