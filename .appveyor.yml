@@ -1,9 +1,9 @@
 install:
   # Download the Rust and Cargo installer.
-  - ps: Start-FileDownload "https://static.rust-lang.org/dist/rust-stable-x86_64-pc-windows-gnu.msi"
+  - ps: Start-FileDownload "https://static.rust-lang.org/dist/rust-1.17.0-x86_64-pc-windows-gnu.msi"
 
   # Install Rust and Cargo and wait for installation to finish by using Write-Output.
-  - ps: msiexec /package "rust-stable-x86_64-pc-windows-gnu.msi" /quiet /norestart | Write-Output
+  - ps: msiexec /package "rust-1.17.0-x86_64-pc-windows-gnu.msi" /quiet /norestart | Write-Output
 
   # Pick up the new Path variable after the installer modified it.
   - ps: $env:Path = [System.Environment]::GetEnvironmentVariable("Path","Machine")
