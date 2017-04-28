@@ -13,12 +13,12 @@ set -e
 # Install external dependencies (Cairo, Harfbuzz, etc.) and gcc and pkg-config,
 # which are required to build some of the Rust dependencies.
 
-pacman -Sy --needed           \
-  make gcc pkg-config         \
-  mingw-w64-x86_64-cairo      \
-  mingw-w64-x86_64-harfbuzz   \
-  mingw-w64-x86_64-fontconfig \
-  mingw-w64-x86_64-freetype   \
+pacman -Sqy --needed --noconfirm \
+  make gcc pkg-config            \
+  mingw-w64-x86_64-cairo         \
+  mingw-w64-x86_64-harfbuzz      \
+  mingw-w64-x86_64-fontconfig    \
+  mingw-w64-x86_64-freetype      \
   mingw-w64-x86_64-librsvg
 
 # Pass the library search path to rustc.
