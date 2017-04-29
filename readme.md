@@ -64,6 +64,13 @@ horizontal line. The first slide contains text in dark purple.
    manipulated as first-class values), and in being a domain-specific language
    rather than being controlled by a general-purpose scripting language.
 
+## Documentation
+
+ * [A language for designing slides][blogpost], a blog post that details the
+   motivation for building Pris.
+ * [Examples](examples), small examples that demonstrate one feature at a time.
+ * More will follow soon.
+
 ## Building
 
 Pris is written in [Rust][rust] and builds with Cargo, the build tool bundled
@@ -84,6 +91,7 @@ Pris is free software. It is licensed under the
 
 [ci-img]:   https://travis-ci.org/ruuda/pris.svg?branch=master
 [ci]:       https://travis-ci.org/ruuda/pris
+[blogpost]: https://ruudvanasseldonk.com/2017/04/27/a-language-for-designing-slides
 [rust]:     https://rust-lang.org
 [cairo]:    https://cairographics.org
 [harfbuzz]: https://www.freedesktop.org/wiki/Software/HarfBuzz/
