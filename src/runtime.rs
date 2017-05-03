@@ -121,6 +121,7 @@ impl<'a> Frame<'a> {
             "width" => Some(Val::Num(self.bounding_box.width, 1)),
             "height" => Some(Val::Num(self.bounding_box.height, 1)),
             "size" => Some(Val::Coord(self.bounding_box.width, self.bounding_box.height, 1)),
+            "offset" => Some(Val::Coord(self.bounding_box.x, self.bounding_box.y, 1)),
             _ => None
         };
 

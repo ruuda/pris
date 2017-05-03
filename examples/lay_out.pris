@@ -3,9 +3,17 @@ hcenter = function(frame)
   at (frame.width * -0.5, 0.0h) put frame
 }
 
-center = function(frame)
+// This centering function works only if the top-left corner of the frame is at
+// (0, 0). This is often the case, but not for e.g. text, which is placed with
+// the baseline at y = 0, so the text itself extends into negative y.
+naive_center = function(frame)
 {
   at frame.size * -0.5 put frame
+}
+
+center = function(frame)
+{
+  at frame.size * -0.5 - frame.offset put frame
 }
 
 {
@@ -17,4 +25,26 @@ center = function(frame)
 
   at (0.5w, 0.2h) put center(line((0.1w, 0.0h)))
   at (0.5w, 0.8h) put hcenter(line((0.1w, 0.0h)))
+}
+
+{
+  color = #ddddff
+  at (0w, 0.5h) put line((1w, 0h))
+  at (0.33w, 0h) put line((0w, 1h))
+  at (0.66w, 0h) put line((0w, 1h))
+
+  // A rectangle with origin at its bottom-righ corner, instead of top-left.
+  offset_rect =
+  {
+    color = #5c415d
+    size = (0.1w, 0.1w)
+    at -size put fill_rectangle(size)
+  }
+
+  font_size = 0.2h
+  line_height = 0.2h
+  font_family = "Cantarell"
+  color = #000000
+  at (0.33w, 0.5h) put naive_center(offset_rect)
+  at (0.66w, 0.5h) put center(offset_rect)
 }
