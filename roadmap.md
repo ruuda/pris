@@ -8,11 +8,12 @@ Points are ordered from highest priority to lowest priority.
 * Implement anchors and adjunction.
 * Support loading svg images.
 * Extend the syntax with unary negation.
+* Add syntax for multiline string literals.
+* Write a custom lexer to support comments.
 
 ## Near-term
 
-* Add syntax for multiline string literals.
-* Write a custom lexer to support comments.
+* Take proper font metrics into account for text bounding box.
 * Add support for Opentype features (smcp, onum).
 * Extend the syntax to support string prefixes, define what they mean.
 
