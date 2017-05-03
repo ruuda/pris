@@ -197,6 +197,7 @@ fn eval_unop<'a>(fm: &mut FontMap,
 fn eval_neg<'a>(rhs: Val<'a>) -> Result<Val<'a>> {
     match rhs {
         Val::Num(x, d) => Ok(Val::Num(-x, d)),
+        Val::Coord(x, y, d) => Ok(Val::Coord(-x, -y, d)),
         _ => {
             let msg = "Type error: '-' expects a num or len operand, \
                        but found <TODO> instead.";
