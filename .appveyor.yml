@@ -1,3 +1,13 @@
+# The MSYS shell will cd to $HOME when it starts due to --login. But we want
+# to stay in the current working directory. So set home to here. Also, we must
+# set MSYSTEM to get MSYS64. Without this the value of PKG_CONFIG_PATH, which
+# is set by sh.exe when it executes /etc/profile due to --login, does not
+# point to the directories where the mingw-w64-x86_64-* packages store their
+# info.
+environment:
+  HOME: C:\projects\pris
+  MSYSTEM: MINGW64
+
 install:
   # Download the Rust and Cargo installer.
   - ps: Start-FileDownload "https://static.rust-lang.org/dist/rust-1.17.0-x86_64-pc-windows-gnu.msi"
@@ -12,12 +22,11 @@ install:
   - rustc --version
   - cargo --version
 
+before_build:
+  - C:\msys64\usr\bin\sh.exe --login /c/projects/pris/build_msys.sh install_deps
+
 build_script:
-  # The MSYS shell will cd to $HOME when it starts. But we want to stay in the
-  # current working directory. So set home to here. Also, we must set MSYSTEM to
-  # get MSYS64. Without this the value of PKG_CONFIG_PATH (which is set by
-  # sh.exe when it executes /etc/profile due to --login) does not point to the
-  # directories where the mingw-w64-x86_64-* packages store their info.
-  - ps: $env:HOME = (Get-Location).path
-  - ps: $env:MSYSTEM = "MINGW64"
-  - C:\msys64\usr\bin\sh.exe --login /c/projects/pris/build_msys.sh
+  - C:\msys64\usr\bin\sh.exe --login /c/projects/pris/build_msys.sh cargo_build
+
+test_script:
+  - C:\msys64\usr\bin\sh.exe --login /c/projects/pris/build_msys.sh cargo_test

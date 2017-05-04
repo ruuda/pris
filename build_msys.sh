@@ -10,21 +10,31 @@
 # Fail if any command fails.
 set -e
 
-# Install external dependencies (Cairo, Harfbuzz, etc.) and gcc and pkg-config,
-# which are required to build some of the Rust dependencies.
+case $1 in
+  install_deps)
 
-pacman -Sqy --needed --noconfirm \
-  make gcc pkg-config            \
-  mingw-w64-x86_64-cairo         \
-  mingw-w64-x86_64-harfbuzz      \
-  mingw-w64-x86_64-fontconfig    \
-  mingw-w64-x86_64-freetype      \
-  mingw-w64-x86_64-librsvg
+    # Install external dependencies (Cairo, Harfbuzz, etc.) and gcc and pkg-config,
+    # which are required to build some of the Rust dependencies.
+
+    pacman -Sqy --needed --noconfirm \
+      make gcc pkg-config            \
+      mingw-w64-x86_64-cairo         \
+      mingw-w64-x86_64-harfbuzz      \
+      mingw-w64-x86_64-fontconfig    \
+      mingw-w64-x86_64-freetype      \
+      mingw-w64-x86_64-librsvg
+  ;;
+esac
 
 # Pass the library search path to rustc.
-
 export RUSTFLAGS=$(pkg-config --libs-only-L \
   fontconfig harfbuzz librsvg-2.0 gobject-2.0 cairo freetype2)
 
-cargo build
-cargo test
+case $1 in
+  cargo_build)
+    cargo build
+  ;;
+  cargo_test)
+    cargo test
+  ;;
+esac
