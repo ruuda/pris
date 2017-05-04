@@ -10,7 +10,7 @@ On MSYS2, install the following packages:
       mingw-w64-x86_64-freetype   \
       mingw-w64-x86_64-librsvg
 
-Then compile as follows from a MSYS2 shell:
+Then compile as follows from an MSYS2 MinGW 64-bit shell:
 
     RUSTFLAGS=$(pkg-config --libs-only-L \
       fontconfig harfbuzz librsvg-2.0 gobject-2.0 cairo freetype2
