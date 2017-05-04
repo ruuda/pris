@@ -3,6 +3,8 @@
 Pris is a domain-specific language for designing slides and other graphics.
 
 [![Build Status][ci-img]][ci]
+[![Gitter][gitter-img]][gitter]
+
 
 ## Example
 
@@ -69,6 +71,7 @@ horizontal line. The first slide contains text in dark purple.
  * [A language for designing slides][blogpost], a blog post that details the
    motivation for building Pris.
  * [Examples](examples), small examples that demonstrate one feature at a time.
+ * Ask questions in [the Gitter chatroom][gitter], or [send me an email][contact].
  * More will follow soon.
 
 ## Building
@@ -89,11 +92,14 @@ render svg images, for which it links against `librsvg-2.so`.
 Pris is free software. It is licensed under the
 [GNU General Public License][gplv3], version 3.
 
-[ci-img]:   https://travis-ci.org/ruuda/pris.svg?branch=master
-[ci]:       https://travis-ci.org/ruuda/pris
-[blogpost]: https://ruudvanasseldonk.com/2017/04/27/a-language-for-designing-slides
-[rust]:     https://rust-lang.org
-[cairo]:    https://cairographics.org
-[harfbuzz]: https://www.freedesktop.org/wiki/Software/HarfBuzz/
-[rsvg]:     https://wiki.gnome.org/Projects/LibRsvg
-[gplv3]:    https://www.gnu.org/licenses/gpl-3.0.html
+[ci-img]:     https://travis-ci.org/ruuda/pris.svg?branch=master
+[ci]:         https://travis-ci.org/ruuda/pris
+[gitter-img]: https://badges.gitter.im/ruuda/pris.svg
+[gitter]:     https://gitter.im/ruuda/pris
+[blogpost]:   https://ruudvanasseldonk.com/2017/04/27/a-language-for-designing-slides
+[contact]:    https://ruudvanasseldonk.com/contact
+[rust]:       https://rust-lang.org
+[cairo]:      https://cairographics.org
+[harfbuzz]:   https://www.freedesktop.org/wiki/Software/HarfBuzz/
+[rsvg]:       https://wiki.gnome.org/Projects/LibRsvg
+[gplv3]:      https://www.gnu.org/licenses/gpl-3.0.html
