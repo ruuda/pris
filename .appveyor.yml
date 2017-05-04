@@ -32,6 +32,10 @@ before_build:
 
 build_script:
   - C:\msys64\usr\bin\sh.exe --login /c/projects/pris/build_msys.sh cargo_build
+  - C:\msys64\usr\bin\sh.exe --login /c/projects/pris/build_msys.sh copy_deps
 
 test_script:
   - C:\msys64\usr\bin\sh.exe --login /c/projects/pris/build_msys.sh cargo_test
+
+  # Do a dry run outside of the MSYS shell. Pass --help to ensure a clean exit.
+  - target\debug\pris.exe --help
