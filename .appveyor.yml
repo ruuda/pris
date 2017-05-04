@@ -8,6 +8,11 @@ environment:
   HOME: C:\projects\pris
   MSYSTEM: MINGW64
 
+init:
+  # Prevent Git from adding carriage returns to all files in the checkout.
+  - git config --global core.eol lf
+  - git config --global core.autocrlf false
+
 install:
   # Download the Rust and Cargo installer.
   - ps: Start-FileDownload "https://static.rust-lang.org/dist/rust-1.17.0-x86_64-pc-windows-gnu.msi"
