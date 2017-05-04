@@ -315,6 +315,61 @@ pub fn t<'a>(fm: &mut FontMap,
     Ok(Val::Frame(Rc::new(frame)))
 }
 
+pub fn glyph<'a>(fm: &mut FontMap,
+                 env: &Env<'a>,
+                 mut args: Vec<Val<'a>>)
+                 -> Result<Val<'a>> {
+    validate_args("glyph", &[ValType::Num(0)], &args)?;
+    let index_f64 = match args.remove(0) {
+        Val::Num(x, 0) => x,
+        _ => unreachable!(),
+    };
+
+    let index = index_f64 as u64;
+
+    if index as f64 != index_f64 {
+        let msg = format!("Expected an unsigned integer glyph index, found {}.", index_f64);
+        return Err(Error::value(msg))
+    }
+
+    // TODO: This was copy-pasted from the `t()` function. Extract the common
+    // stuff.
+
+    let font_family = env.lookup_str(&Idents(vec!["font_family"]))?;
+    let font_style = env.lookup_str(&Idents(vec!["font_style"]))?;
+    let font_size = env.lookup_len(&Idents(vec!["font_size"]))?;
+    let line_height = env.lookup_len(&Idents(vec!["line_height"]))?;
+    let _ft_face = match fm.get(&font_family, &font_style) {
+        Some(face) => face,
+        None => return Err(Error::missing_font(font_family, font_style)),
+    };
+
+    let glyphs = vec![cairo::Glyph::new(index, 0.0, 0.0)];
+
+    // TODO: Extract the glyph width from the font.
+    // TODO: Deal with text_align? Probably that is overkill and not very
+    // useful.
+    let width = 0.0;
+
+    let text_elem = Text {
+        color: env.lookup_color(&Idents(vec!["color"]))?,
+        font_family: font_family,
+        font_style: font_style,
+        font_size: font_size,
+        glyphs: glyphs,
+    };
+
+    let mut frame = Frame::new();
+    frame.place_element(Vec2::zero(), Element::Text(text_elem));
+    frame.set_anchor(Vec2::new(width, 0.0));
+
+    let top_left = Vec2::new(0.0, -line_height);
+    let size = Vec2::new(width, 0.0);
+    frame.union_bounding_box(&BoundingBox::new(top_left, size));
+
+    Ok(Val::Frame(Rc::new(frame)))
+}
+
 pub fn image<'a>(_fm: &mut FontMap,
                  _env: &Env<'a>,
                  mut args: Vec<Val<'a>>)

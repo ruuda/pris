@@ -188,6 +188,7 @@ impl<'a> Env<'a> {
         bindings.insert("line", Val::FnIntrin(Builtin(builtins::line)));
         bindings.insert("str", Val::FnIntrin(Builtin(builtins::str)));
         bindings.insert("t", Val::FnIntrin(Builtin(builtins::t)));
+        bindings.insert("glyph", Val::FnIntrin(Builtin(builtins::glyph)));
         Env { bindings: bindings }
     }
 

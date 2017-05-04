@@ -1,0 +1,9 @@
+{
+  font_family = "Minion Pro"
+
+  // Place three leaf ornaments. These all have the same code points, but
+  // different glyph indices.
+  at (2em, 2.5em) put t("❧")
+  at (4em, 2.5em) put glyph(1253)
+  at (6em, 2.5em) put glyph(1260)
+}
