@@ -14,6 +14,10 @@ install:
 
 build_script:
   # The MSYS shell will cd to $HOME when it starts. But we want to stay in the
-  # current working directory. So set home to here.
+  # current working directory. So set home to here. Also, we must set MSYSTEM to
+  # get MSYS64. Without this the value of PKG_CONFIG_PATH (which is set by
+  # sh.exe when it executes /etc/profile due to --login) does not point to the
+  # directories where the mingw-w64-x86_64-* packages store their info.
   - ps: $env:HOME = (Get-Location).path
+  - ps: $env:MSYSTEM = "MINGW64"
   - C:\msys64\usr\bin\sh.exe --login /c/projects/pris/build_msys.sh
