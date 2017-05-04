@@ -228,6 +228,6 @@ impl Glyph {
 
     /// Make a copy of the glyph, offset by the specified amount.
     pub fn offset(&self, dx: f64, dy: f64) -> Glyph {
-        Glyph::new(self.0.index, self.0.x + dx, self.0.y + dy)
+        Glyph::new(self.0.index as u64, self.0.x + dx, self.0.y + dy)
     }
 }
