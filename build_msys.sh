@@ -37,4 +37,11 @@ case $1 in
   cargo_test)
     cargo test
   ;;
+  copy_deps)
+    # Copy all mingw dlls that the executable depends on into the target
+    # directory, so the executable can be used outside of an MSYS shell too.
+    for fname in $(ldd target/debug/pris | grep -o '/mingw64[^ ]*\.dll'); do
+      cp $fname target/debug
+    done
+  ;;
 esac
