@@ -34,8 +34,9 @@ addons:
 
 # On OS X, dependencies are installed through Brew.
 before_install:
-  - if [[ "$TRAVIS_OS_NAME" == "osx" ]]; then brew install cairo fontconfig harfbuzz librsvg; fi
   - if [[ "$TRAVIS_OS_NAME" == "osx" ]]; then brew tap caskroom/fonts; fi
+  - if [[ "$TRAVIS_OS_NAME" == "osx" ]]; then brew update; fi
+  - if [[ "$TRAVIS_OS_NAME" == "osx" ]]; then brew install cairo fontconfig harfbuzz librsvg; fi
   - if [[ "$TRAVIS_OS_NAME" == "osx" ]]; then brew cask install font-cantarell; fi
 
 script:
