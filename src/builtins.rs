@@ -339,17 +339,26 @@ pub fn glyph<'a>(fm: &mut FontMap,
     let font_style = env.lookup_str(&Idents(vec!["font_style"]))?;
     let font_size = env.lookup_len(&Idents(vec!["font_size"]))?;
     let line_height = env.lookup_len(&Idents(vec!["line_height"]))?;
-    let _ft_face = match fm.get(&font_family, &font_style) {
+    let ft_face = match fm.get(&font_family, &font_style) {
         Some(face) => face,
         None => return Err(Error::missing_font(font_family, font_style)),
     };
 
-    let glyphs = vec![cairo::Glyph::new(index, 0.0, 0.0)];
+    // Compensate for the fixed font size which is set for the Freetype font.
+    // There is a 16.6 factor that `linear_hori_advance` adds according to the
+    // docs, but it turns out that actually the advance with is returned with a
+    // multiplication factor of 1024.
+    let size_factor = font_size / 1000.0 / 1024.0;
 
-    // TODO: Extract the glyph width from the font.
-    // TODO: Deal with text_align? Probably that is overkill and not very
-    // useful.
-    let width = 0.0;
+    // Get the x-advance from the font, which will be used as the glyph width.
+    match ft_face.load_glyph(index as u32, freetype::face::LoadFlag::empty()) {
+        Ok(..) => {}
+        // TODO: Better structural error.
+        Err(..) => return Err(Error::Other(format!("Could not load glyph {}.", index))),
+    }
+    let width = ft_face.glyph().linear_hori_advance() as f64 * size_factor;
+
+    let glyphs = vec![cairo::Glyph::new(index, 0.0, 0.0)];
 
     let text_elem = Text {
         color: env.lookup_color(&Idents(vec!["color"]))?,
