@@ -271,6 +271,17 @@ pub fn t<'a>(fm: &mut FontMap,
         }
     };
 
+    // TODO: Extract this, warn properly, do not use Debug instance for
+    // printing.
+    if ft_face.family_name().as_ref() != Some(&font_family) {
+        println!("Warning: requested font family '{}', but loaded '{:?}'.",
+                 font_family, ft_face.family_name());
+    }
+    if ft_face.style_name().as_ref() != Some(&font_style) {
+        println!("Warning: requested font style '{}', but loaded '{:?}'.",
+                 font_style, ft_face.style_name());
+    }
+
     let mut glyphs = Vec::new();
     let mut max_width: f64 = 0.0;
     let mut min_offset: f64 = 0.0;
