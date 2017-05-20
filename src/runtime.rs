@@ -41,7 +41,9 @@ pub struct Frame<'a> {
     /// placed when a frame is adjoined, relative to the origin of this frame.
     anchor: Vec2,
 
-    elements: Vec<PlacedElement>,
+    /// The subframes (at least one, possibly more) which contain placed
+    /// graphics elements.
+    subframes: Vec<Subframe>,
 }
 
 #[derive(Clone)]
@@ -55,6 +57,11 @@ pub struct BoundingBox {
     pub y: f64,
     pub width: f64,
     pub height: f64,
+}
+
+#[derive(Clone)]
+pub struct Subframe {
+    elements: Vec<PlacedElement>,
 }
 
 /// A "builtin" function is a function that takes an environment and a vector of
@@ -88,7 +95,7 @@ impl<'a> Frame<'a> {
             env: Env::new(),
             bounding_box: BoundingBox::empty(),
             anchor: Vec2::zero(),
-            elements: Vec::new(),
+            subframes: Vec::new(),
         }
     }
 
@@ -97,7 +104,7 @@ impl<'a> Frame<'a> {
             env: env,
             bounding_box: BoundingBox::empty(),
             anchor: Vec2::zero(),
-            elements: Vec::new(),
+            subframes: Vec::new(),
         }
     }
 
@@ -141,8 +148,20 @@ impl<'a> Frame<'a> {
         self.env.put(ident, val);
     }
 
-    pub fn get_elements(&self) -> &[PlacedElement] {
-        &self.elements
+    pub fn get_subframes(&self) -> &[Subframe] {
+        &self.subframes
+    }
+
+    pub fn push_subframe(&mut self, subframe: Subframe) {
+        self.subframes.push(subframe);
+    }
+
+    pub fn place_element_on_last_subframe(&mut self, position: Vec2, elem: Element) {
+        if self.subframes.len() == 0 {
+            self.subframes.push(Subframe::new());
+        }
+        let mut subframe = &mut self.subframes[self.subframes.len() - 1];
+        subframe.place_element(position, elem);
     }
 
     pub fn get_anchor(&self) -> Vec2 {
@@ -159,14 +178,6 @@ impl<'a> Frame<'a> {
 
     pub fn union_bounding_box(&mut self, bb: &BoundingBox) {
         self.bounding_box = self.bounding_box.union(bb);
-    }
-
-    pub fn place_element(&mut self, position: Vec2, elem: Element) {
-        let placed = PlacedElement {
-            position: position,
-            element: elem,
-        };
-        self.elements.push(placed);
     }
 }
 
@@ -320,6 +331,26 @@ impl BoundingBox {
     }
 }
 
+impl Subframe {
+    pub fn new() -> Subframe {
+        Subframe {
+            elements: Vec::new(),
+        }
+    }
+
+    pub fn get_elements(&self) -> &[PlacedElement] {
+        &self.elements
+    }
+
+    pub fn place_element(&mut self, position: Vec2, elem: Element) {
+        let placed = PlacedElement {
+            position: position,
+            element: elem,
+        };
+        self.elements.push(placed);
+    }
+}
+
 impl Clone for Builtin {
     fn clone(&self) -> Builtin {
         let Builtin(x) = *self;
@@ -453,8 +484,8 @@ impl<'a> Print for (&'a &'a str, &'a Val<'a>) {
 impl<'a> Print for Frame<'a> {
     fn print(&self, f: &mut Formatter) {
         f.print("frame with ");
-        f.print(self.elements.len());
-        f.print(" elements\n");
+        f.print(self.subframes.len());
+        f.print(" subframes\n");
         f.print(&self.env);
     }
 }

@@ -15,7 +15,7 @@ use freetype;
 use harfbuzz;
 use pretty::Formatter;
 use rsvg;
-use runtime::{BoundingBox, Env, FontMap, Frame, Val};
+use runtime::{BoundingBox, Env, FontMap, Frame, Subframe, Val};
 use types::ValType;
 
 fn validate_args<'a>(fn_name: &str,
@@ -81,13 +81,18 @@ pub fn fit<'a>(_fm: &mut FontMap,
         return Err(Error::Other("Cannot fit a frame of size (0w, 0w).".into()))
     };
 
-    // As the frame is immutable anyway, it would actually be possible to refer
-    // to the elements in the frame, instead of copying them. If performance
-    // ever becomes a concern, this would be a good place to start.
-    let elements: Vec<_> = frame.get_elements().iter().cloned().collect();
-
     let mut scaled_frame = Frame::from_env(frame.get_env().clone());
-    scaled_frame.place_element(Vec2::zero(), Element::Scaled(elements, scale));
+
+    // As the frame is immutable anyway, it would actually be possible to refer
+    // to the subframes in the frame, instead of copying them. If performance
+    // ever becomes a concern, this would be a good place to start.
+    for subframe in frame.get_subframes() {
+        let elements: Vec<_> = subframe.get_elements().iter().cloned().collect();
+        let mut new_sf = Subframe::new();
+        new_sf.place_element(Vec2::zero(), Element::Scaled(elements, scale));
+        scaled_frame.push_subframe(new_sf);
+    }
+
     scaled_frame.set_anchor(frame.get_anchor() * scale);
     scaled_frame.union_bounding_box(&frame.get_bounding_box().scale(scale));
 
@@ -113,7 +118,7 @@ pub fn line<'a>(_fm: &mut FontMap,
     };
 
     let mut frame = Frame::new();
-    frame.place_element(Vec2::zero(), Element::StrokePolygon(line));
+    frame.place_element_on_last_subframe(Vec2::zero(), Element::StrokePolygon(line));
     frame.set_anchor(offset);
     // TODO: Make bounding box take Vec2.
     frame.union_bounding_box(&BoundingBox::sized(offset.x, offset.y));
@@ -143,7 +148,7 @@ pub fn fill_rectangle<'a>(_fm: &mut FontMap,
     };
 
     let mut frame = Frame::new();
-    frame.place_element(Vec2::zero(), Element::FillPolygon(rect));
+    frame.place_element_on_last_subframe(Vec2::zero(), Element::FillPolygon(rect));
     frame.set_anchor(Vec2::new(w, h));
     // TODO: Make bounding box take Vec2.
     frame.union_bounding_box(&BoundingBox::sized(w, h));
@@ -316,7 +321,7 @@ pub fn t<'a>(fm: &mut FontMap,
     };
 
     let mut frame = Frame::new();
-    frame.place_element(Vec2::zero(), Element::Text(text_elem));
+    frame.place_element_on_last_subframe(Vec2::zero(), Element::Text(text_elem));
     frame.set_anchor(Vec2::new(cur_x, cur_y - line_height));
 
     let top_left = Vec2::new(min_offset, -line_height);
@@ -380,7 +385,7 @@ pub fn glyph<'a>(fm: &mut FontMap,
     };
 
     let mut frame = Frame::new();
-    frame.place_element(Vec2::zero(), Element::Text(text_elem));
+    frame.place_element_on_last_subframe(Vec2::zero(), Element::Text(text_elem));
     frame.set_anchor(Vec2::new(width, 0.0));
 
     let top_left = Vec2::new(0.0, -line_height);
@@ -419,7 +424,7 @@ pub fn image<'a>(_fm: &mut FontMap,
     let (width, height) = svg.size();
 
     let mut frame = Frame::new();
-    frame.place_element(Vec2::zero(), Element::Svg(svg));
+    frame.place_element_on_last_subframe(Vec2::zero(), Element::Svg(svg));
     frame.union_bounding_box(&BoundingBox::sized(width as f64, height as f64));
 
     // The image anchor is in the top right, so images can be adjoined easily:

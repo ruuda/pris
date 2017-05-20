@@ -108,12 +108,15 @@ pub fn render_frame<'a>(fm: &mut FontMap, cr: &mut Cairo, frame: &Frame<'a>) {
     // TODO: Ensure that writing to background_color only accepts a color value,
     // so a lookup failure here is never a type error.
     let var_bgcolor = Idents(vec!["background_color"]);
-    if let Ok(bgcolor) = frame.get_env().lookup_color(&var_bgcolor) {
-        draw_background(cr, bgcolor);
-    }
 
-    for pe in frame.get_elements() {
-        draw_element(fm, cr, pe);
+    for subframe in frame.get_subframes() {
+        if let Ok(bgcolor) = frame.get_env().lookup_color(&var_bgcolor) {
+            draw_background(cr, bgcolor);
+        }
+
+        for pe in subframe.get_elements() {
+            draw_element(fm, cr, pe);
+        }
+        cr.show_page()
     }
-    cr.show_page()
 }
