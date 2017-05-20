@@ -13,7 +13,7 @@ use ast::{Num, PutAt, Return, Stmt, Term, UnOp, UnTerm, Unit};
 use error::{Error, Result};
 use elements::{Color, Vec2};
 use pretty::Formatter;
-use runtime::{Builtin, FontMap, Frame, Env, Val};
+use runtime::{Builtin, FontMap, Frame, Env, Subframe, Val};
 use types::ValType;
 
 // Expression interpreter.
@@ -100,8 +100,18 @@ fn eval_adj<'a>(lhs: Val<'a>, rhs: Val<'a>) -> Result<Val<'a>> {
         (Val::Frame(f0), Val::Frame(f1)) => {
             let mut frame = (*f0).clone();
             let anchor = f0.get_anchor();
-            for pe in f1.get_elements() {
-                frame.place_element(anchor + pe.position, pe.element.clone());
+            // Copy the elements of f1 onto the new frame (cloned from f0),
+            // subframe by subframe.
+            for (i, sf1) in f1.get_subframes().iter().enumerate() {
+                // If f1 had more subframes than f0, the result will have as
+                // many subframes as f1.
+                if frame.get_subframes().len() <= i {
+                    frame.push_subframe(Subframe::new());
+                }
+                let mut subframe = frame.get_subframe_mut(i);
+                for pe in sf1.get_elements() {
+                    subframe.place_element(anchor + pe.position, pe.element.clone());
+                }
             }
             frame.set_anchor(anchor + f1.get_anchor());
             frame.union_bounding_box(&f1.get_bounding_box().offset(anchor));

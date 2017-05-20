@@ -152,6 +152,10 @@ impl<'a> Frame<'a> {
         &self.subframes
     }
 
+    pub fn get_subframe_mut(&mut self, sf_index: usize) -> &mut Subframe {
+        &mut self.subframes[sf_index]
+    }
+
     pub fn push_subframe(&mut self, subframe: Subframe) {
         self.subframes.push(subframe);
     }
