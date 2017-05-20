@@ -18,6 +18,9 @@ use rsvg;
 use runtime::{BoundingBox, Env, FontMap, Frame, Subframe, Val};
 use types::ValType;
 
+// TODO: Put that somewhere else.
+use interpreter::ExprInterpreter;
+
 fn validate_args<'a>(fn_name: &str,
                      expected: &[ValType],
                      actual: &[Val<'a>])
@@ -37,10 +40,9 @@ fn validate_args<'a>(fn_name: &str,
     Ok(())
 }
 
-pub fn fit<'a>(_fm: &mut FontMap,
-               _env: &Env<'a>,
-               mut args: Vec<Val<'a>>)
-               -> Result<Val<'a>> {
+pub fn fit<'i, 'a>(interpreter: &mut ExprInterpreter<'i, 'a>,
+                   mut args: Vec<Val<'a>>)
+                   -> Result<Val<'a>> {
     validate_args("fit", &[ValType::Frame, ValType::Coord(1)], &args)?;
     let frame = match args.remove(0) {
         Val::Frame(f) => f,
@@ -99,10 +101,9 @@ pub fn fit<'a>(_fm: &mut FontMap,
     Ok(Val::Frame(Rc::new(scaled_frame)))
 }
 
-pub fn line<'a>(_fm: &mut FontMap,
-                env: &Env<'a>,
-                mut args: Vec<Val<'a>>)
-                -> Result<Val<'a>> {
+pub fn line<'i, 'a>(interpreter: &mut ExprInterpreter<'i, 'a>,
+                    mut args: Vec<Val<'a>>)
+                    -> Result<Val<'a>> {
     validate_args("line", &[ValType::Coord(1)], &args)?;
     let offset = match args.remove(0) {
         Val::Coord(x, y, 1) => Vec2::new(x, y),
@@ -111,8 +112,8 @@ pub fn line<'a>(_fm: &mut FontMap,
 
     let line = StrokePolygon {
         // TODO: Better idents type for non-ast use?
-        color: env.lookup_color(&Idents(vec!["color"]))?,
-        line_width: env.lookup_len(&Idents(vec!["line_width"]))?,
+        color: interpreter.env.lookup_color(&Idents(vec!["color"]))?,
+        line_width: interpreter.env.lookup_len(&Idents(vec!["line_width"]))?,
         close: false,
         vertices: vec![Vec2::zero(), offset],
     };
@@ -126,10 +127,9 @@ pub fn line<'a>(_fm: &mut FontMap,
     Ok(Val::Frame(Rc::new(frame)))
 }
 
-pub fn fill_rectangle<'a>(_fm: &mut FontMap,
-                          env: &Env<'a>,
-                          mut args: Vec<Val<'a>>)
-                          -> Result<Val<'a>> {
+pub fn fill_rectangle<'i, 'a>(interpreter: &mut ExprInterpreter<'i, 'a>,
+                              mut args: Vec<Val<'a>>)
+                              -> Result<Val<'a>> {
     validate_args("fill_rectangle", &[ValType::Coord(1)], &args)?;
     let (w, h) = match args.remove(0) {
         Val::Coord(x, y, 1) => (x, y),
@@ -138,7 +138,7 @@ pub fn fill_rectangle<'a>(_fm: &mut FontMap,
 
     let rect = FillPolygon {
         // TODO: Better idents type for non-ast use?
-        color: env.lookup_color(&Idents(vec!["color"]))?,
+        color: interpreter.env.lookup_color(&Idents(vec!["color"]))?,
         vertices: vec![
             Vec2::zero(),
             Vec2::new(0.0, h),
@@ -156,10 +156,9 @@ pub fn fill_rectangle<'a>(_fm: &mut FontMap,
     Ok(Val::Frame(Rc::new(frame)))
 }
 
-pub fn str<'a>(_fm: &mut FontMap,
-               _env: &Env<'a>,
-               mut args: Vec<Val<'a>>)
-               -> Result<Val<'a>> {
+pub fn str<'i, 'a>(_interpreter: &mut ExprInterpreter<'i, 'a>,
+                   mut args: Vec<Val<'a>>)
+                   -> Result<Val<'a>> {
     // TODO: Make this generic over the dimension?
     validate_args("str", &[ValType::Num(0)], &args)?;
     let num = match args.remove(0) {
@@ -230,10 +229,9 @@ fn split_lines_returns_as_many_lines_as_newlines_plus_one() {
     assert_eq!(&lines, &["", "foo", "bar", ""]);
 }
 
-pub fn t<'a>(fm: &mut FontMap,
-             env: &Env<'a>,
-             mut args: Vec<Val<'a>>)
-             -> Result<Val<'a>> {
+pub fn t<'i, 'a>(interpreter: &mut ExprInterpreter<'i, 'a>,
+                 mut args: Vec<Val<'a>>)
+                 -> Result<Val<'a>> {
     validate_args("t", &[ValType::Str], &args)?;
     let text = match args.remove(0) {
         Val::Str(s) => s,
@@ -251,12 +249,12 @@ pub fn t<'a>(fm: &mut FontMap,
     // then it does not scale automatically. Or we could allow both here:
     // numbers have units, so we could figure out what to do. But my gut feeling
     // is that dynamic typing will be confusing in the end.
-    let font_family = env.lookup_str(&Idents(vec!["font_family"]))?;
-    let font_style = env.lookup_str(&Idents(vec!["font_style"]))?;
-    let font_size = env.lookup_len(&Idents(vec!["font_size"]))?;
-    let line_height = env.lookup_len(&Idents(vec!["line_height"]))?;
-    let text_align = env.lookup_str(&Idents(vec!["text_align"]))?;
-    let mut ft_face = match fm.get(&font_family, &font_style) {
+    let font_family = interpreter.env.lookup_str(&Idents(vec!["font_family"]))?;
+    let font_style = interpreter.env.lookup_str(&Idents(vec!["font_style"]))?;
+    let font_size = interpreter.env.lookup_len(&Idents(vec!["font_size"]))?;
+    let line_height = interpreter.env.lookup_len(&Idents(vec!["line_height"]))?;
+    let text_align = interpreter.env.lookup_str(&Idents(vec!["text_align"]))?;
+    let mut ft_face = match interpreter.font_map.get(&font_family, &font_style) {
         Some(face) => face,
         None => return Err(Error::missing_font(font_family, font_style)),
     };
@@ -313,7 +311,7 @@ pub fn t<'a>(fm: &mut FontMap,
     }
 
     let text_elem = Text {
-        color: env.lookup_color(&Idents(vec!["color"]))?,
+        color: interpreter.env.lookup_color(&Idents(vec!["color"]))?,
         font_family: font_family,
         font_style: font_style,
         font_size: font_size,
@@ -331,10 +329,9 @@ pub fn t<'a>(fm: &mut FontMap,
     Ok(Val::Frame(Rc::new(frame)))
 }
 
-pub fn glyph<'a>(fm: &mut FontMap,
-                 env: &Env<'a>,
-                 mut args: Vec<Val<'a>>)
-                 -> Result<Val<'a>> {
+pub fn glyph<'i, 'a>(interpreter: &mut ExprInterpreter<'i, 'a>,
+                     mut args: Vec<Val<'a>>)
+                     -> Result<Val<'a>> {
     validate_args("glyph", &[ValType::Num(0)], &args)?;
     let index_f64 = match args.remove(0) {
         Val::Num(x, 0) => x,
@@ -351,11 +348,11 @@ pub fn glyph<'a>(fm: &mut FontMap,
     // TODO: This was copy-pasted from the `t()` function. Extract the common
     // stuff.
 
-    let font_family = env.lookup_str(&Idents(vec!["font_family"]))?;
-    let font_style = env.lookup_str(&Idents(vec!["font_style"]))?;
-    let font_size = env.lookup_len(&Idents(vec!["font_size"]))?;
-    let line_height = env.lookup_len(&Idents(vec!["line_height"]))?;
-    let ft_face = match fm.get(&font_family, &font_style) {
+    let font_family = interpreter.env.lookup_str(&Idents(vec!["font_family"]))?;
+    let font_style = interpreter.env.lookup_str(&Idents(vec!["font_style"]))?;
+    let font_size = interpreter.env.lookup_len(&Idents(vec!["font_size"]))?;
+    let line_height = interpreter.env.lookup_len(&Idents(vec!["line_height"]))?;
+    let ft_face = match interpreter.font_map.get(&font_family, &font_style) {
         Some(face) => face,
         None => return Err(Error::missing_font(font_family, font_style)),
     };
@@ -377,7 +374,7 @@ pub fn glyph<'a>(fm: &mut FontMap,
     let glyphs = vec![cairo::Glyph::new(index, 0.0, 0.0)];
 
     let text_elem = Text {
-        color: env.lookup_color(&Idents(vec!["color"]))?,
+        color: interpreter.env.lookup_color(&Idents(vec!["color"]))?,
         font_family: font_family,
         font_style: font_style,
         font_size: font_size,
@@ -395,10 +392,9 @@ pub fn glyph<'a>(fm: &mut FontMap,
     Ok(Val::Frame(Rc::new(frame)))
 }
 
-pub fn image<'a>(_fm: &mut FontMap,
-                 _env: &Env<'a>,
-                 mut args: Vec<Val<'a>>)
-                 -> Result<Val<'a>> {
+pub fn image<'i, 'a>(_interpreter: &mut ExprInterpreter<'i, 'a>,
+                     mut args: Vec<Val<'a>>)
+                     -> Result<Val<'a>> {
     validate_args("image", &[ValType::Str], &args)?;
     let path = match args.remove(0) {
         Val::Str(s) => s,

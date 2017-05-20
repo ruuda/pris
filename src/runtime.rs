@@ -18,6 +18,9 @@ use fontconfig;
 use pretty::{Formatter, Print};
 use types::{LenDim, ValType};
 
+// TODO: Put that somewhere else.
+use interpreter::ExprInterpreter;
+
 #[derive(Clone)]
 pub enum Val<'a> {
     Num(f64, LenDim), // TODO: Be consistent about abbreviating things.
@@ -67,7 +70,7 @@ pub struct Subframe {
 /// A "builtin" function is a function that takes an environment and a vector of
 /// arguments, and produces a new value. We make a wrapper type to be able to
 /// implement a no-op clone on it.
-pub struct Builtin(pub for<'a> fn(&mut FontMap, &Env<'a>, Vec<Val<'a>>) -> Result<Val<'a>>);
+pub struct Builtin(pub for<'i, 'a> fn(&mut ExprInterpreter<'i, 'a>, Vec<Val<'a>>) -> Result<Val<'a>>);
 
 /// Keeps track of loaded Freetype fonts, indexed by (family name, style) pairs.
 pub struct FontMap {

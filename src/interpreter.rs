@@ -18,360 +18,380 @@ use types::ValType;
 
 // Expression interpreter.
 
-fn eval_expr<'a>(fm: &mut FontMap,
-                 env: &Env<'a>,
-                 term: &'a Term<'a>)
-                 -> Result<Val<'a>> {
-    match *term {
-        Term::String(ref s) => Ok(Val::Str(s.clone())),
-        Term::Number(ref x) => eval_num(env, x),
-        Term::Color(ref co) => Ok(eval_color(co)),
-        Term::Idents(ref i) => env.lookup(i),
-        Term::Coord(ref co) => eval_coord(fm, env, co),
-        Term::BinOp(ref bo) => eval_binop(fm, env, bo),
-        Term::UnOp(ref uop) => eval_unop(fm, env, uop),
-        Term::FnCall(ref f) => eval_call(fm, env, f),
-        Term::FnDef(ref fd) => Ok(Val::FnExtrin(fd)),
-        Term::Block(ref bk) => eval_block(fm, env, bk),
-    }
+// TODO: This should not be public at all.
+pub struct ExprInterpreter<'i, 'a: 'i> {
+    pub font_map: &'i mut FontMap,
+    pub env: &'i Env<'a>,
 }
 
-fn eval_num<'a>(env: &Env<'a>, num: &'a Num) -> Result<Val<'a>> {
-    let Num(x, opt_unit) = *num;
-    if let Some(unit) = opt_unit {
-        match unit {
-            Unit::W => Ok(Val::Num(1920.0 * x, 1)),
-            Unit::H => Ok(Val::Num(1080.0 * x, 1)),
-            Unit::Pt => Ok(Val::Num(1.0 * x, 1)),
-            Unit::Em => {
-                // The variable "font_size" should always be set, it is present
-                // in the global environment.
-                let ident_font_size = Idents(vec!["font_size"]);
-                let emsize = env.lookup_len(&ident_font_size)?;
-                Ok(Val::Num(emsize * x, 1))
-            }
-        }
-    } else {
-        Ok(Val::Num(x, 0))
-    }
-}
+impl<'i, 'a> ExprInterpreter<'i, 'a> {
 
-fn eval_color<'a>(col: &ast::Color) -> Val<'a> {
-    let ast::Color(rbyte, gbyte, bbyte) = *col;
-    let cf64 = Color::new(rbyte as f64 / 255.0, gbyte as f64 / 255.0, bbyte as f64 / 255.0);
-    Val::Col(cf64)
-}
-
-fn eval_coord<'a>(fm: &mut FontMap,
-                  env: &Env<'a>,
-                  coord: &'a Coord<'a>)
-                  -> Result<Val<'a>> {
-    let x = eval_expr(fm, env, &coord.0)?;
-    let y = eval_expr(fm, env, &coord.1)?;
-    match (x, y) {
-        (Val::Num(a, d), Val::Num(b, e)) if d == e => Ok(Val::Coord(a, b, d)),
-        _ => {
-            let msg = "Type error: coord must be (num, num) or (len, len), \
-                       but found (<TODO>, <TODO>) instead.";
-            Err(Error::Other(String::from(msg)))
+    fn eval_expr(&mut self, term: &'a Term<'a>) -> Result<Val<'a>> {
+        match *term {
+            Term::String(ref s) => Ok(Val::Str(s.clone())),
+            Term::Number(ref x) => self.eval_num(x),
+            Term::Color(ref co) => Ok(ExprInterpreter::eval_color(co)),
+            Term::Idents(ref i) => self.env.lookup(i),
+            Term::Coord(ref co) => self.eval_coord(co),
+            Term::BinOp(ref bo) => self.eval_binop(bo),
+            Term::UnOp(ref uop) => self.eval_unop(uop),
+            Term::FnCall(ref f) => self.eval_call(f),
+            Term::FnDef(ref fd) => Ok(Val::FnExtrin(fd)),
+            Term::Block(ref bk) => self.eval_block(bk),
         }
     }
-}
 
-fn eval_binop<'a>(fm: &mut FontMap,
-                  env: &Env<'a>,
-                  binop: &'a BinTerm<'a>)
-                  -> Result<Val<'a>> {
-    let lhs = eval_expr(fm, env, &binop.0)?;
-    let rhs = eval_expr(fm, env, &binop.2)?;
-    match binop.1 {
-        BinOp::Adj => eval_adj(lhs, rhs),
-        BinOp::Add => eval_add(lhs, rhs),
-        BinOp::Sub => eval_sub(lhs, rhs),
-        BinOp::Mul => eval_mul(lhs, rhs),
-        BinOp::Div => eval_div(lhs, rhs),
-        BinOp::Exp => panic!("TODO: eval exp"),
-    }
-}
-
-/// Adjoins two frames.
-fn eval_adj<'a>(lhs: Val<'a>, rhs: Val<'a>) -> Result<Val<'a>> {
-    match (lhs, rhs) {
-        (Val::Frame(f0), Val::Frame(f1)) => {
-            let mut frame = (*f0).clone();
-            let anchor = f0.get_anchor();
-            // Copy the elements of f1 onto the new frame (cloned from f0),
-            // subframe by subframe.
-            for (i, sf1) in f1.get_subframes().iter().enumerate() {
-                // If f1 had more subframes than f0, the result will have as
-                // many subframes as f1.
-                if frame.get_subframes().len() <= i {
-                    frame.push_subframe(Subframe::new());
-                }
-                let mut subframe = frame.get_subframe_mut(i);
-                for pe in sf1.get_elements() {
-                    subframe.place_element(anchor + pe.position, pe.element.clone());
+    fn eval_num(&mut self, num: &'a Num) -> Result<Val<'a>> {
+        let Num(x, opt_unit) = *num;
+        if let Some(unit) = opt_unit {
+            match unit {
+                Unit::W => Ok(Val::Num(1920.0 * x, 1)),
+                Unit::H => Ok(Val::Num(1080.0 * x, 1)),
+                Unit::Pt => Ok(Val::Num(1.0 * x, 1)),
+                Unit::Em => {
+                    // The variable "font_size" should always be set, it is present
+                    // in the global environment.
+                    let ident_font_size = Idents(vec!["font_size"]);
+                    let emsize = self.env.lookup_len(&ident_font_size)?;
+                    Ok(Val::Num(emsize * x, 1))
                 }
             }
-            frame.set_anchor(anchor + f1.get_anchor());
-            frame.union_bounding_box(&f1.get_bounding_box().offset(anchor));
-            Ok(Val::Frame(Rc::new(frame)))
-        }
-        (lhs, rhs) => {
-            Err(Error::binop_type("~", ValType::Frame, lhs.get_type(), rhs.get_type()))
+        } else {
+            Ok(Val::Num(x, 0))
         }
     }
-}
 
-fn eval_add<'a>(lhs: Val<'a>, rhs: Val<'a>) -> Result<Val<'a>> {
-    match (lhs, rhs) {
-        (Val::Num(x0, d0), Val::Num(x1, d1)) if d0 == d1 => {
-            Ok(Val::Num(x0 + x1, d0))
-        }
-        (Val::Coord(x0, y0, d0), Val::Coord(x1, y1, d1)) if d0 == d1 => {
-            Ok(Val::Coord(x0 + x1, y0 + y1, d0))
-        }
-        (Val::Str(a), Val::Str(b)) => {
-            Ok(Val::Str(a + &b))
-        }
-        (lhs, rhs) => {
-            let mut f = Formatter::new();
-            f.print("Type error: '+' expects operands of the same type, \
-                     num or len or coords thereof, \
-                     but found '");
-            f.print(lhs);
-            f.print("' and '");
-            f.print(rhs);
-            f.print("' instead.");
-            Err(Error::Other(f.into_string()))
-        }
-    }
-}
-
-fn eval_sub<'a>(lhs: Val<'a>, rhs: Val<'a>) -> Result<Val<'a>> {
-    match (lhs, rhs) {
-        (Val::Num(x0, d0), Val::Num(x1, d1)) if d0 == d1 => {
-            Ok(Val::Num(x0 - x1, d0))
-        }
-        (Val::Coord(x0, y0, d0), Val::Coord(x1, y1, d1)) if d0 == d1 => {
-            Ok(Val::Coord(x0 - x1, y0 - y1, d0))
-        }
-        (lhs, rhs) => {
-            let mut f = Formatter::new();
-            f.print("Type error: '-' expects operands of the same type, \
-                     num or len or coords thereof, \
-                     but found '");
-            f.print(lhs);
-            f.print("' and '");
-            f.print(rhs);
-            f.print("' instead.");
-            Err(Error::Other(f.into_string()))
-        }
-    }
-}
-
-fn eval_mul<'a>(lhs: Val<'a>, rhs: Val<'a>) -> Result<Val<'a>> {
-    match (lhs, rhs) {
-        (Val::Num(x, d), Val::Num(y, e)) => Ok(Val::Num(x * y, d + e)),
-        (Val::Coord(x, y, d), Val::Num(z, e)) => Ok(Val::Coord(x * z, y * z, d + e)),
-        (Val::Num(z, e), Val::Coord(x, y, d)) => Ok(Val::Coord(x * z, y * z, d + e)),
-        _ => {
-            let msg = "Type error: '*' expects num or len operands, \
-                       but found <TODO> and <TODO> instead.";
-            Err(Error::Other(String::from(msg)))
-        }
-    }
-}
-
-fn eval_div<'a>(lhs: Val<'a>, rhs: Val<'a>) -> Result<Val<'a>> {
-    match (lhs, rhs) {
-        (Val::Num(x, d), Val::Num(y, e)) => Ok(Val::Num(x / y, d - e)),
-        _ => {
-            let msg = "Type error: '/' expects num or len operands, \
-                       but found <TODO> and <TODO> instead.";
-            Err(Error::Other(String::from(msg)))
-        }
-    }
-}
-
-fn eval_unop<'a>(fm: &mut FontMap,
-                 env: &Env<'a>,
-                 unop: &'a UnTerm<'a>)
-                 -> Result<Val<'a>> {
-    let rhs = eval_expr(fm, env, &unop.1)?;
-    match unop.0 {
-        UnOp::Neg => eval_neg(rhs),
-    }
-}
-
-fn eval_neg<'a>(rhs: Val<'a>) -> Result<Val<'a>> {
-    match rhs {
-        Val::Num(x, d) => Ok(Val::Num(-x, d)),
-        Val::Coord(x, y, d) => Ok(Val::Coord(-x, -y, d)),
-        _ => {
-            let msg = "Type error: '-' expects a num or len operand, \
-                       but found <TODO> instead.";
-            Err(Error::Other(String::from(msg)))
-        }
-    }
-}
-
-fn eval_call<'a>(fm: &mut FontMap,
-                 env: &Env<'a>,
-                 call: &'a FnCall<'a>)
-                 -> Result<Val<'a>> {
-    let mut args = Vec::with_capacity(call.1.len());
-    for arg in &call.1 {
-        args.push(eval_expr(fm, env, arg)?);
-    }
-    let func = eval_expr(fm, env, &call.0)?;
-    match func {
-        // For a user-defined function, we evaluate the function body.
-        Val::FnExtrin(fn_def) => eval_call_def(fm, env, fn_def, args),
-        // For a builtin function, the value carries a function pointer,
-        // so we can just call that.
-        Val::FnIntrin(Builtin(intrin)) => intrin(fm, env, args),
-        // Other things are not callable.
-        _ => {
-            let msg = "Type error: attempting to call value of type <TODO>. \
-                       Only functions can be called.";
-            Err(Error::Other(String::from(msg)))
-        }
-    }
-}
-
-fn eval_call_def<'a>(fm: &mut FontMap,
-                     env: &Env<'a>,
-                     fn_def: &'a FnDef<'a>,
-                     args: Vec<Val<'a>>)
-                     -> Result<Val<'a>> {
-    // Ensure that a value is provided for every argument, and no more.
-    if fn_def.0.len() != args.len() {
-        let msg = format!("Arity error: function takes {} arguments, \
-                           but {} were provided.",
-                          fn_def.0.len(), args.len());
-        return Err(Error::Other(msg))
+    fn eval_color(col: &ast::Color) -> Val<'a> {
+        let ast::Color(rbyte, gbyte, bbyte) = *col;
+        let cf64 = Color::new(rbyte as f64 / 255.0, gbyte as f64 / 255.0, bbyte as f64 / 255.0);
+        Val::Col(cf64)
     }
 
-    // For a function call, bring the argument in scope as variables, and then
-    // evaluate the body block.
-    let mut inner_env = env.clone();
-    for (arg_name, val) in fn_def.0.iter().zip(args) {
-        inner_env.put(arg_name, val);
-    }
-
-    eval_block(fm, &inner_env, &fn_def.1)
-}
-
-fn eval_block<'a>(fm: &mut FontMap,
-                  env: &Env<'a>,
-                  block: &'a Block<'a>)
-                  -> Result<Val<'a>> {
-    // A block is evaluated in its enclosing environment, but it does not modify
-    // the environment, it gets a copy.
-    let inner_env = (*env).clone();
-    let mut frame = Frame::from_env(inner_env);
-
-    for statement in &block.0 {
-        match *statement {
-            // A return statement in a block determines the value that the block
-            // evalates to, if a return is present.
-            Stmt::Return(Return(ref r)) => return eval_expr(fm, frame.get_env(), r),
-            // A block statemen to make a frame can only be used at the top
-            // level.
-            Stmt::Block(..) => {
-                let msg = "Error: slides can only be introduced at the top level. \
-                           Note: use 'at (0w, 0w) put { ... }' to place a frame.";
-                return Err(Error::Other(String::from(msg)));
-            }
-            // Otherwise, evaluating a statement just mutates the environment.
+    fn eval_coord(&mut self, coord: &'a Coord<'a>) -> Result<Val<'a>> {
+        let x = self.eval_expr(&coord.0)?;
+        let y = self.eval_expr(&coord.1)?;
+        match (x, y) {
+            (Val::Num(a, d), Val::Num(b, e)) if d == e => Ok(Val::Coord(a, b, d)),
             _ => {
-                let maybe_frame = eval_statement(fm, &mut frame, statement)?;
-                assert!(maybe_frame.is_none());
+                let msg = "Type error: coord must be (num, num) or (len, len), \
+                           but found (<TODO>, <TODO>) instead.";
+                Err(Error::Other(String::from(msg)))
             }
         }
     }
 
-    Ok(Val::Frame(Rc::new(frame)))
+    fn eval_binop(&mut self, binop: &'a BinTerm<'a>) -> Result<Val<'a>> {
+        let lhs = self.eval_expr(&binop.0)?;
+        let rhs = self.eval_expr(&binop.2)?;
+        match binop.1 {
+            BinOp::Adj => ExprInterpreter::eval_adj(lhs, rhs),
+            BinOp::Add => ExprInterpreter::eval_add(lhs, rhs),
+            BinOp::Sub => ExprInterpreter::eval_sub(lhs, rhs),
+            BinOp::Mul => ExprInterpreter::eval_mul(lhs, rhs),
+            BinOp::Div => ExprInterpreter::eval_div(lhs, rhs),
+            BinOp::Exp => panic!("TODO: eval exp"),
+        }
+    }
+
+    /// Adjoins two frames.
+    fn eval_adj(lhs: Val<'a>, rhs: Val<'a>) -> Result<Val<'a>> {
+        match (lhs, rhs) {
+            (Val::Frame(f0), Val::Frame(f1)) => {
+                let mut frame = (*f0).clone();
+                let anchor = f0.get_anchor();
+                // Copy the elements of f1 onto the new frame (cloned from f0),
+                // subframe by subframe.
+                for (i, sf1) in f1.get_subframes().iter().enumerate() {
+                    // If f1 had more subframes than f0, the result will have as
+                    // many subframes as f1.
+                    if frame.get_subframes().len() <= i {
+                        frame.push_subframe(Subframe::new());
+                    }
+                    let mut subframe = frame.get_subframe_mut(i);
+                    for pe in sf1.get_elements() {
+                        subframe.place_element(anchor + pe.position, pe.element.clone());
+                    }
+                }
+                frame.set_anchor(anchor + f1.get_anchor());
+                frame.union_bounding_box(&f1.get_bounding_box().offset(anchor));
+                Ok(Val::Frame(Rc::new(frame)))
+            }
+            (lhs, rhs) => {
+                Err(Error::binop_type("~", ValType::Frame, lhs.get_type(), rhs.get_type()))
+            }
+        }
+    }
+
+    fn eval_add(lhs: Val<'a>, rhs: Val<'a>) -> Result<Val<'a>> {
+        match (lhs, rhs) {
+            (Val::Num(x0, d0), Val::Num(x1, d1)) if d0 == d1 => {
+                Ok(Val::Num(x0 + x1, d0))
+            }
+            (Val::Coord(x0, y0, d0), Val::Coord(x1, y1, d1)) if d0 == d1 => {
+                Ok(Val::Coord(x0 + x1, y0 + y1, d0))
+            }
+            (Val::Str(a), Val::Str(b)) => {
+                Ok(Val::Str(a + &b))
+            }
+            (lhs, rhs) => {
+                let mut f = Formatter::new();
+                f.print("Type error: '+' expects operands of the same type, \
+                         num or len or coords thereof, \
+                         but found '");
+                f.print(lhs);
+                f.print("' and '");
+                f.print(rhs);
+                f.print("' instead.");
+                Err(Error::Other(f.into_string()))
+            }
+        }
+    }
+
+    fn eval_sub(lhs: Val<'a>, rhs: Val<'a>) -> Result<Val<'a>> {
+        match (lhs, rhs) {
+            (Val::Num(x0, d0), Val::Num(x1, d1)) if d0 == d1 => {
+                Ok(Val::Num(x0 - x1, d0))
+            }
+            (Val::Coord(x0, y0, d0), Val::Coord(x1, y1, d1)) if d0 == d1 => {
+                Ok(Val::Coord(x0 - x1, y0 - y1, d0))
+            }
+            (lhs, rhs) => {
+                let mut f = Formatter::new();
+                f.print("Type error: '-' expects operands of the same type, \
+                         num or len or coords thereof, \
+                         but found '");
+                f.print(lhs);
+                f.print("' and '");
+                f.print(rhs);
+                f.print("' instead.");
+                Err(Error::Other(f.into_string()))
+            }
+        }
+    }
+
+    fn eval_mul(lhs: Val<'a>, rhs: Val<'a>) -> Result<Val<'a>> {
+        match (lhs, rhs) {
+            (Val::Num(x, d), Val::Num(y, e)) => Ok(Val::Num(x * y, d + e)),
+            (Val::Coord(x, y, d), Val::Num(z, e)) => Ok(Val::Coord(x * z, y * z, d + e)),
+            (Val::Num(z, e), Val::Coord(x, y, d)) => Ok(Val::Coord(x * z, y * z, d + e)),
+            _ => {
+                let msg = "Type error: '*' expects num or len operands, \
+                           but found <TODO> and <TODO> instead.";
+                Err(Error::Other(String::from(msg)))
+            }
+        }
+    }
+
+    fn eval_div(lhs: Val<'a>, rhs: Val<'a>) -> Result<Val<'a>> {
+        match (lhs, rhs) {
+            (Val::Num(x, d), Val::Num(y, e)) => Ok(Val::Num(x / y, d - e)),
+            _ => {
+                let msg = "Type error: '/' expects num or len operands, \
+                           but found <TODO> and <TODO> instead.";
+                Err(Error::Other(String::from(msg)))
+            }
+        }
+    }
+
+    fn eval_unop(&mut self, unop: &'a UnTerm<'a>) -> Result<Val<'a>> {
+        let rhs = self.eval_expr(&unop.1)?;
+        match unop.0 {
+            UnOp::Neg => ExprInterpreter::eval_neg(rhs),
+        }
+    }
+
+    fn eval_neg(rhs: Val<'a>) -> Result<Val<'a>> {
+        match rhs {
+            Val::Num(x, d) => Ok(Val::Num(-x, d)),
+            Val::Coord(x, y, d) => Ok(Val::Coord(-x, -y, d)),
+            _ => {
+                let msg = "Type error: '-' expects a num or len operand, \
+                           but found <TODO> instead.";
+                Err(Error::Other(String::from(msg)))
+            }
+        }
+    }
+
+    fn eval_call(&mut self, call: &'a FnCall<'a>) -> Result<Val<'a>> {
+        let mut args = Vec::with_capacity(call.1.len());
+        for arg in &call.1 {
+            args.push(self.eval_expr(arg)?);
+        }
+        let func = self.eval_expr(&call.0)?;
+        match func {
+            // For a user-defined function, we evaluate the function body.
+            Val::FnExtrin(fn_def) => self.eval_call_extrin(fn_def, args),
+            // For a builtin function, the value carries a function pointer,
+            // so we can just call that.
+            Val::FnIntrin(Builtin(intrin)) => intrin(self, args),
+            // Other things are not callable.
+            _ => {
+                let msg = "Type error: attempting to call value of type <TODO>. \
+                           Only functions can be called.";
+                Err(Error::Other(String::from(msg)))
+            }
+        }
+    }
+
+    fn eval_call_extrin(&mut self,
+                        fn_def: &'a FnDef<'a>,
+                        args: Vec<Val<'a>>)
+                        -> Result<Val<'a>> {
+        // Ensure that a value is provided for every argument, and no more.
+        if fn_def.0.len() != args.len() {
+            let msg = format!("Arity error: function takes {} arguments, \
+                               but {} were provided.",
+                              fn_def.0.len(), args.len());
+            return Err(Error::Other(msg))
+        }
+
+        // For a function call, bring the argument in scope as variables, and
+        // then evaluate the body block in the modified environment.
+        let mut inner_env = self.env.clone();
+        for (arg_name, val) in fn_def.0.iter().zip(args) {
+            inner_env.put(arg_name, val);
+        }
+
+        let inner_interpreter = ExprInterpreter {
+            font_map: &mut *self.font_map,
+            env: &inner_env,
+        };
+
+        inner_interpreter.eval_block(&fn_def.1)
+    }
+
+    fn eval_block(&mut self, block: &'a Block<'a>) -> Result<Val<'a>> {
+        // A block is evaluated in its enclosing environment, but it does not
+        // modify the environment, it gets a copy.
+        let inner_env = (*self.env).clone();
+
+        // A block can consist of multiple statements, which mutate the frame,
+        // until the block ends. The statement interpreter keeps track of this
+        // frame internally. When the block ends, the frame is the result of the
+        // block (if there was no return).
+        let fm = *self.font_map;
+        let mut stmt_interpreter = StmtInterpreter {
+            font_map: &mut fm,
+            frame: Frame::from_env(inner_env),
+        };
+
+        for statement in &block.0 {
+            match *statement {
+                // A return statement in a block determines the value that the
+                // block evalates to, if a return is present.
+                Stmt::Return(Return(ref r)) => {
+                    return stmt_interpreter.get_expr_interpreter().eval_expr(r)
+                }
+                // A block statemen to make a frame can only be used at the top
+                // level.
+                Stmt::Block(..) => {
+                    let msg = "Error: slides can only be introduced at the top level. \
+                               Note: use 'at (0w, 0w) put { ... }' to place a frame.";
+                    return Err(Error::Other(String::from(msg)));
+                }
+                // Otherwise, evaluating a statement only mutates the frame.
+                _ => {
+                    let maybe_frame = stmt_interpreter.eval_statement(statement)?;
+                    assert!(maybe_frame.is_none());
+                }
+            }
+        }
+
+        // The result of a block, if there was no return, is the frame in its
+        // final state.
+        Ok(Val::Frame(Rc::new(stmt_interpreter.frame)))
+    }
 }
 
 // Statement interpreter.
 
-pub fn eval_statement<'a>(fm: &mut FontMap,
-                          frame: &mut Frame<'a>,
+struct StmtInterpreter<'i, 'a: 'i> {
+    font_map: &'i mut FontMap,
+    frame: Frame<'a>,
+}
+
+impl<'i, 'a> StmtInterpreter<'i, 'a> {
+
+    fn get_expr_interpreter<'j>(&'j mut self) -> ExprInterpreter<'j, 'a> {
+        let fm = *self.font_map;
+        let env = self.frame.get_env();
+        ExprInterpreter {
+            font_map: &mut fm,
+            env: env,
+        }
+    }
+
+    pub fn eval_statement(&mut self,
                           stmt: &'a Stmt<'a>)
                           -> Result<Option<Rc<Frame<'a>>>> {
-    match *stmt {
-        Stmt::Import(ref _i) => {
-            println!("TODO: eval import");
-            Ok(None)
-        }
-        Stmt::Assign(ref a) => {
-            eval_assign(fm, frame, a)?;
-            Ok(None)
-        }
-        Stmt::Return(..) => {
-            // The return case is handled in block evaluation. A bare return
-            // statement does not make sense.
-            Err(Error::Other(String::from("Syntax error: 'return' cannot be used here.")))
-        }
-        Stmt::Block(ref bk) => {
-            if let Val::Frame(frame) = eval_block(fm, frame.get_env(), bk)? {
-                Ok(Some(frame))
-            } else {
-                let msg = "Type error: top-level blocks must evaluate to frames, \
-                           but a <TODO> was encountered instead.";
+        match *stmt {
+            Stmt::Import(ref _i) => {
+                println!("TODO: eval import");
+                Ok(None)
+            }
+            Stmt::Assign(ref a) => {
+                self.eval_assign(a)?;
+                Ok(None)
+            }
+            Stmt::Return(..) => {
+                // The return case is handled in block evaluation. A bare return
+                // statement does not make sense.
+                let msg = "Syntax error: 'return' cannot be used here.";
                 Err(Error::Other(String::from(msg)))
             }
-        }
-        Stmt::PutAt(ref pa) => {
-            eval_put_at(fm, frame, pa)?;
-            Ok(None)
+            Stmt::Block(ref bk) => {
+                let mut expr_interpreter = self.get_expr_interpreter();
+                if let Val::Frame(frame) = expr_interpreter.eval_block(bk)? {
+                    Ok(Some(frame))
+                } else {
+                    let msg = "Type error: top-level blocks must evaluate to \
+                               frames, but a <TODO> was encountered instead.";
+                    Err(Error::Other(String::from(msg)))
+                }
+            }
+            Stmt::PutAt(ref pa) => {
+                self.eval_put_at(pa)?;
+                Ok(None)
+            }
         }
     }
-}
 
-fn eval_assign<'a>(fm: &mut FontMap,
-                   frame: &mut Frame<'a>,
-                   stmt: &'a Assign<'a>)
-                   -> Result<()> {
-    let Assign(target, ref expression) = *stmt;
-    let value = eval_expr(fm, frame.get_env(), expression)?;
-    frame.put_in_env(target, value);
-    Ok(())
-}
-
-fn eval_put_at<'a>(fm: &mut FontMap,
-                   frame: &mut Frame<'a>,
-                   put_at: &'a PutAt<'a>)
-                   -> Result<()> {
-    let content = match eval_expr(fm, frame.get_env(), &put_at.0)? {
-        Val::Frame(f) => f,
-        _ => {
-            let msg = "Cannot place <TODO>. Only frames can be placed.";
-            return Err(Error::Other(String::from(msg)));
-        }
-    };
-
-    let pos = match eval_expr(fm, frame.get_env(), &put_at.1)? {
-        // TODO: Make Coord type carry Vec2 instead of separate x, y.
-        Val::Coord(x, y, 1) => Vec2::new(x, y),
-        _ => {
-            let msg = "Placement requires a coordinate with length units, \
-                       but a <TODO> was found instead.";
-            return Err(Error::Other(String::from(msg)));
-        }
-    };
-
-    for pe in content.get_elements() {
-        frame.place_element(pos + pe.position, pe.element.clone());
+    fn eval_assign(&mut self, stmt: &'a Assign<'a>) -> Result<()> {
+        let Assign(target, ref expression) = *stmt;
+        let value = self.get_expr_interpreter().eval_expr(expression)?;
+        self.frame.put_in_env(target, value);
+        Ok(())
     }
 
-    frame.union_bounding_box(&content.get_bounding_box().offset(pos));
+    fn eval_put_at(&mut self, put_at: &'a PutAt<'a>) -> Result<()> {
+        let content = match self.get_expr_interpreter().eval_expr(&put_at.0)? {
+            Val::Frame(f) => f,
+            _ => {
+                let msg = "Cannot place <TODO>. Only frames can be placed.";
+                return Err(Error::Other(String::from(msg)));
+            }
+        };
 
-    // Update the anchor of the frame: the anchor of a block is the anchor of
-    // the element that was placed last.
-    frame.set_anchor(pos + content.get_anchor());
+        let pos = match self.get_expr_interpreter().eval_expr(&put_at.1)? {
+            // TODO: Make Coord type carry Vec2 instead of separate x, y.
+            Val::Coord(x, y, 1) => Vec2::new(x, y),
+            _ => {
+                let msg = "Placement requires a coordinate with length units, \
+                           but a <TODO> was found instead.";
+                return Err(Error::Other(String::from(msg)));
+            }
+        };
 
-    Ok(())
+        for pe in content.get_elements() {
+            self.frame.place_element(pos + pe.position, pe.element.clone());
+        }
+
+        self.frame.union_bounding_box(&content.get_bounding_box().offset(pos));
+
+        // Update the anchor of the frame: the anchor of a block is the anchor
+        // of the element that was placed last.
+        self.frame.set_anchor(pos + content.get_anchor());
+
+        Ok(())
+    }
 }
