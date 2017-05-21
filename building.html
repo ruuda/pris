@@ -1,0 +1,46 @@
+<!DOCTYPE HTML>
+<html>
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Pris, a language for designing slides</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <div id="top">
+    <nav>
+      <a href="index.html">Pris</a>
+      <a href="https://github.com/ruuda/pris/tree/master/examples">Examples</a>
+      <a href="getting-started.html">Docs</a>
+      <a href="https://github.com/ruuda/pris">GitHub</a>
+    </nav>
+  </div>
+  <input type="checkbox" id="hamburger-check">
+  <label for="hamburger-check" id="hamburger">≡</label>
+  <div id="content">
+    <nav id="toc"><a href="getting-started.html">Getting started</a><a href="building.html" class="active">Building</a><a href="#linux" class="sect">Linux</a><a href="#mac" class="sect">Mac</a><a href="#windows" class="sect">Windows</a><a href="function-reference.html">Function reference</a></nav><h1>Building</h1>
+<p>Pris is written in <a href="https://www.rust-lang.org/">Rust</a> and builds with Cargo, the build tool bundled with Rust. When system dependencies are installed, <code>cargo build</code> is sufficient.</p>
+<pre><code>git clone https://github.com/ruuda/pris
+cd pris
+cargo build --release
+target/release/pris --help
+target/release/pris examples/lines.pris
+evince examples/lines.pdf
+</code></pre>
+<p>If building does not succeed at first, some system dependencies might not be installed. See below.</p>
+<h2 id="linux"><a href="#linux">¶ </a>Linux</h2>
+<p>To install system dependencies on Ubuntu:</p>
+<pre><code>apt install libcairo2-dev libharfbuzz-dev librsvg2-dev
+</code></pre>
+<p>To install system dependencies on Arch Linux:</p>
+<pre><code>pacman -S --needed cairo harfbuzz librsvg fontconfig freetype2
+</code></pre>
+<h2 id="mac"><a href="#mac">¶ </a>Mac</h2>
+<p>On Mac, system dependencies can be installed through Homebrew:</p>
+<pre><code>brew install cairo harfbuzz librsvg fontconfig
+</code></pre>
+<h2 id="windows"><a href="#windows">¶ </a>Windows</h2>
+<p>On Windows, system dependencies can be installed inside an <a href="http://www.msys2.org/">MSYS2</a> environment. More information will follow soon. For now, check out the <code>windows</code> branch for more information.</p>
+  </div>
+</body>
+</html>
