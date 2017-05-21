@@ -72,7 +72,7 @@ horizontal line. The first slide contains text in dark purple.
    motivation for building Pris.
  * [Examples](examples), small examples that demonstrate one feature at a time.
  * Ask questions in [the Gitter chatroom][gitter], or [send me an email][contact].
- * More will follow soon.
+ * The [online documentation][docs] (a work in progress).
 
 ## Building
 
@@ -98,6 +98,7 @@ Pris is free software. It is licensed under the
 [gitter]:     https://gitter.im/ruuda/pris
 [blogpost]:   https://ruudvanasseldonk.com/2017/04/27/a-language-for-designing-slides
 [contact]:    https://ruudvanasseldonk.com/contact
+[docs]:       https://ruuda.github.io/pris/getting-started.html
 [rust]:       https://rust-lang.org
 [cairo]:      https://cairographics.org
 [harfbuzz]:   https://www.freedesktop.org/wiki/Software/HarfBuzz/
