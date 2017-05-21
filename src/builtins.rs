@@ -15,7 +15,7 @@ use freetype;
 use harfbuzz;
 use pretty::Formatter;
 use rsvg;
-use runtime::{BoundingBox, Env, FontMap, Frame, Subframe, Val};
+use runtime::{BoundingBox, Frame, Subframe, Val};
 use types::ValType;
 
 // TODO: Put that somewhere else.
@@ -40,7 +40,7 @@ fn validate_args<'a>(fn_name: &str,
     Ok(())
 }
 
-pub fn fit<'i, 'a>(interpreter: &mut ExprInterpreter<'i, 'a>,
+pub fn fit<'i, 'a>(_interpreter: &mut ExprInterpreter<'i, 'a>,
                    mut args: Vec<Val<'a>>)
                    -> Result<Val<'a>> {
     validate_args("fit", &[ValType::Frame, ValType::Coord(1)], &args)?;

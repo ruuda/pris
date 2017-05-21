@@ -252,7 +252,7 @@ impl<'i, 'a> ExprInterpreter<'i, 'a> {
             inner_env.put(arg_name, val);
         }
 
-        let inner_interpreter = ExprInterpreter {
+        let mut inner_interpreter = ExprInterpreter {
             font_map: &mut *self.font_map,
             env: &inner_env,
         };
@@ -269,10 +269,10 @@ impl<'i, 'a> ExprInterpreter<'i, 'a> {
         // until the block ends. The statement interpreter keeps track of this
         // frame internally. When the block ends, the frame is the result of the
         // block (if there was no return).
-        let fm = *self.font_map;
         let mut stmt_interpreter = StmtInterpreter {
-            font_map: &mut fm,
+            font_map: self.font_map,
             frame: Frame::from_env(inner_env),
+            current_subframe: 0,
         };
 
         for statement in &block.0 {
@@ -305,18 +305,27 @@ impl<'i, 'a> ExprInterpreter<'i, 'a> {
 
 // Statement interpreter.
 
-struct StmtInterpreter<'i, 'a: 'i> {
+// TODO: This should not be public, or at least, not in this form.
+pub struct StmtInterpreter<'i, 'a: 'i> {
     font_map: &'i mut FontMap,
     frame: Frame<'a>,
+    current_subframe: usize,
 }
 
 impl<'i, 'a> StmtInterpreter<'i, 'a> {
 
+    pub fn new(font_map: &'i mut FontMap) -> StmtInterpreter<'i, 'a> {
+        StmtInterpreter {
+            font_map: font_map,
+            frame: Frame::new(),
+            current_subframe: 0,
+        }
+    }
+
     fn get_expr_interpreter<'j>(&'j mut self) -> ExprInterpreter<'j, 'a> {
-        let fm = *self.font_map;
         let env = self.frame.get_env();
         ExprInterpreter {
-            font_map: &mut fm,
+            font_map: self.font_map,
             env: env,
         }
     }
@@ -382,8 +391,22 @@ impl<'i, 'a> StmtInterpreter<'i, 'a> {
             }
         };
 
-        for pe in content.get_elements() {
-            self.frame.place_element(pos + pe.position, pe.element.clone());
+        // Ensure that the current frame has enough subframes to place the
+        // elements in content subframes. If the content has more subframes than
+        // the current frame, more must be added.
+        while content.get_subframes().len() > self.frame.get_subframes().len() {
+            self.frame.push_subframe(Subframe::new());
+        }
+
+        for (i, subframe) in content.get_subframes().iter().enumerate() {
+            // Getting the subframe will not fail here, because we ensured that
+            // they all exist before entering the loop.
+            let sf_idx = self.current_subframe + i;
+            let dest_sf = self.frame.get_subframe_mut(sf_idx);
+
+            for pe in subframe.get_elements() {
+                dest_sf.place_element(pos + pe.position, pe.element.clone());
+            }
         }
 
         self.frame.union_bounding_box(&content.get_bounding_box().offset(pos));

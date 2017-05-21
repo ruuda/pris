@@ -81,15 +81,18 @@ fn main() {
 
     println!("Evaluating document ...");
 
-    let mut fm = runtime::FontMap::new();
     let mut frames = Vec::new();
-    let mut context_frame = runtime::Frame::new();
-    for statement in &doc.0 {
-        let result = match interpreter::eval_statement(&mut fm, &mut context_frame, statement) {
-            Ok(x) => x,
-            Err(e) => { e.print(); panic!("Abort after error.") }
-        };
-        if let Some(frame) = result { frames.push(frame); }
+    let mut fm = runtime::FontMap::new();
+
+    {
+        let mut stmt_interpreter = interpreter::StmtInterpreter::new(&mut fm);
+        for statement in &doc.0 {
+            let result = match stmt_interpreter.eval_statement(statement) {
+                Ok(x) => x,
+                Err(e) => { e.print(); panic!("Abort after error.") }
+            };
+            if let Some(frame) = result { frames.push(frame); }
+        }
     }
 
     let surf = cairo::Surface::new(&outfile, 1920.0, 1080.0);

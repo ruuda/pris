@@ -167,7 +167,8 @@ impl<'a> Frame<'a> {
         if self.subframes.len() == 0 {
             self.subframes.push(Subframe::new());
         }
-        let mut subframe = &mut self.subframes[self.subframes.len() - 1];
+        let index = self.subframes.len() - 1;
+        let mut subframe = &mut self.subframes[index];
         subframe.place_element(position, elem);
     }
 
