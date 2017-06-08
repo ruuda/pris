@@ -90,6 +90,7 @@ expr_exp: Term<'input> = {
   <term> => <>,
   <lhs:term> "^" <rhs:term> => Term::BinOp(Box::new(BinTerm(lhs, BinOp::Exp, rhs))),
   "-" <rhs:term> => Term::UnOp(Box::new(UnTerm(UnOp::Neg, rhs))),
+  fn_call => Term::FnCall(Box::new(<>)),
 };
 
 term: Term<'input> = {
@@ -98,7 +99,6 @@ term: Term<'input> = {
   color => Term::Color(<>),
   idents => Term::Idents(<>),
   coord => Term::Coord(Box::new(<>)),
-  fn_call => Term::FnCall(Box::new(<>)),
   fn_def => Term::FnDef(<>),
   block => Term::Block(<>),
   "(" <expr> ")" => <>,
