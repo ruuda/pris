@@ -1,5 +1,7 @@
 # Pris
 
+[![Join the chat at https://gitter.im/ruuda/pris](https://badges.gitter.im/ruuda/pris.svg)](https://gitter.im/ruuda/pris?utm_source=badge&utm_medium=badge&utm_campaign=pr-badge&utm_content=badge)
+
 Pris is a domain-specific language for designing slides and other graphics.
 
 [![Build Status][ci-img]][ci]
