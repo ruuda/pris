@@ -18,11 +18,11 @@ use std::result;
 
 use ast::{Assign, BinOp, BinTerm, Block, Coord, Document, FnCall, FnDef};
 use ast::{Idents, Import, Num, PutAt, Return, Stmt, Term, UnOp, UnTerm, Unit};
-use lexer::Token;
+use lexer::{Token, lex};
 use error::{Error, Result};
 
 struct Parser<'a> {
-    tokens: Vec<(usize, Token<'a>, usize)>,
+    tokens: &'a [(usize, Token<'a>, usize)],
 }
 
 /// An intermediate parse error.
@@ -36,6 +36,7 @@ struct Parser<'a> {
 /// required to build a full parse error is here: the index of the wrong token,
 /// which in turn contains the source location, and the prefix for the error
 /// message, to which the "actually found" part still needs to be appended.
+#[derive(Debug)]
 struct PError {
     token_index: usize,
     message: &'static str,
@@ -57,7 +58,7 @@ fn map<T, U, F: Fn(T) -> U>(f: F, result: PResult<T>) -> PResult<U> {
 }
 
 impl<'a> Parser<'a> {
-    fn new(tokens: Vec<(usize, Token<'a>, usize)>) -> Parser<'a> {
+    fn new(tokens: &'a [(usize, Token<'a>, usize)]) -> Parser<'a> {
         Parser {
             tokens: tokens,
         }
@@ -69,16 +70,21 @@ impl<'a> Parser<'a> {
     }
 
     fn parse_statements(&self, start: usize) -> PResult<Vec<Stmt<'a>>> {
+        debug_assert!(start < self.tokens.len());
+
         let mut statements = Vec::new();
         let mut i = start;
         while let Ok((j, stmt)) = self.parse_statement(i) {
             statements.push(stmt);
             i = j;
+            if i == self.tokens.len() { break }
         }
         Ok((i, statements))
     }
 
     fn parse_statement(&self, start: usize) -> PResult<Stmt<'a>> {
+        debug_assert!(start < self.tokens.len());
+
         match self.tokens[start].1 {
             Token::KwImport => map(Stmt::Import, self.parse_import(start)),
             Token::Ident(..) => map(Stmt::Assign, self.parse_assign(start)),
@@ -86,7 +92,8 @@ impl<'a> Parser<'a> {
             Token::LBrace => map(Stmt::Block, self.parse_block(start)),
             Token::KwPut | Token::KwAt => map(Stmt::PutAt, self.parse_put_at(start)),
             _ => {
-                let msg = "in statement: expected import, return, assignment, block, or put-at.";
+                let msg = "Parse error in statement: expected import, return, \
+                           assignment, block, or put-at.";
                 parse_error(start, msg)
             }
         }
@@ -98,7 +105,7 @@ impl<'a> Parser<'a> {
         match self.parse_idents(start + 1) {
             Ok((i, idents)) => Ok((i, Import(idents))),
             Err(err) => {
-                let msg = "in import: expected path like 'std.colors'.";
+                let msg = "Parse error in import: expected path like 'std.colors'.";
                 parse_error(err.token_index, msg)
             }
         }
@@ -121,6 +128,64 @@ impl<'a> Parser<'a> {
     }
 
     fn parse_idents(&self, start: usize) -> PResult<Idents<'a>> {
-        panic!("not implemented");
+        let mut idents = Vec::new();
+        let mut i = start;
+
+        // Take one identifier. If it is followed by a dot, repeat.
+        loop {
+            let (j, ident) = self.parse_ident(i)?;
+
+            idents.push(ident);
+            i = j;
+
+            if i >= self.tokens.len() { break }
+
+            if self.tokens[i].1 == Token::Dot {
+                i += 1
+            } else {
+                break
+            }
+        }
+
+        Ok((i, Idents(idents)))
     }
+
+    fn parse_ident(&self, start: usize) -> PResult<&'a str> {
+        if start < self.tokens.len() {
+            if let Token::Ident(ident) = self.tokens[start].1 {
+                return Ok((start + 1, ident))
+            }
+        }
+        parse_error(start, "Parse error: expected identifier.")
+    }
+}
+
+#[test]
+fn parse_parses_idents_single() {
+    let tokens = lex(b"foo 22").unwrap();
+    let (i, idents) = Parser::new(&tokens).parse_idents(0).unwrap();
+    assert_eq!(i, 1);
+    assert_eq!(&idents.0[..], ["foo"]);
+}
+
+#[test]
+fn parse_parses_idents_multiple() {
+    let tokens = lex(b"foo.bar.baz").unwrap();
+    let (i, idents) = Parser::new(&tokens).parse_idents(0).unwrap();
+    assert_eq!(i, tokens.len());
+    assert_eq!(&idents.0[..], ["foo", "bar", "baz"]);
+}
+
+#[test]
+fn parse_fails_empty() {
+    let tokens = lex(b"put").unwrap(); // "put" is a keyword, not identifier.
+    let result = Parser::new(&tokens).parse_idents(0);
+    assert_eq!(result.err().unwrap().token_index, 0);
+}
+
+#[test]
+fn parse_fails_idents_unfinished_dot() {
+    let tokens = lex(b"foo.").unwrap();
+    let result = Parser::new(&tokens).parse_idents(0);
+    assert_eq!(result.err().unwrap().token_index, 2);
 }

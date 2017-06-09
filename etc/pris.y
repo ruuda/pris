@@ -77,7 +77,10 @@ fn_def
 
 fn_def_args: IDENT | fn_def_args ',' IDENT;
 
-block: '{' statements '}';
+block
+  : '{' '}'
+  | '{' statements '}'
+  ;
 
 return: "return" expr;
 
