@@ -13,6 +13,7 @@ mod elements;
 mod fontconfig;
 mod harfbuzz;
 mod parser;
+mod parser_utils;
 mod pretty;
 mod rsvg;
 mod types;

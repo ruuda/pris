@@ -8,7 +8,7 @@
 use std::str::FromStr;
 use ast::{Assign, BinOp, BinTerm, Block, Color, Coord, Document, FnCall, FnDef};
 use ast::{Idents, Import, Num, PutAt, Return, Stmt, Term, UnOp, UnTerm, Unit};
-use parser::{unescape_raw_string_literal, unescape_string_literal};
+use parser_utils::{unescape_raw_string_literal, unescape_string_literal};
 use lexer;
 
 grammar<'input>(text: &'input str);
