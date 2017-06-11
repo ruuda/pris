@@ -66,6 +66,9 @@ impl<'a> Parser<'a> {
 
     /// Run the parser on the full input and return the resulting document.
     fn parse_document(&self, start: usize) -> PResult<Document<'a>> {
+        // TODO: Have a pre-pass that checks for balanced parens and brackets.
+        // That will produce more helpful error messages than "unexpected token"
+        // at the mismatched closing bracket.
         panic!("not_implemented");
     }
 
@@ -112,7 +115,13 @@ impl<'a> Parser<'a> {
     }
 
     fn parse_assign(&self, start: usize) -> PResult<Assign<'a>> {
-        panic!("not implemented");
+        let (_, ident) = self.parse_ident(start)?;
+        // TODO: Add hints to these messages. It is possible to explain here
+        // that nested assignments are not allowed.
+        let msg = "Parse error: expected '='.";
+        let _ = self.expect_token(start + 1, Token::Equals, msg)?;
+        let (i, expr) = self.parse_expr(start + 2)?;
+        Ok((i, Assign(ident, expr)))
     }
 
     fn parse_return(&self, start: usize) -> PResult<Return<'a>> {
@@ -124,6 +133,10 @@ impl<'a> Parser<'a> {
     }
 
     fn parse_put_at(&self, start: usize) -> PResult<PutAt<'a>> {
+        panic!("not implemented");
+    }
+
+    fn parse_expr(&self, start: usize) -> PResult<Term<'a>> {
         panic!("not implemented");
     }
 
@@ -157,6 +170,19 @@ impl<'a> Parser<'a> {
             }
         }
         parse_error(start, "Parse error: expected identifier.")
+    }
+
+    fn expect_token(&self,
+                    at: usize,
+                    token: Token<'a>,
+                    error_message: &'static str)
+                    -> PResult<()> {
+        if at < self.tokens.len() {
+            if self.tokens[at].1 == token {
+                return Ok((at + 1, ()))
+            }
+        }
+        parse_error(at, error_message)
     }
 }
 
