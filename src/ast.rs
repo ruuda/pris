@@ -9,6 +9,7 @@ use pretty::{Formatter, Print};
 
 pub struct Document<'a>(pub Vec<Stmt<'a>>);
 
+#[derive(PartialEq)]
 pub enum Stmt<'a> {
     Import(Import<'a>),
     Assign(Assign<'a>),
@@ -17,12 +18,16 @@ pub enum Stmt<'a> {
     PutAt(PutAt<'a>),
 }
 
+#[derive(PartialEq, Eq)]
 pub struct Import<'a>(pub Idents<'a>);
 
+#[derive(PartialEq, Eq)]
 pub struct Idents<'a>(pub Vec<&'a str>);
 
+#[derive(PartialEq)]
 pub struct Assign<'a>(pub &'a str, pub Term<'a>);
 
+#[derive(PartialEq)]
 pub enum Term<'a> {
     String(String),
     Number(Num),
@@ -36,9 +41,10 @@ pub enum Term<'a> {
     Block(Block<'a>),
 }
 
+#[derive(PartialEq)]
 pub struct Num(pub f64, pub Option<Unit>);
 
-#[derive(Copy, Clone)]
+#[derive(Copy, Clone, PartialEq, Eq)]
 pub enum Unit {
   W,
   H,
@@ -46,14 +52,17 @@ pub enum Unit {
   Pt,
 }
 
+#[derive(PartialEq, Eq)]
 pub struct Color(pub u8, pub u8, pub u8);
 
+#[derive(PartialEq)]
 pub struct Coord<'a>(pub Term<'a>, pub Term<'a>);
 
 /// A binary operation applied to two terms.
+#[derive(PartialEq)]
 pub struct BinTerm<'a>(pub Term<'a>, pub BinOp, pub Term<'a>);
 
-#[derive(Copy, Clone)]
+#[derive(Copy, Clone, PartialEq, Eq)]
 pub enum BinOp {
     /// Adjoin, '~'.
     Adj,
@@ -70,22 +79,28 @@ pub enum BinOp {
 }
 
 /// A unary operation applied to a term.
+#[derive(PartialEq)]
 pub struct UnTerm<'a>(pub UnOp, pub Term<'a>);
 
-#[derive(Copy, Clone)]
+#[derive(Copy, Clone, PartialEq, Eq)]
 pub enum UnOp {
     /// Unary negation, '-'.
     Neg,
 }
 
+#[derive(PartialEq)]
 pub struct FnCall<'a>(pub Term<'a>, pub Vec<Term<'a>>);
 
+#[derive(PartialEq)]
 pub struct FnDef<'a>(pub Vec<&'a str>, pub Block<'a>);
 
+#[derive(PartialEq)]
 pub struct Block<'a>(pub Vec<Stmt<'a>>);
 
+#[derive(PartialEq)]
 pub struct Return<'a>(pub Term<'a>);
 
+#[derive(PartialEq)]
 pub struct PutAt<'a>(pub Term<'a>, pub Term<'a>);
 
 // Pretty-printers.
