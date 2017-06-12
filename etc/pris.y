@@ -2,7 +2,7 @@
 
 %}
 
-%token IDENT COLOR NUM STRING
+%token IDENT COLOR NUMBER STRING
 
 %%
 
@@ -46,7 +46,7 @@ expr_exp
 
 term
   : STRING
-  | num
+  | number
   | COLOR
   | idents
   | coord
@@ -57,9 +57,9 @@ term
 
 suffix: "w" | "h" | "em" | "pt";
 
-num
-  : NUM
-  | NUM suffix;
+number
+  : NUMBER
+  | NUMBER suffix;
 
 coord: '(' expr ',' expr ')';
 

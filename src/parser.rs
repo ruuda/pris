@@ -102,6 +102,38 @@ impl<'a> Parser<'a> {
         }
     }
 
+    fn parse_idents(&self, start: usize) -> PResult<Idents<'a>> {
+        let mut idents = Vec::new();
+        let mut i = start;
+
+        // Take one identifier. If it is followed by a dot, repeat.
+        loop {
+            let (j, ident) = self.parse_ident(i)?;
+
+            idents.push(ident);
+            i = j;
+
+            if i >= self.tokens.len() { break }
+
+            if self.tokens[i].1 == Token::Dot {
+                i += 1
+            } else {
+                break
+            }
+        }
+
+        Ok((i, Idents(idents)))
+    }
+
+    fn parse_ident(&self, start: usize) -> PResult<&'a str> {
+        if start < self.tokens.len() {
+            if let Token::Ident(ident) = self.tokens[start].1 {
+                return Ok((start + 1, ident))
+            }
+        }
+        parse_error(start, "Parse error: expected identifier.")
+    }
+
     fn parse_import(&self, start: usize) -> PResult<Import<'a>> {
         debug_assert!(self.tokens[start].1 == Token::KwImport);
 
@@ -140,36 +172,67 @@ impl<'a> Parser<'a> {
         panic!("not implemented");
     }
 
-    fn parse_idents(&self, start: usize) -> PResult<Idents<'a>> {
-        let mut idents = Vec::new();
-        let mut i = start;
+    fn parse_term(&self, start: usize) -> PResult<Term<'a>> {
+        use parser_utils::unescape_string_literal;
+        use parser_utils::unescape_raw_string_literal;
+        use parser_utils::parse_color;
 
-        // Take one identifier. If it is followed by a dot, repeat.
-        loop {
-            let (j, ident) = self.parse_ident(i)?;
+        let msg = "Parse error in expression: expected one more token.";
+        let (_, tok) = self.take_token(start, msg)?;
 
-            idents.push(ident);
-            i = j;
-
-            if i >= self.tokens.len() { break }
-
-            if self.tokens[i].1 == Token::Dot {
-                i += 1
-            } else {
-                break
+        match tok {
+            Token::String(ref s) => {
+                // TODO: Return the right kind of parse error there, or make the
+                // type an enum.
+                let contents = unescape_string_literal(s).unwrap();
+                Ok((start + 1, Term::String(contents)))
             }
+            Token::RawString(ref s) => {
+                // TODO: Return the right kind of parse error there, or make the
+                // type an enum.
+                let contents = unescape_raw_string_literal(s);
+                Ok((start + 1, Term::String(contents)))
+            }
+            Token::Color(ref cs) => {
+                Ok((start + 1, Term::Color(parse_color(cs))))
+            }
+            Token::Number(..) => map(Term::Number, self.parse_number(start)),
+            Token::Ident(..) => map(Term::Idents, self.parse_idents(start)),
+            Token::KwFunction => map(Term::FnDef, self.parse_fn_def(start)),
+            Token::LBrace => map(Term::Block, self.parse_block(start)),
+            // Only in the case of an opening paren, it is ambiguous what to
+            // parse: it could become a coord or an expression between parens.
+            Token::LParen => self.parse_coord_or_parens(start),
+            _ => parse_error(start, "Parse error: expected expression."),
         }
-
-        Ok((i, Idents(idents)))
     }
 
-    fn parse_ident(&self, start: usize) -> PResult<&'a str> {
-        if start < self.tokens.len() {
-            if let Token::Ident(ident) = self.tokens[start].1 {
-                return Ok((start + 1, ident))
-            }
+    fn parse_number(&self, start: usize) -> PResult<Num> {
+        let num_str = match self.tokens[start].1 {
+            Token::Number(x) => x,
+            _ => unreachable!("parse_number must be called with cursor at number token"),
+        };
+        unimplemented!()
+    }
+
+    fn parse_fn_def(&self, start: usize) -> PResult<FnDef<'a>> {
+        debug_assert!(self.tokens[start].1 == Token::KwFunction);
+        unimplemented!()
+    }
+
+    fn parse_coord_or_parens(&self, start: usize) -> PResult<Term<'a>> {
+        debug_assert!(self.tokens[start].1 == Token::LParen);
+        unimplemented!()
+    }
+
+    fn take_token(&self,
+                  at: usize,
+                  error_message: &'static str) -> PResult<Token<'a>> {
+        if at < self.tokens.len() {
+            Ok((at + 1, self.tokens[at].1))
+        } else {
+            parse_error(at, error_message)
         }
-        parse_error(start, "Parse error: expected identifier.")
     }
 
     fn expect_token(&self,
@@ -214,4 +277,23 @@ fn parse_fails_idents_unfinished_dot() {
     let tokens = lex(b"foo.").unwrap();
     let result = Parser::new(&tokens).parse_idents(0);
     assert_eq!(result.err().unwrap().token_index, 2);
+}
+
+#[test]
+fn parse_parses_string_literal() {
+    let tokens = lex(b"\"foo\"").unwrap();
+    let (i, lit) = Parser::new(&tokens).parse_term(0).unwrap();
+    assert_eq!(i, 1);
+    assert!(lit == Term::String(String::from("foo")));
+}
+
+#[test]
+fn parse_parses_idents_term() {
+    let tokens = lex(b"foo.bar.baz 22").unwrap();
+    let (i, term) = Parser::new(&tokens).parse_term(0).unwrap();
+    assert_eq!(i, 5);
+    match term {
+        Term::Idents(idents) => assert_eq!(&idents.0[..], ["foo", "bar", "baz"]),
+        _ => panic!("expected idents"),
+    }
 }
