@@ -61,7 +61,9 @@ pub fn unescape_raw_string_literal<'a>(literal: &'a str) -> String {
     // And the final line.
     assert!(left.chars().take(indent).all(|x| x == ' '),
             "Non-space character in indent of raw string literal.");
-    string.push_str(&left[indent..]);
+    if left.len() >= indent {
+        string.push_str(&left[indent..]);
+    }
 
     // We should not have allocated accidentally.
     debug_assert_eq!(string.capacity(), literal.len() - 7);
@@ -180,6 +182,15 @@ fn unescape_raw_string_literal_preserves_newlines() {
 fn unescape_raw_string_literal_allows_blank_lines() {
     let x = unescape_raw_string_literal("---\n  hi\n\n  there\n  ---");
     assert_eq!("hi\n\nthere", &x);
+}
+
+#[test]
+fn unescape_raw_string_literal_can_end_with_blank_line() {
+    // What we have here is a line of a raw string literal (indented by two
+    // spaces), followed by a blank line (entirely empty). This caused an index
+    // out of bounds before.
+    let x = unescape_raw_string_literal("---\n  First line.\n\n  ---");
+    assert_eq!("First line.\n", &x);
 }
 
 #[test]
