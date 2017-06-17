@@ -15,7 +15,7 @@ rust:
   - 1.15.1
   - 1.16.0
   - beta
-  - nightly
+  # - nightly
 
 # Apart from the above Rust versions on Linux, also test on stable Rust on OS X.
 matrix:
