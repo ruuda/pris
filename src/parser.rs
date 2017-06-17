@@ -208,11 +208,29 @@ impl<'a> Parser<'a> {
     }
 
     fn parse_number(&self, start: usize) -> PResult<Num> {
+        use std::str::FromStr;
+
         let num_str = match self.tokens[start].1 {
             Token::Number(x) => x,
             _ => unreachable!("parse_number must be called with cursor at number token"),
         };
-        unimplemented!()
+
+        // The unwrap here is safe, because the lexer guarantees that we get a
+        // string of the right format.
+        let x = f64::from_str(&num_str).unwrap();
+
+        let unit = match self.take_token(start + 1, "<unused msg>").map(|t| t.1) {
+            Ok(Token::UnitEm) => Some(Unit::Em),
+            Ok(Token::UnitPt) => Some(Unit::Pt),
+            Ok(Token::UnitW) => Some(Unit::W),
+            Ok(Token::UnitH) => Some(Unit::H),
+            _ => None,
+        };
+
+        match unit {
+            Some(u) => Ok((start + 2, Num(x, unit))),
+            None => Ok((start + 1, Num(x, None))),
+        }
     }
 
     fn parse_fn_def(&self, start: usize) -> PResult<FnDef<'a>> {
@@ -296,4 +314,28 @@ fn parse_parses_idents_term() {
         Term::Idents(idents) => assert_eq!(&idents.0[..], ["foo", "bar", "baz"]),
         _ => panic!("expected idents"),
     }
+}
+
+#[test]
+fn parse_parses_unitless_number_literal() {
+    let tokens = lex(b"31seconds").unwrap();
+    let (i, lit) = Parser::new(&tokens).parse_term(0).unwrap();
+    assert_eq!(i, 1);
+    assert!(lit == Term::Number(Num(31.0, None)));
+}
+
+#[test]
+fn parse_parses_unitful_number_literal() {
+    let tokens = lex(b"0.5em").unwrap();
+    let (i, lit) = Parser::new(&tokens).parse_term(0).unwrap();
+    assert_eq!(i, 2);
+    assert!(lit == Term::Number(Num(0.5, Some(Unit::Em))));
+}
+
+#[test]
+fn parse_parses_number_then_eof() {
+    let tokens = lex(b"17").unwrap();
+    let (i, lit) = Parser::new(&tokens).parse_term(0).unwrap();
+    assert_eq!(i, 1);
+    assert!(lit == Term::Number(Num(17.0, None)));
 }
