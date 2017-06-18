@@ -5,6 +5,10 @@
 // it under the terms of the GNU General Public License version 3. A copy
 // of the License is available in the root of the repository.
 
+// TODO: Remove when parser is done.
+#![allow(dead_code)]
+#![allow(unused_variables)]
+
 //! This module contains the Pris parser.
 //!
 //! The parser is a hand-written recursive descent parser. This is not the most
@@ -235,7 +239,52 @@ impl<'a> Parser<'a> {
 
     fn parse_fn_def(&self, start: usize) -> PResult<FnDef<'a>> {
         debug_assert!(self.tokens[start].1 == Token::KwFunction);
-        unimplemented!()
+
+        let msg = "Parse error in function definition: expected '('.";
+        self.expect_token(start + 1, Token::LParen, msg)?;
+
+        let (i, args) = self.parse_fn_def_args(start + 1)?;
+
+        let msg = "Parse error in function definition: expected '{'.";
+        self.expect_token(i, Token::LBrace, msg)?;
+
+        let (j, body) = self.parse_block(i)?;
+
+        Ok((j, FnDef(args, body)))
+    }
+
+    /// Parse arguments between parentheses, like "()" or "(a, b, c)".
+    fn parse_fn_def_args(&self, start: usize) -> PResult<Vec<&'a str>> {
+        debug_assert!(self.tokens[start].1 == Token::LParen);
+
+        let mut args = Vec::new();
+        let mut i = start + 1;
+
+        // Take one identifier. If it is followed by a comma, repeat. If we find
+        // a closing paren instead, we are done.
+        loop {
+            let msg = "Parse error in function definition: expected argument name or ')'.";
+            let (j, tok) = self.take_token(i, msg)?;
+            match tok {
+                Token::Ident(ident) => args.push(ident),
+                Token::RParen => break,
+                _ => return parse_error(i, msg),
+            }
+
+            i = j;
+
+            let msg = "Parse error in function definition: expected ',' or ')'.";
+
+            if i >= self.tokens.len() { return parse_error(i, msg) }
+
+            match self.tokens[i].1 {
+                Token::Comma => i += 1,
+                Token::RParen => break,
+                _ => return parse_error(i, msg),
+            }
+        }
+
+        Ok((i + 1, args))
     }
 
     fn parse_coord_or_parens(&self, start: usize) -> PResult<Term<'a>> {
@@ -338,4 +387,39 @@ fn parse_parses_number_then_eof() {
     let (i, lit) = Parser::new(&tokens).parse_term(0).unwrap();
     assert_eq!(i, 1);
     assert!(lit == Term::Number(Num(17.0, None)));
+}
+
+#[test]
+fn parse_parses_fn_def_args_empty() {
+    let tokens = lex(b"()").unwrap();
+    let (i, args) = Parser::new(&tokens).parse_fn_def_args(0).unwrap();
+    let bogus = ["foobar"]; // Required to help type inference.
+    assert_eq!(i, 2);
+    assert_eq!(&args[..], &bogus[..0]);
+}
+
+#[test]
+fn parse_parses_fn_def_args_one() {
+    let tokens = lex(b"(x)").unwrap();
+    let (i, args) = Parser::new(&tokens).parse_fn_def_args(0).unwrap();
+    assert_eq!(i, 3);
+    assert_eq!(&args[..], &["x"]);
+}
+
+#[test]
+fn parse_parses_fn_def_args_two() {
+    let tokens = lex(b"(x, y)").unwrap();
+    let (i, args) = Parser::new(&tokens).parse_fn_def_args(0).unwrap();
+    assert_eq!(i, 5);
+    assert_eq!(&args[..], &["x", "y"]);
+}
+
+#[test]
+fn parse_parses_fn_def_empty() {
+    let tokens = lex(b"function() {}").unwrap();
+    // TODO: Enable this once blocks are implemented.
+    // let (i, fn_def) = Parser::new(&tokens).parse_fn_def(0).unwrap();
+    // assert_eq!(i, 5);
+    // assert_eq!(fn_def.0.len(), 0); // Zero arguments.
+    // assert_eq!((fn_def.1).0.len(), 0); // Zero statements.
 }
