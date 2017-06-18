@@ -173,7 +173,8 @@ impl<'a> Parser<'a> {
     }
 
     fn parse_expr(&self, start: usize) -> PResult<Term<'a>> {
-        panic!("not implemented");
+        // TODO: Operators.
+        self.parse_term(start)
     }
 
     fn parse_term(&self, start: usize) -> PResult<Term<'a>> {
@@ -289,7 +290,25 @@ impl<'a> Parser<'a> {
 
     fn parse_coord_or_parens(&self, start: usize) -> PResult<Term<'a>> {
         debug_assert!(self.tokens[start].1 == Token::LParen);
-        unimplemented!()
+
+        let (i, expr_x) = self.parse_expr(start + 1)?;
+
+        // If we find a ')' then we are done, it was an expression between
+        // parens. If we find a ',' then it is a coord. Otherwise an error.
+        let msg = "Parse error: expected ',' or ')'.";
+        match self.take_token(i, msg)?.1 {
+            Token::RParen => return Ok((i + 1, expr_x)),
+            Token::Comma => {},
+            _ => return parse_error(i, msg),
+        }
+
+        // If we get here, we are in the coordinate case.
+        let (j, expr_y) = self.parse_expr(i + 1)?;
+        let msg = "Parse error in coordinate: expected ')'.";
+        self.expect_token(j, Token::RParen, msg)?;
+
+        let coord = Box::new(Coord(expr_x, expr_y));
+        Ok((j + 1, Term::Coord(coord)))
     }
 
     fn take_token(&self,
@@ -422,4 +441,23 @@ fn parse_parses_fn_def_empty() {
     // assert_eq!(i, 5);
     // assert_eq!(fn_def.0.len(), 0); // Zero arguments.
     // assert_eq!((fn_def.1).0.len(), 0); // Zero statements.
+}
+
+#[test]
+fn parse_parses_coord() {
+    let tokens = lex(b"(1, 2)").unwrap();
+    let (i, coord) = Parser::new(&tokens).parse_term(0).unwrap();
+    let one = Term::Number(Num(1.0, None));
+    let two = Term::Number(Num(2.0, None));
+    assert_eq!(i, 5);
+    assert!(coord == Term::Coord(Box::new(Coord(one, two))));
+}
+
+#[test]
+fn parse_parses_expr_in_parens() {
+    let tokens = lex(b"(1)").unwrap();
+    let (i, term) = Parser::new(&tokens).parse_term(0).unwrap();
+    let one = Term::Number(Num(1.0, None));
+    assert_eq!(i, 3);
+    assert!(term == one);
 }
