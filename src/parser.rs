@@ -20,7 +20,7 @@
 
 use std::result;
 
-use ast::{Assign, BinOp, BinTerm, Block, Coord, Document, FnCall, FnDef};
+use ast::{Assign, BinOp, BinTerm, Block, Color, Coord, Document, FnCall, FnDef};
 use ast::{Idents, Import, Num, PutAt, Return, Stmt, Term, UnOp, UnTerm, Unit};
 use lexer::{Token, lex};
 use error::{Error, Result};
@@ -395,6 +395,24 @@ fn parse_parses_string_literal() {
     let mut parser = Parser::new(&tokens);
     let lit = parser.parse_term().unwrap();
     assert!(lit == Term::String(String::from("foo")));
+    assert_eq!(parser.cursor, 1);
+}
+
+#[test]
+fn parse_parses_raw_string_literal() {
+    let tokens = lex(b"  ---\n  foo\n  --- appendix").unwrap();
+    let mut parser = Parser::new(&tokens);
+    let lit = parser.parse_term().unwrap();
+    assert!(lit == Term::String(String::from("foo")));
+    assert_eq!(parser.cursor, 1);
+}
+
+#[test]
+fn parse_parses_color() {
+    let tokens = lex(b"#c0ffee").unwrap();
+    let mut parser = Parser::new(&tokens);
+    let color = parser.parse_term().unwrap();
+    assert!(color == Term::Color(Color(0xc0, 0xff, 0xee)));
     assert_eq!(parser.cursor, 1);
 }
 
