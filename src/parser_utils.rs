@@ -167,7 +167,11 @@ fn char_from_codepoint<'a>(codepoint: u32) -> Result<char, ParseError<'a>> {
 /// not. It is the task of the lexer and parser to ensure that only strings of
 /// the valid format end up here.
 pub fn parse_color(color: &str) -> ast::Color {
-    unimplemented!();
+    debug_assert_eq!(&color[0..1], "#");
+    let r = u8::from_str_radix(&color[1..3], 16).unwrap();
+    let g = u8::from_str_radix(&color[3..5], 16).unwrap();
+    let b = u8::from_str_radix(&color[5..7], 16).unwrap();
+    ast::Color(r, g, b)
 }
 
 #[test]
