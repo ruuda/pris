@@ -135,10 +135,7 @@ impl<'a> Parser<'a> {
     }
 
     fn parse_import(&mut self) -> PResult<Import<'a>> {
-        debug_assert!(self.peek() == Some(Token::KwImport));
-
-        // Skip over the import keyword.
-        self.consume();
+        assert!(self.take() == Some(Token::KwImport));
 
         let msg = "Parse error in import: expected path like 'std.colors'.";
         self.parse_idents().map(Import).replace_error(msg)
@@ -157,7 +154,8 @@ impl<'a> Parser<'a> {
     }
 
     fn parse_return(&mut self) -> PResult<Return<'a>> {
-        panic!("not implemented");
+        assert!(self.take() == Some(Token::KwReturn));
+        self.parse_expr().map(Return)
     }
 
     fn parse_block(&mut self) -> PResult<Block<'a>> {
@@ -165,7 +163,22 @@ impl<'a> Parser<'a> {
     }
 
     fn parse_put_at(&mut self) -> PResult<PutAt<'a>> {
-        panic!("not implemented");
+        let (frame, coord) = match self.take() {
+            Some(Token::KwAt) => {
+                let coord = self.parse_expr()?;
+                self.expect_consume(Token::KwPut, "Parse error: expected 'put'.")?;
+                let frame = self.parse_expr()?;
+                (frame, coord)
+            }
+            Some(Token::KwPut) => {
+                let frame = self.parse_expr()?;
+                self.expect_consume(Token::KwAt, "Parse error: expected 'at'.")?;
+                let coord = self.parse_expr()?;
+                (frame, coord)
+            }
+            _ => unreachable!("parse_put_at must be called with cursor on put or at."),
+        };
+        Ok(PutAt(frame, coord))
     }
 
     fn parse_expr(&mut self) -> PResult<Term<'a>> {
@@ -331,8 +344,11 @@ impl<'a> Parser<'a> {
 
     /// Consume one token. If it does not match, return the error message.
     fn expect_consume(&mut self, expected: Token<'a>, message: &'static str) -> PResult<()> {
-        match self.take() {
-            Some(token) if token == expected => Ok(()),
+        match self.peek() {
+            Some(token) if token == expected => {
+                self.consume();
+                Ok(())
+            }
             _ => self.error(message),
         }
     }
@@ -353,6 +369,15 @@ impl<'a> Parser<'a> {
         };
         Err(err)
     }
+}
+
+#[test]
+fn parse_parses_import() {
+    let tokens = lex(b"import foo.bar").unwrap();
+    let mut parser = Parser::new(&tokens);
+    let import = parser.parse_import().unwrap();
+    assert_eq!(&(import.0).0[..], ["foo", "bar"]);
+    assert_eq!(parser.cursor, 4);
 }
 
 #[test]
@@ -513,4 +538,44 @@ fn parse_parses_expr_in_parens() {
     let one = Term::Number(Num(1.0, None));
     assert!(term == one);
     assert_eq!(parser.cursor, 3);
+}
+
+#[test]
+fn parse_parses_put_at() {
+    let tokens = lex(b"put 1 at 2").unwrap();
+    let mut parser = Parser::new(&tokens);
+    let put_at = parser.parse_put_at().unwrap();
+    let one = Term::Number(Num(1.0, None));
+    let two = Term::Number(Num(2.0, None));
+    assert!(put_at.0 == one);
+    assert!(put_at.1 == two);
+    assert_eq!(parser.cursor, 4);
+}
+
+#[test]
+fn parse_parses_at_put() {
+    let tokens = lex(b"at 1 put 2").unwrap();
+    let mut parser = Parser::new(&tokens);
+    let put_at = parser.parse_put_at().unwrap();
+    let one = Term::Number(Num(1.0, None));
+    let two = Term::Number(Num(2.0, None));
+    assert!(put_at.0 == two);
+    assert!(put_at.1 == one);
+    assert_eq!(parser.cursor, 4);
+}
+
+#[test]
+fn parse_fails_at_not_put() {
+    let tokens = lex(b"at 1 place 2").unwrap();
+    let mut parser = Parser::new(&tokens);
+    let result = parser.parse_put_at();
+    assert_eq!(result.err().unwrap().token_index, 2);
+}
+
+#[test]
+fn parse_fails_put_not_at() {
+    let tokens = lex(b"put 1 on 2").unwrap();
+    let mut parser = Parser::new(&tokens);
+    let result = parser.parse_put_at();
+    assert_eq!(result.err().unwrap().token_index, 2);
 }
