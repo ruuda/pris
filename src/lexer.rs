@@ -31,6 +31,9 @@ use error::{Error, Result};
 
 #[derive(Copy, Clone, Debug, Eq, PartialEq)]
 pub enum Token<'a> {
+    // TODO: These should not contain slices, that information is redundant and
+    // makes the variants unnecessarily big. Instead, make the parser extract
+    // this from the token boundaries and the original source.
     String(&'a str),
     RawString(&'a str),
     Color(&'a str),
