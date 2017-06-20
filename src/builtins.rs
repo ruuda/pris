@@ -274,15 +274,14 @@ pub fn t<'i, 'a>(interpreter: &mut ExprInterpreter<'i, 'a>,
         }
     };
 
-    // TODO: Extract this, warn properly, do not use Debug instance for
-    // printing.
+    // TODO: Extract this, warn properly.
     if ft_face.family_name().as_ref() != Some(&font_family) {
-        println!("Warning: requested font family '{}', but loaded '{:?}'.",
-                 font_family, ft_face.family_name());
+        println!("Warning: requested font family '{}', but loaded '{}'.",
+                 font_family, ft_face.family_name().unwrap_or("?".into()));
     }
     if ft_face.style_name().as_ref() != Some(&font_style) {
-        println!("Warning: requested font style '{}', but loaded '{:?}'.",
-                 font_style, ft_face.style_name());
+        println!("Warning: requested font style '{}', but loaded '{}'.",
+                 font_style, ft_face.style_name().unwrap_or("?".into()));
     }
 
     let mut glyphs = Vec::new();
