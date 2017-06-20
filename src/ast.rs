@@ -41,6 +41,28 @@ pub enum Term<'a> {
     Block(Block<'a>),
 }
 
+impl<'a> Term<'a> {
+    /// Shorthand to construct a `Term::Coord`.
+    pub fn coord(coord: Coord<'a>) -> Term<'a> {
+        Term::Coord(Box::new(coord))
+    }
+
+    /// Shorthand to construct a `Term::BinOp`.
+    pub fn bin_op(bin_op: BinTerm<'a>) -> Term<'a> {
+        Term::BinOp(Box::new(bin_op))
+    }
+
+    /// Shorthand to construct a `Term::UnOp`.
+    pub fn un_op(un_op: UnTerm<'a>) -> Term<'a> {
+        Term::UnOp(Box::new(un_op))
+    }
+
+    /// Shorthand to construct a `Term::FnCall`.
+    pub fn fn_call(fn_call: FnCall<'a>) -> Term<'a> {
+        Term::FnCall(Box::new(fn_call))
+    }
+}
+
 #[derive(PartialEq)]
 pub struct Num(pub f64, pub Option<Unit>);
 

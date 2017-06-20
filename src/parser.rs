@@ -202,8 +202,7 @@ impl<'a> Parser<'a> {
         if let Some(op) = maybe_op {
             self.consume();
             let rhs = self.parse_expr_add()?;
-            let binterm = BinTerm(term, op, rhs);
-            Ok(Term::BinOp(Box::new(binterm)))
+            Ok(Term::bin_op(BinTerm(term, op, rhs)))
         } else {
             Ok(term)
         }
@@ -223,8 +222,7 @@ impl<'a> Parser<'a> {
         if let Some(op) = maybe_op {
             self.consume();
             let rhs = self.parse_expr_mul()?;
-            let binterm = BinTerm(term, op, rhs);
-            Ok(Term::BinOp(Box::new(binterm)))
+            Ok(Term::bin_op(BinTerm(term, op, rhs)))
         } else {
             Ok(term)
         }
@@ -234,7 +232,7 @@ impl<'a> Parser<'a> {
         // Detect unary operators first, and handle them immediately.
         match self.peek() {
             // For now there is only minus. Might have ! in the future.
-            Some(Token::Minus) => return self.parse_unop().map(|u| Term::UnOp(Box::new(u))),
+            Some(Token::Minus) => return self.parse_unop().map(Term::un_op),
             _ => {}
         }
 
@@ -248,7 +246,7 @@ impl<'a> Parser<'a> {
             Some(Token::Hat) => {
                 self.consume();
                 let rhs = self.parse_term()?;
-                Ok(Term::BinOp(Box::new(BinTerm(term, BinOp::Exp, rhs))))
+                Ok(Term::bin_op(BinTerm(term, BinOp::Exp, rhs)))
             }
             Some(Token::LParen) => {
                 self.consume();
@@ -400,7 +398,7 @@ impl<'a> Parser<'a> {
         let expr_y = self.parse_expr()?;
         self.expect_consume(Token::RParen, "Parse error in coordinate: expected ')'.")?;
 
-        Ok(Term::Coord(Box::new(Coord(expr_x, expr_y))))
+        Ok(Term::coord(Coord(expr_x, expr_y)))
     }
 
     /// Return the token under the cursor, if there is one.
@@ -611,7 +609,7 @@ fn parse_parses_coord() {
     let coord = parser.parse_term().unwrap();
     let one = Term::Number(Num(1.0, None));
     let two = Term::Number(Num(2.0, None));
-    assert!(coord == Term::Coord(Box::new(Coord(one, two))));
+    assert!(coord == Term::coord(Coord(one, two)));
     assert_eq!(parser.cursor, 5);
 }
 
@@ -684,7 +682,7 @@ fn parse_parses_binop_exp() {
     let one = Term::Number(Num(1.0, None));
     let two = Term::Number(Num(2.0, None));
     let bt = BinTerm(one, BinOp::Exp, two);
-    assert!(exp == Term::BinOp(Box::new(bt)));
+    assert!(exp == Term::bin_op(bt));
     assert_eq!(parser.cursor, 3);
 }
 
@@ -702,11 +700,11 @@ fn parse_parses_single_exp() {
 fn parse_parses_binop_mul() {
     let tokens = lex(b"1 * 2").unwrap();
     let mut parser = Parser::new(&tokens);
-    let exp = parser.parse_expr_mul().unwrap();
+    let mul = parser.parse_expr_mul().unwrap();
     let one = Term::Number(Num(1.0, None));
     let two = Term::Number(Num(2.0, None));
     let bt = BinTerm(one, BinOp::Mul, two);
-    assert!(exp == Term::BinOp(Box::new(bt)));
+    assert!(mul == Term::bin_op(bt));
     assert_eq!(parser.cursor, 3);
 }
 
@@ -714,11 +712,11 @@ fn parse_parses_binop_mul() {
 fn parse_parses_binop_div() {
     let tokens = lex(b"1 / 2").unwrap();
     let mut parser = Parser::new(&tokens);
-    let exp = parser.parse_expr_mul().unwrap();
+    let mul = parser.parse_expr_mul().unwrap();
     let one = Term::Number(Num(1.0, None));
     let two = Term::Number(Num(2.0, None));
     let bt = BinTerm(one, BinOp::Div, two);
-    assert!(exp == Term::BinOp(Box::new(bt)));
+    assert!(mul == Term::bin_op(bt));
     assert_eq!(parser.cursor, 3);
 }
 
@@ -726,9 +724,9 @@ fn parse_parses_binop_div() {
 fn parse_parses_binop_single_mul() {
     let tokens = lex(b"1").unwrap();
     let mut parser = Parser::new(&tokens);
-    let exp = parser.parse_expr_mul().unwrap();
+    let mul = parser.parse_expr_mul().unwrap();
     let one = Term::Number(Num(1.0, None));
-    assert!(exp == one);
+    assert!(mul == one);
     assert_eq!(parser.cursor, 1);
 }
 
@@ -736,11 +734,11 @@ fn parse_parses_binop_single_mul() {
 fn parse_parses_binop_add() {
     let tokens = lex(b"1 + 2").unwrap();
     let mut parser = Parser::new(&tokens);
-    let exp = parser.parse_expr_add().unwrap();
+    let add = parser.parse_expr_add().unwrap();
     let one = Term::Number(Num(1.0, None));
     let two = Term::Number(Num(2.0, None));
     let bt = BinTerm(one, BinOp::Add, two);
-    assert!(exp == Term::BinOp(Box::new(bt)));
+    assert!(add == Term::bin_op(bt));
     assert_eq!(parser.cursor, 3);
 }
 
@@ -748,11 +746,11 @@ fn parse_parses_binop_add() {
 fn parse_parses_binop_sub() {
     let tokens = lex(b"1 - 2").unwrap();
     let mut parser = Parser::new(&tokens);
-    let exp = parser.parse_expr_add().unwrap();
+    let add = parser.parse_expr_add().unwrap();
     let one = Term::Number(Num(1.0, None));
     let two = Term::Number(Num(2.0, None));
     let bt = BinTerm(one, BinOp::Sub, two);
-    assert!(exp == Term::BinOp(Box::new(bt)));
+    assert!(add == Term::bin_op(bt));
     assert_eq!(parser.cursor, 3);
 }
 
@@ -760,11 +758,11 @@ fn parse_parses_binop_sub() {
 fn parse_parses_binop_adj() {
     let tokens = lex(b"1 ~ 2").unwrap();
     let mut parser = Parser::new(&tokens);
-    let exp = parser.parse_expr_add().unwrap();
+    let add = parser.parse_expr_add().unwrap();
     let one = Term::Number(Num(1.0, None));
     let two = Term::Number(Num(2.0, None));
     let bt = BinTerm(one, BinOp::Adj, two);
-    assert!(exp == Term::BinOp(Box::new(bt)));
+    assert!(add == Term::bin_op(bt));
     assert_eq!(parser.cursor, 3);
 }
 
@@ -772,8 +770,8 @@ fn parse_parses_binop_adj() {
 fn parse_parses_binop_single_add() {
     let tokens = lex(b"1").unwrap();
     let mut parser = Parser::new(&tokens);
-    let exp = parser.parse_expr_add().unwrap();
+    let add = parser.parse_expr_add().unwrap();
     let one = Term::Number(Num(1.0, None));
-    assert!(exp == one);
+    assert!(add == one);
     assert_eq!(parser.cursor, 1);
 }
