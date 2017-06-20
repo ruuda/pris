@@ -186,6 +186,47 @@ impl<'a> Parser<'a> {
         self.parse_term()
     }
 
+    fn parse_expr_exp(&mut self) -> PResult<Term<'a>> {
+        // Detect unary operators first, and handle them immediately.
+        match self.peek() {
+            // For now there is only minus. Might have ! in the future.
+            Some(Token::Minus) => return self.parse_unop().map(|u| Term::UnOp(Box::new(u))),
+            _ => {}
+        }
+
+        // If we are not dealing with a unary operator, then it is either a bare
+        // term, exponentiation, or a function call.
+        let term = self.parse_term()?;
+
+        // Maybe we were dealing with exponentiation or a function call. If not,
+        // just return the term.
+        match self.peek() {
+            Some(Token::Hat) => {
+                self.consume();
+                let rhs = self.parse_term()?;
+                Ok(Term::BinOp(Box::new(BinTerm(term, BinOp::Exp, rhs))))
+            }
+            Some(Token::LParen) => {
+                self.consume();
+                unimplemented!();
+            }
+            _ => Ok(term)
+        }
+    }
+
+    fn parse_unop(&mut self) -> PResult<UnTerm<'a>> {
+        let op = match self.take() {
+            Some(Token::Minus) => UnOp::Neg,
+            _ => unreachable!("parse_unop must be called with cursor on unop."),
+        };
+
+        // Note that what follows is not an arbitrary expression, but a term.
+        // This ensures that unary operators bind most closely.
+        let term = self.parse_term()?;
+
+        Ok(UnTerm(op, term))
+    }
+
     fn parse_term(&mut self) -> PResult<Term<'a>> {
         use parser_utils::unescape_string_literal;
         use parser_utils::unescape_raw_string_literal;
@@ -578,4 +619,27 @@ fn parse_fails_put_not_at() {
     let mut parser = Parser::new(&tokens);
     let result = parser.parse_put_at();
     assert_eq!(result.err().unwrap().token_index, 2);
+}
+
+#[test]
+fn parse_parses_unop_neg() {
+    let tokens = lex(b"-1").unwrap();
+    let mut parser = Parser::new(&tokens);
+    let unterm = parser.parse_unop().unwrap();
+    let one = Term::Number(Num(1.0, None));
+    assert!(unterm.0 == UnOp::Neg);
+    assert!(unterm.1 == one);
+    assert_eq!(parser.cursor, 2);
+}
+
+#[test]
+fn parse_parses_binop_exp() {
+    let tokens = lex(b"1 ^ 2").unwrap();
+    let mut parser = Parser::new(&tokens);
+    let exp = parser.parse_expr_exp().unwrap();
+    let one = Term::Number(Num(1.0, None));
+    let two = Term::Number(Num(2.0, None));
+    let bt = BinTerm(one, BinOp::Exp, two);
+    assert!(exp == Term::BinOp(Box::new(bt)));
+    assert_eq!(parser.cursor, 3);
 }
