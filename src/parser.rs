@@ -186,6 +186,27 @@ impl<'a> Parser<'a> {
         self.parse_term()
     }
 
+    fn parse_expr_mul(&mut self) -> PResult<Term<'a>> {
+        let term = self.parse_expr_exp()?;
+
+        // The term so far could be it, or it could be part of a bigger binary
+        // expression, if we encounter the right operator next.
+        let maybe_op = match self.peek() {
+            Some(Token::Star) => Some(BinOp::Mul),
+            Some(Token::Slash) => Some(BinOp::Div),
+            _ => None,
+        };
+
+        if let Some(op) = maybe_op {
+            self.consume();
+            let rhs = self.parse_expr_mul()?;
+            let binterm = BinTerm(term, op, rhs);
+            Ok(Term::BinOp(Box::new(binterm)))
+        } else {
+            Ok(term)
+        }
+    }
+
     fn parse_expr_exp(&mut self) -> PResult<Term<'a>> {
         // Detect unary operators first, and handle them immediately.
         match self.peek() {
@@ -642,4 +663,48 @@ fn parse_parses_binop_exp() {
     let bt = BinTerm(one, BinOp::Exp, two);
     assert!(exp == Term::BinOp(Box::new(bt)));
     assert_eq!(parser.cursor, 3);
+}
+
+#[test]
+fn parse_parses_single_exp() {
+    let tokens = lex(b"1").unwrap();
+    let mut parser = Parser::new(&tokens);
+    let exp = parser.parse_expr_exp().unwrap();
+    let one = Term::Number(Num(1.0, None));
+    assert!(exp == one);
+    assert_eq!(parser.cursor, 1);
+}
+
+#[test]
+fn parse_parses_binop_mul() {
+    let tokens = lex(b"1 * 2").unwrap();
+    let mut parser = Parser::new(&tokens);
+    let exp = parser.parse_expr_mul().unwrap();
+    let one = Term::Number(Num(1.0, None));
+    let two = Term::Number(Num(2.0, None));
+    let bt = BinTerm(one, BinOp::Mul, two);
+    assert!(exp == Term::BinOp(Box::new(bt)));
+    assert_eq!(parser.cursor, 3);
+}
+
+#[test]
+fn parse_parses_binop_div() {
+    let tokens = lex(b"1 / 2").unwrap();
+    let mut parser = Parser::new(&tokens);
+    let exp = parser.parse_expr_mul().unwrap();
+    let one = Term::Number(Num(1.0, None));
+    let two = Term::Number(Num(2.0, None));
+    let bt = BinTerm(one, BinOp::Div, two);
+    assert!(exp == Term::BinOp(Box::new(bt)));
+    assert_eq!(parser.cursor, 3);
+}
+
+#[test]
+fn parse_parses_binop_single_mul() {
+    let tokens = lex(b"1").unwrap();
+    let mut parser = Parser::new(&tokens);
+    let exp = parser.parse_expr_mul().unwrap();
+    let one = Term::Number(Num(1.0, None));
+    assert!(exp == one);
+    assert_eq!(parser.cursor, 1);
 }
