@@ -721,6 +721,21 @@ fn parse_parses_binop_div() {
 }
 
 #[test]
+fn parse_parses_binop_mul_mixed_precedence() {
+    let tokens = lex(b"1^6 * -2").unwrap();
+    let mut parser = Parser::new(&tokens);
+    let result = parser.parse_expr_mul().unwrap();
+    let one = Term::Number(Num(1.0, None));
+    let two = Term::Number(Num(2.0, None));
+    let six = Term::Number(Num(6.0, None));
+    let lhs = Term::bin_op(BinTerm(one, BinOp::Exp, six));
+    let rhs = Term::un_op(UnTerm(UnOp::Neg, two));
+    let expected = Term::bin_op(BinTerm(lhs, BinOp::Mul, rhs));
+    assert!(result == expected);
+    assert_eq!(parser.cursor, 6);
+}
+
+#[test]
 fn parse_parses_binop_single_mul() {
     let tokens = lex(b"1").unwrap();
     let mut parser = Parser::new(&tokens);
