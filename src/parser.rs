@@ -790,3 +790,19 @@ fn parse_parses_binop_single_add() {
     assert!(add == one);
     assert_eq!(parser.cursor, 1);
 }
+
+#[test]
+fn parse_parses_binop_add_mixed_precedence() {
+    let tokens = lex(b"1 * 2 + 6 / 10").unwrap();
+    let mut parser = Parser::new(&tokens);
+    let result = parser.parse_expr_add().unwrap();
+    let one = Term::Number(Num(1.0, None));
+    let two = Term::Number(Num(2.0, None));
+    let six = Term::Number(Num(6.0, None));
+    let ten = Term::Number(Num(10.0, None));
+    let lhs = Term::bin_op(BinTerm(one, BinOp::Mul, two));
+    let rhs = Term::bin_op(BinTerm(six, BinOp::Div, ten));
+    let expected = Term::bin_op(BinTerm(lhs, BinOp::Add, rhs));
+    assert!(result == expected);
+    assert_eq!(parser.cursor, 7);
+}
