@@ -154,12 +154,43 @@ impl<'a> Parser<'a> {
     }
 
     fn parse_return(&mut self) -> PResult<Return<'a>> {
-        assert!(self.take() == Some(Token::KwReturn));
+        debug_assert!(self.peek() == Some(Token::KwReturn));
+
+        // Step over the 'return' keyword.
+        self.consume();
+
         self.parse_expr().map(Return)
     }
 
     fn parse_block(&mut self) -> PResult<Block<'a>> {
-        panic!("not implemented");
+        debug_assert!(self.peek() == Some(Token::LBrace));
+
+        // Step over the opening brace.
+        self.consume();
+
+        let mut statements = Vec::new();
+
+        loop {
+            // A closing brace marks the end of the block.
+            match self.peek() {
+                Some(Token::RBrace) => {
+                    self.consume();
+                    break
+                }
+                None => {
+                    let msg = "Parse error in block: expected closing '}'.";
+                    return self.error(msg)
+                }
+                Some(..) => {}
+            }
+
+            // Otherwise we expect a statement.
+            statements.push(self.parse_statement()?);
+
+            // Unlike idents, there are no separators for statements.
+        }
+
+        Ok(Block(statements))
     }
 
     fn parse_put_at(&mut self) -> PResult<PutAt<'a>> {
@@ -595,11 +626,10 @@ fn parse_parses_fn_def_args_two() {
 fn parse_parses_fn_def_empty() {
     let tokens = lex(b"function() {}").unwrap();
     let mut parser = Parser::new(&tokens);
-    // TODO: Enable this once blocks are implemented.
-    // let fn_def = parser.parse_fn_def(0).unwrap();
-    // assert_eq!(parser.cursor, 5);
-    // assert_eq!(fn_def.0.len(), 0); // Zero arguments.
-    // assert_eq!((fn_def.1).0.len(), 0); // Zero statements.
+    let fn_def = parser.parse_fn_def().unwrap();
+    assert_eq!(fn_def.0.len(), 0); // Zero arguments.
+    assert_eq!((fn_def.1).0.len(), 0); // Zero statements.
+    assert_eq!(parser.cursor, 5);
 }
 
 #[test]
@@ -805,4 +835,55 @@ fn parse_parses_binop_add_mixed_precedence() {
     let expected = Term::bin_op(BinTerm(lhs, BinOp::Add, rhs));
     assert!(result == expected);
     assert_eq!(parser.cursor, 7);
+}
+
+#[test]
+fn parse_parses_block_empty() {
+    let tokens = lex(b"{}").unwrap();
+    let mut parser = Parser::new(&tokens);
+    let block = parser.parse_block().unwrap();
+    assert_eq!(block.0.len(), 0);
+    assert_eq!(parser.cursor, 2);
+}
+
+#[test]
+fn parse_parses_block_single_statement() {
+    let tokens = lex(b"{ x = 1 }").unwrap();
+    let mut parser = Parser::new(&tokens);
+    let block = parser.parse_block().unwrap();
+    let one = Term::Number(Num(1.0, None));
+    assert_eq!(block.0.len(), 1);
+    assert!(block.0[0] == Stmt::Assign(Assign("x", one)));
+    assert_eq!(parser.cursor, 5);
+}
+
+#[test]
+fn parse_parses_block_double_statement() {
+    let tokens = lex(b"{ x = 1 y = 2 }").unwrap();
+    let mut parser = Parser::new(&tokens);
+    let block = parser.parse_block().unwrap();
+    let one = Term::Number(Num(1.0, None));
+    let two = Term::Number(Num(2.0, None));
+    assert_eq!(block.0.len(), 2);
+    assert!(block.0[0] == Stmt::Assign(Assign("x", one)));
+    assert!(block.0[1] == Stmt::Assign(Assign("y", two)));
+    assert_eq!(parser.cursor, 8);
+}
+
+#[test]
+fn parse_block_can_separate_statements() {
+    // In this case the most greedy expression is '1 * y',
+    // and the parse error occurs at the unexpected '=' token.
+    let tokens = lex(b"{ x = 1 * y = 2 }").unwrap();
+    let mut parser = Parser::new(&tokens);
+    let result = parser.parse_block();
+    assert_eq!(result.err().unwrap().token_index, 6);
+}
+
+#[test]
+fn parse_block_requires_closing_brace() {
+    let tokens = lex(b"{ x = 1 ").unwrap();
+    let mut parser = Parser::new(&tokens);
+    let result = parser.parse_block();
+    assert_eq!(result.err().unwrap().token_index, 4);
 }
