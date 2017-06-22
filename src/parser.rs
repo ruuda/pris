@@ -278,8 +278,8 @@ impl<'t, 'a: 't> Parser<'t, 'a> {
                 Ok(Term::bin_op(BinTerm(term, BinOp::Exp, rhs)))
             }
             Some(Token::LParen) => {
-                self.consume();
-                unimplemented!();
+                let args = self.parse_fn_call_args()?;
+                Ok(Term::fn_call(FnCall(term, args)))
             }
             _ => Ok(term)
         }
@@ -749,6 +749,19 @@ fn parse_parses_binop_exp() {
     let bt = BinTerm(one, BinOp::Exp, two);
     assert!(exp == Term::bin_op(bt));
     assert_eq!(parser.cursor, 3);
+}
+
+#[test]
+fn parse_parses_fn_call() {
+    let tokens = lex(b"1(2, 6)").unwrap();
+    let mut parser = Parser::new(&tokens);
+    let exp = parser.parse_expr_exp().unwrap();
+    let one = Term::Number(Num(1.0, None));
+    let two = Term::Number(Num(2.0, None));
+    let six = Term::Number(Num(6.0, None));
+    let fc = FnCall(one, vec![two, six]);
+    assert!(exp == Term::fn_call(fc));
+    assert_eq!(parser.cursor, 6);
 }
 
 #[test]
