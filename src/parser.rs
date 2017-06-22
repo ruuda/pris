@@ -25,8 +25,17 @@ use ast::{Idents, Import, Num, PutAt, Return, Stmt, Term, UnOp, UnTerm, Unit};
 use lexer::{Token, lex};
 use error::{Error, Result};
 
-struct Parser<'a> {
-    tokens: &'a [(usize, Token<'a>, usize)],
+/// Parse a token stream into a document.
+pub fn parse<'a>(tokens: &[(usize, Token<'a>, usize)]) -> Document<'a> {
+    // TODO: Have a pre-pass that checks for balanced parens and brackets.
+    // That will produce more helpful error messages than "unexpected token"
+    // at the mismatched closing bracket.
+    // TODO: Do not unwrap, pack the error as a proper parse error.
+    Parser::new(tokens).parse_document().unwrap()
+}
+
+struct Parser<'t, 'a: 't> {
+    tokens: &'t [(usize, Token<'a>, usize)],
     cursor: usize,
 }
 
@@ -61,8 +70,8 @@ impl<T> ReplaceError for PResult<T> {
     }
 }
 
-impl<'a> Parser<'a> {
-    fn new(tokens: &'a [(usize, Token<'a>, usize)]) -> Parser<'a> {
+impl<'t, 'a: 't> Parser<'t, 'a> {
+    fn new(tokens: &'t [(usize, Token<'a>, usize)]) -> Parser<'t, 'a> {
         Parser {
             tokens: tokens,
             cursor: 0,
@@ -71,10 +80,6 @@ impl<'a> Parser<'a> {
 
     /// Run the parser on the full input and return the resulting document.
     fn parse_document(&mut self) -> PResult<Document<'a>> {
-        // TODO: Have a pre-pass that checks for balanced parens and brackets.
-        // That will produce more helpful error messages than "unexpected token"
-        // at the mismatched closing bracket.
-
         let mut statements = Vec::new();
         while self.cursor < self.tokens.len() {
             statements.push(self.parse_statement()?);

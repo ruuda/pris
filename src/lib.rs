@@ -12,7 +12,6 @@ mod builtins;
 mod elements;
 mod fontconfig;
 mod harfbuzz;
-mod parser;
 mod parser_utils;
 mod pretty;
 mod rsvg;
@@ -24,6 +23,7 @@ pub mod driver;
 pub mod error;
 pub mod interpreter;
 pub mod lexer;
+pub mod parser;
 pub mod runtime;
 pub mod syntax;
 
