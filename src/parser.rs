@@ -74,21 +74,13 @@ impl<'a> Parser<'a> {
         // TODO: Have a pre-pass that checks for balanced parens and brackets.
         // That will produce more helpful error messages than "unexpected token"
         // at the mismatched closing bracket.
-        panic!("not_implemented");
-    }
-
-    fn parse_statements(&mut self) -> PResult<Vec<Stmt<'a>>> {
-        debug_assert!(self.cursor < self.tokens.len());
 
         let mut statements = Vec::new();
-        // TODO: Do not rely on error handling to determine next action:
-        // actually we can just inspect the token. When parsing a block, we
-        // expect to see a '}', when parsing a document, we expect to see EOF.
-        while let Ok(stmt) = self.parse_statement() {
-            statements.push(stmt);
-            if self.cursor == self.tokens.len() { break }
+        while self.cursor < self.tokens.len() {
+            statements.push(self.parse_statement()?);
         }
-        Ok(statements)
+
+        Ok(Document(statements))
     }
 
     fn parse_statement(&mut self) -> PResult<Stmt<'a>> {
@@ -886,4 +878,17 @@ fn parse_block_requires_closing_brace() {
     let mut parser = Parser::new(&tokens);
     let result = parser.parse_block();
     assert_eq!(result.err().unwrap().token_index, 4);
+}
+
+#[test]
+fn parse_parses_document_double_statement() {
+    let tokens = lex(b"x = 1 y = 2").unwrap();
+    let mut parser = Parser::new(&tokens);
+    let doc = parser.parse_document().unwrap();
+    let one = Term::Number(Num(1.0, None));
+    let two = Term::Number(Num(2.0, None));
+    assert_eq!(doc.0.len(), 2);
+    assert!(doc.0[0] == Stmt::Assign(Assign("x", one)));
+    assert!(doc.0[1] == Stmt::Assign(Assign("y", two)));
+    assert_eq!(parser.cursor, 6);
 }
