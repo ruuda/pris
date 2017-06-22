@@ -175,6 +175,7 @@ impl<'t, 'a: 't> Parser<'t, 'a> {
                     break
                 }
                 None => {
+                    // TODO: Make the parencheck deal with this.
                     let msg = "Parse error in block: expected closing '}'.";
                     return self.error(msg)
                 }
@@ -282,6 +283,43 @@ impl<'t, 'a: 't> Parser<'t, 'a> {
             }
             _ => Ok(term)
         }
+    }
+
+    fn parse_fn_call_args(&mut self) -> PResult<Vec<Term<'a>>> {
+        debug_assert!(self.peek() == Some(Token::LParen));
+
+        // Step over the opening parenthesis.
+        self.consume();
+
+        // If there are no arguments, return immediately.
+        if self.peek() == Some(Token::RParen) {
+            self.consume();
+            return Ok(Vec::new())
+        }
+
+        // Otherwise, parse one or more expressions separated by commas.
+        let mut args = Vec::new();
+
+        loop {
+            args.push(self.parse_expr()?);
+
+            match self.peek() {
+                Some(Token::Comma) => {
+                    self.consume();
+                    continue
+                }
+                Some(Token::RParen) => {
+                    self.consume();
+                    break
+                }
+                _ => {
+                    let msg = "Parse error in function call: expected ',' or ')'.";
+                    return self.error(msg)
+                }
+            }
+        }
+
+        Ok(args)
     }
 
     fn parse_unop(&mut self) -> PResult<UnTerm<'a>> {
@@ -896,4 +934,34 @@ fn parse_parses_document_double_statement() {
     assert!(doc.0[0] == Stmt::Assign(Assign("x", one)));
     assert!(doc.0[1] == Stmt::Assign(Assign("y", two)));
     assert_eq!(parser.cursor, 6);
+}
+
+#[test]
+fn parse_parses_fn_call_args_empty() {
+    let tokens = lex(b"()").unwrap();
+    let mut parser = Parser::new(&tokens);
+    let args = parser.parse_fn_call_args().unwrap();
+    assert_eq!(args.len(), 0);
+    assert_eq!(parser.cursor, 2);
+}
+
+#[test]
+fn parse_parses_fn_call_args_single() {
+    let tokens = lex(b"(1)").unwrap();
+    let mut parser = Parser::new(&tokens);
+    let args = parser.parse_fn_call_args().unwrap();
+    assert_eq!(args.len(), 1);
+    assert!(args[0] == Term::Number(Num(1.0, None)));
+    assert_eq!(parser.cursor, 3);
+}
+
+#[test]
+fn parse_parses_fn_call_args_double() {
+    let tokens = lex(b"(1, 2)").unwrap();
+    let mut parser = Parser::new(&tokens);
+    let args = parser.parse_fn_call_args().unwrap();
+    assert_eq!(args.len(), 2);
+    assert!(args[0] == Term::Number(Num(1.0, None)));
+    assert!(args[1] == Term::Number(Num(2.0, None)));
+    assert_eq!(parser.cursor, 5);
 }
