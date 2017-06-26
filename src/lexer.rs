@@ -16,7 +16,7 @@
 //!    as regex without support for non-greedy matching.
 //!  * The lexer was originally written to feed tokens into Lalrpop, because the
 //!    lexer included with Lalrpop cannot handle comments that span to the end
-//!    of the line.
+//!    of the line. Today this lexer feeds the hand-written parser.
 //!
 //! The lexer is a state machine with only a few states (the `State` enum). To
 //! avoid an explosion of states, the handler for every state can do a bit of
@@ -264,7 +264,9 @@ impl<'a> Lexer<'a> {
             // The end of the color in a non-hexadecimal character, as expected.
             // Re-inspect the current character from the base state.
             if i == self.start + 7 && !is_hexadecimal(c) {
-                // Include the contents in the token too for lalrpop.
+                // TODO: The new parser does not need the tokens to have content
+                // if the source available to the parser. (Which it needs to be
+                // anyway to generate errors.)
                 let inner = self.parse_utf8_str(self.start, i).unwrap();
                 self.tokens.push((self.start, Token::Color(inner), i));
                 return change_state(i, State::Base)

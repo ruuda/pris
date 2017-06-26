@@ -2,13 +2,8 @@
 name    = "pris"
 version = "0.1.0"
 authors = ["Ruud van Asseldonk <dev@veniogames.com>"]
-build   = "build.rs"
 
 [dependencies]
 docopt          = "0.6"  # TODO: Upgrade to 0.7 once lalrpop does too.
 freetype-rs     = "0.11"
-lalrpop-util    = "0.12"
 rustc-serialize = "0.3"
-
-[build-dependencies]
-lalrpop = "0.12"

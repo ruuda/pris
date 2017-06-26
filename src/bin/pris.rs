@@ -6,7 +6,6 @@
 // of the License is available in the root of the repository.
 
 extern crate docopt;
-extern crate lalrpop_util;
 extern crate rustc_serialize;
 extern crate pris;
 
@@ -17,7 +16,6 @@ use std::io;
 use std::path::{Path, PathBuf};
 
 use docopt::Docopt;
-use lalrpop_util::ParseError;
 
 use pris::ast;
 use pris::cairo;
@@ -27,7 +25,6 @@ use pris::interpreter;
 use pris::lexer;
 use pris::parser;
 use pris::runtime;
-use pris::syntax;
 
 const USAGE: &'static str = "
 Pris, a language for designing slides.
