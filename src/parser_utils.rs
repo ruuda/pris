@@ -9,7 +9,6 @@
 //! be found in the `parser` module.
 
 use ast;
-use lexer::Token;
 use std::char;
 
 /// Strips the '---' of a raw string literal and corrects its indentation.

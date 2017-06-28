@@ -5,10 +5,6 @@
 // it under the terms of the GNU General Public License version 3. A copy
 // of the License is available in the root of the repository.
 
-// TODO: Remove when parser is done.
-#![allow(dead_code)]
-#![allow(unused_variables)]
-
 //! This module contains the Pris parser.
 //!
 //! The parser is a hand-written recursive descent parser. This is not the most
@@ -20,10 +16,9 @@
 
 use std::result;
 
-use ast::{Assign, BinOp, BinTerm, Block, Color, Coord, Document, FnCall, FnDef};
+use ast::{Assign, BinOp, BinTerm, Block, Coord, Document, FnCall, FnDef};
 use ast::{Idents, Import, Num, PutAt, Return, Stmt, Term, UnOp, UnTerm, Unit};
-use lexer::{Token, lex};
-use error::{Error, Result};
+use lexer::Token;
 
 /// Parse a token stream into a document.
 pub fn parse<'a>(tokens: &[(usize, Token<'a>, usize)]) -> Document<'a> {
@@ -520,461 +515,469 @@ impl<'t, 'a: 't> Parser<'t, 'a> {
     }
 }
 
-#[test]
-fn parse_parses_import() {
-    let tokens = lex(b"import foo.bar").unwrap();
-    let mut parser = Parser::new(&tokens);
-    let import = parser.parse_import().unwrap();
-    assert_eq!(&(import.0).0[..], ["foo", "bar"]);
-    assert_eq!(parser.cursor, 4);
-}
+#[cfg(test)]
+mod test {
+    use parser::Parser;
+    use lexer::lex;
+    use ast::{Assign, BinOp, BinTerm, Coord, Color, FnCall};
+    use ast::{Num, Stmt, Term, UnOp, UnTerm, Unit};
 
-#[test]
-fn parse_parses_idents_single() {
-    let tokens = lex(b"foo 22").unwrap();
-    let mut parser = Parser::new(&tokens);
-    let idents = parser.parse_idents().unwrap();
-    assert_eq!(&idents.0[..], ["foo"]);
-    assert_eq!(parser.cursor, 1);
-}
-
-#[test]
-fn parse_parses_idents_multiple() {
-    let tokens = lex(b"foo.bar.baz").unwrap();
-    let mut parser = Parser::new(&tokens);
-    let idents = parser.parse_idents().unwrap();
-    assert_eq!(&idents.0[..], ["foo", "bar", "baz"]);
-    assert_eq!(parser.cursor, 5);
-}
-
-#[test]
-fn parse_fails_empty() {
-    let tokens = lex(b"put").unwrap(); // "put" is a keyword, not identifier.
-    let mut parser = Parser::new(&tokens);
-    let result = parser.parse_idents();
-    assert_eq!(result.err().unwrap().token_index, 0);
-}
-
-#[test]
-fn parse_fails_idents_unfinished_dot() {
-    let tokens = lex(b"foo.").unwrap();
-    let mut parser = Parser::new(&tokens);
-    let result = parser.parse_idents();
-    assert_eq!(result.err().unwrap().token_index, 2);
-}
-
-#[test]
-fn parse_parses_string_literal() {
-    let tokens = lex(b"\"foo\"").unwrap();
-    let mut parser = Parser::new(&tokens);
-    let lit = parser.parse_term().unwrap();
-    assert!(lit == Term::String(String::from("foo")));
-    assert_eq!(parser.cursor, 1);
-}
-
-#[test]
-fn parse_parses_raw_string_literal() {
-    let tokens = lex(b"  ---\n  foo\n  --- appendix").unwrap();
-    let mut parser = Parser::new(&tokens);
-    let lit = parser.parse_term().unwrap();
-    assert!(lit == Term::String(String::from("foo")));
-    assert_eq!(parser.cursor, 1);
-}
-
-#[test]
-fn parse_parses_color() {
-    let tokens = lex(b"#c0ffee").unwrap();
-    let mut parser = Parser::new(&tokens);
-    let color = parser.parse_term().unwrap();
-    assert!(color == Term::Color(Color(0xc0, 0xff, 0xee)));
-    assert_eq!(parser.cursor, 1);
-}
-
-#[test]
-fn parse_parses_idents_term() {
-    let tokens = lex(b"foo.bar.baz 22").unwrap();
-    let mut parser = Parser::new(&tokens);
-    let term = parser.parse_term().unwrap();
-    match term {
-        Term::Idents(idents) => assert_eq!(&idents.0[..], ["foo", "bar", "baz"]),
-        _ => panic!("expected idents"),
+    #[test]
+    fn parse_parses_import() {
+        let tokens = lex(b"import foo.bar").unwrap();
+        let mut parser = Parser::new(&tokens);
+        let import = parser.parse_import().unwrap();
+        assert_eq!(&(import.0).0[..], ["foo", "bar"]);
+        assert_eq!(parser.cursor, 4);
     }
-    assert_eq!(parser.cursor, 5);
-}
 
-#[test]
-fn parse_parses_unitless_number_literal() {
-    let tokens = lex(b"31seconds").unwrap();
-    let mut parser = Parser::new(&tokens);
-    let lit = parser.parse_term().unwrap();
-    assert!(lit == Term::Number(Num(31.0, None)));
-    assert_eq!(parser.cursor, 1);
-}
+    #[test]
+    fn parse_parses_idents_single() {
+        let tokens = lex(b"foo 22").unwrap();
+        let mut parser = Parser::new(&tokens);
+        let idents = parser.parse_idents().unwrap();
+        assert_eq!(&idents.0[..], ["foo"]);
+        assert_eq!(parser.cursor, 1);
+    }
 
-#[test]
-fn parse_parses_unitful_number_literal() {
-    let tokens = lex(b"0.5em").unwrap();
-    let mut parser = Parser::new(&tokens);
-    let lit = parser.parse_term().unwrap();
-    assert!(lit == Term::Number(Num(0.5, Some(Unit::Em))));
-    assert_eq!(parser.cursor, 2);
-}
+    #[test]
+    fn parse_parses_idents_multiple() {
+        let tokens = lex(b"foo.bar.baz").unwrap();
+        let mut parser = Parser::new(&tokens);
+        let idents = parser.parse_idents().unwrap();
+        assert_eq!(&idents.0[..], ["foo", "bar", "baz"]);
+        assert_eq!(parser.cursor, 5);
+    }
 
-#[test]
-fn parse_parses_number_then_eof() {
-    let tokens = lex(b"17").unwrap();
-    let mut parser = Parser::new(&tokens);
-    let lit = parser.parse_term().unwrap();
-    assert!(lit == Term::Number(Num(17.0, None)));
-    assert_eq!(parser.cursor, 1);
-}
+    #[test]
+    fn parse_fails_empty() {
+        let tokens = lex(b"put").unwrap(); // "put" is a keyword, not identifier.
+        let mut parser = Parser::new(&tokens);
+        let result = parser.parse_idents();
+        assert_eq!(result.err().unwrap().token_index, 0);
+    }
 
-#[test]
-fn parse_parses_fn_def_args_empty() {
-    let tokens = lex(b"()").unwrap();
-    let mut parser = Parser::new(&tokens);
-    let args = parser.parse_fn_def_args().unwrap();
-    let bogus = ["foobar"]; // Required to help type inference.
-    assert_eq!(&args[..], &bogus[..0]);
-    assert_eq!(parser.cursor, 2);
-}
+    #[test]
+    fn parse_fails_idents_unfinished_dot() {
+        let tokens = lex(b"foo.").unwrap();
+        let mut parser = Parser::new(&tokens);
+        let result = parser.parse_idents();
+        assert_eq!(result.err().unwrap().token_index, 2);
+    }
 
-#[test]
-fn parse_parses_fn_def_args_one() {
-    let tokens = lex(b"(x)").unwrap();
-    let mut parser = Parser::new(&tokens);
-    let args = parser.parse_fn_def_args().unwrap();
-    assert_eq!(&args[..], &["x"]);
-    assert_eq!(parser.cursor, 3);
-}
+    #[test]
+    fn parse_parses_string_literal() {
+        let tokens = lex(b"\"foo\"").unwrap();
+        let mut parser = Parser::new(&tokens);
+        let lit = parser.parse_term().unwrap();
+        assert!(lit == Term::String(String::from("foo")));
+        assert_eq!(parser.cursor, 1);
+    }
 
-#[test]
-fn parse_parses_fn_def_args_two() {
-    let tokens = lex(b"(x, y)").unwrap();
-    let mut parser = Parser::new(&tokens);
-    let args = parser.parse_fn_def_args().unwrap();
-    assert_eq!(&args[..], &["x", "y"]);
-    assert_eq!(parser.cursor, 5);
-}
+    #[test]
+    fn parse_parses_raw_string_literal() {
+        let tokens = lex(b"  ---\n  foo\n  --- appendix").unwrap();
+        let mut parser = Parser::new(&tokens);
+        let lit = parser.parse_term().unwrap();
+        assert!(lit == Term::String(String::from("foo")));
+        assert_eq!(parser.cursor, 1);
+    }
 
-#[test]
-fn parse_parses_fn_def_empty() {
-    let tokens = lex(b"function() {}").unwrap();
-    let mut parser = Parser::new(&tokens);
-    let fn_def = parser.parse_fn_def().unwrap();
-    assert_eq!(fn_def.0.len(), 0); // Zero arguments.
-    assert_eq!((fn_def.1).0.len(), 0); // Zero statements.
-    assert_eq!(parser.cursor, 5);
-}
+    #[test]
+    fn parse_parses_color() {
+        let tokens = lex(b"#c0ffee").unwrap();
+        let mut parser = Parser::new(&tokens);
+        let color = parser.parse_term().unwrap();
+        assert!(color == Term::Color(Color(0xc0, 0xff, 0xee)));
+        assert_eq!(parser.cursor, 1);
+    }
 
-#[test]
-fn parse_parses_coord() {
-    let tokens = lex(b"(1, 2)").unwrap();
-    let mut parser = Parser::new(&tokens);
-    let coord = parser.parse_term().unwrap();
-    let one = Term::Number(Num(1.0, None));
-    let two = Term::Number(Num(2.0, None));
-    assert!(coord == Term::coord(Coord(one, two)));
-    assert_eq!(parser.cursor, 5);
-}
+    #[test]
+    fn parse_parses_idents_term() {
+        let tokens = lex(b"foo.bar.baz 22").unwrap();
+        let mut parser = Parser::new(&tokens);
+        let term = parser.parse_term().unwrap();
+        match term {
+            Term::Idents(idents) => assert_eq!(&idents.0[..], ["foo", "bar", "baz"]),
+            _ => panic!("expected idents"),
+        }
+        assert_eq!(parser.cursor, 5);
+    }
 
-#[test]
-fn parse_parses_expr_in_parens() {
-    let tokens = lex(b"(1)").unwrap();
-    let mut parser = Parser::new(&tokens);
-    let term = parser.parse_term().unwrap();
-    let one = Term::Number(Num(1.0, None));
-    assert!(term == one);
-    assert_eq!(parser.cursor, 3);
-}
+    #[test]
+    fn parse_parses_unitless_number_literal() {
+        let tokens = lex(b"31seconds").unwrap();
+        let mut parser = Parser::new(&tokens);
+        let lit = parser.parse_term().unwrap();
+        assert!(lit == Term::Number(Num(31.0, None)));
+        assert_eq!(parser.cursor, 1);
+    }
 
-#[test]
-fn parse_parses_put_at() {
-    let tokens = lex(b"put 1 at 2").unwrap();
-    let mut parser = Parser::new(&tokens);
-    let put_at = parser.parse_put_at().unwrap();
-    let one = Term::Number(Num(1.0, None));
-    let two = Term::Number(Num(2.0, None));
-    assert!(put_at.0 == one);
-    assert!(put_at.1 == two);
-    assert_eq!(parser.cursor, 4);
-}
+    #[test]
+    fn parse_parses_unitful_number_literal() {
+        let tokens = lex(b"0.5em").unwrap();
+        let mut parser = Parser::new(&tokens);
+        let lit = parser.parse_term().unwrap();
+        assert!(lit == Term::Number(Num(0.5, Some(Unit::Em))));
+        assert_eq!(parser.cursor, 2);
+    }
 
-#[test]
-fn parse_parses_at_put() {
-    let tokens = lex(b"at 1 put 2").unwrap();
-    let mut parser = Parser::new(&tokens);
-    let put_at = parser.parse_put_at().unwrap();
-    let one = Term::Number(Num(1.0, None));
-    let two = Term::Number(Num(2.0, None));
-    assert!(put_at.0 == two);
-    assert!(put_at.1 == one);
-    assert_eq!(parser.cursor, 4);
-}
+    #[test]
+    fn parse_parses_number_then_eof() {
+        let tokens = lex(b"17").unwrap();
+        let mut parser = Parser::new(&tokens);
+        let lit = parser.parse_term().unwrap();
+        assert!(lit == Term::Number(Num(17.0, None)));
+        assert_eq!(parser.cursor, 1);
+    }
 
-#[test]
-fn parse_fails_at_not_put() {
-    let tokens = lex(b"at 1 place 2").unwrap();
-    let mut parser = Parser::new(&tokens);
-    let result = parser.parse_put_at();
-    assert_eq!(result.err().unwrap().token_index, 2);
-}
+    #[test]
+    fn parse_parses_fn_def_args_empty() {
+        let tokens = lex(b"()").unwrap();
+        let mut parser = Parser::new(&tokens);
+        let args = parser.parse_fn_def_args().unwrap();
+        let bogus = ["foobar"]; // Required to help type inference.
+        assert_eq!(&args[..], &bogus[..0]);
+        assert_eq!(parser.cursor, 2);
+    }
 
-#[test]
-fn parse_fails_put_not_at() {
-    let tokens = lex(b"put 1 on 2").unwrap();
-    let mut parser = Parser::new(&tokens);
-    let result = parser.parse_put_at();
-    assert_eq!(result.err().unwrap().token_index, 2);
-}
+    #[test]
+    fn parse_parses_fn_def_args_one() {
+        let tokens = lex(b"(x)").unwrap();
+        let mut parser = Parser::new(&tokens);
+        let args = parser.parse_fn_def_args().unwrap();
+        assert_eq!(&args[..], &["x"]);
+        assert_eq!(parser.cursor, 3);
+    }
 
-#[test]
-fn parse_parses_unop_neg() {
-    let tokens = lex(b"-1").unwrap();
-    let mut parser = Parser::new(&tokens);
-    let unterm = parser.parse_unop().unwrap();
-    let one = Term::Number(Num(1.0, None));
-    assert!(unterm.0 == UnOp::Neg);
-    assert!(unterm.1 == one);
-    assert_eq!(parser.cursor, 2);
-}
+    #[test]
+    fn parse_parses_fn_def_args_two() {
+        let tokens = lex(b"(x, y)").unwrap();
+        let mut parser = Parser::new(&tokens);
+        let args = parser.parse_fn_def_args().unwrap();
+        assert_eq!(&args[..], &["x", "y"]);
+        assert_eq!(parser.cursor, 5);
+    }
 
-#[test]
-fn parse_parses_binop_exp() {
-    let tokens = lex(b"1 ^ 2").unwrap();
-    let mut parser = Parser::new(&tokens);
-    let exp = parser.parse_expr_exp().unwrap();
-    let one = Term::Number(Num(1.0, None));
-    let two = Term::Number(Num(2.0, None));
-    let bt = BinTerm(one, BinOp::Exp, two);
-    assert!(exp == Term::bin_op(bt));
-    assert_eq!(parser.cursor, 3);
-}
+    #[test]
+    fn parse_parses_fn_def_empty() {
+        let tokens = lex(b"function() {}").unwrap();
+        let mut parser = Parser::new(&tokens);
+        let fn_def = parser.parse_fn_def().unwrap();
+        assert_eq!(fn_def.0.len(), 0); // Zero arguments.
+        assert_eq!((fn_def.1).0.len(), 0); // Zero statements.
+        assert_eq!(parser.cursor, 5);
+    }
 
-#[test]
-fn parse_parses_fn_call() {
-    let tokens = lex(b"1(2, 6)").unwrap();
-    let mut parser = Parser::new(&tokens);
-    let exp = parser.parse_expr_exp().unwrap();
-    let one = Term::Number(Num(1.0, None));
-    let two = Term::Number(Num(2.0, None));
-    let six = Term::Number(Num(6.0, None));
-    let fc = FnCall(one, vec![two, six]);
-    assert!(exp == Term::fn_call(fc));
-    assert_eq!(parser.cursor, 6);
-}
+    #[test]
+    fn parse_parses_coord() {
+        let tokens = lex(b"(1, 2)").unwrap();
+        let mut parser = Parser::new(&tokens);
+        let coord = parser.parse_term().unwrap();
+        let one = Term::Number(Num(1.0, None));
+        let two = Term::Number(Num(2.0, None));
+        assert!(coord == Term::coord(Coord(one, two)));
+        assert_eq!(parser.cursor, 5);
+    }
 
-#[test]
-fn parse_parses_single_exp() {
-    let tokens = lex(b"1").unwrap();
-    let mut parser = Parser::new(&tokens);
-    let exp = parser.parse_expr_exp().unwrap();
-    let one = Term::Number(Num(1.0, None));
-    assert!(exp == one);
-    assert_eq!(parser.cursor, 1);
-}
+    #[test]
+    fn parse_parses_expr_in_parens() {
+        let tokens = lex(b"(1)").unwrap();
+        let mut parser = Parser::new(&tokens);
+        let term = parser.parse_term().unwrap();
+        let one = Term::Number(Num(1.0, None));
+        assert!(term == one);
+        assert_eq!(parser.cursor, 3);
+    }
 
-#[test]
-fn parse_parses_binop_mul() {
-    let tokens = lex(b"1 * 2").unwrap();
-    let mut parser = Parser::new(&tokens);
-    let mul = parser.parse_expr_mul().unwrap();
-    let one = Term::Number(Num(1.0, None));
-    let two = Term::Number(Num(2.0, None));
-    let bt = BinTerm(one, BinOp::Mul, two);
-    assert!(mul == Term::bin_op(bt));
-    assert_eq!(parser.cursor, 3);
-}
+    #[test]
+    fn parse_parses_put_at() {
+        let tokens = lex(b"put 1 at 2").unwrap();
+        let mut parser = Parser::new(&tokens);
+        let put_at = parser.parse_put_at().unwrap();
+        let one = Term::Number(Num(1.0, None));
+        let two = Term::Number(Num(2.0, None));
+        assert!(put_at.0 == one);
+        assert!(put_at.1 == two);
+        assert_eq!(parser.cursor, 4);
+    }
 
-#[test]
-fn parse_parses_binop_div() {
-    let tokens = lex(b"1 / 2").unwrap();
-    let mut parser = Parser::new(&tokens);
-    let mul = parser.parse_expr_mul().unwrap();
-    let one = Term::Number(Num(1.0, None));
-    let two = Term::Number(Num(2.0, None));
-    let bt = BinTerm(one, BinOp::Div, two);
-    assert!(mul == Term::bin_op(bt));
-    assert_eq!(parser.cursor, 3);
-}
+    #[test]
+    fn parse_parses_at_put() {
+        let tokens = lex(b"at 1 put 2").unwrap();
+        let mut parser = Parser::new(&tokens);
+        let put_at = parser.parse_put_at().unwrap();
+        let one = Term::Number(Num(1.0, None));
+        let two = Term::Number(Num(2.0, None));
+        assert!(put_at.0 == two);
+        assert!(put_at.1 == one);
+        assert_eq!(parser.cursor, 4);
+    }
 
-#[test]
-fn parse_parses_binop_mul_mixed_precedence() {
-    let tokens = lex(b"1^6 * -2").unwrap();
-    let mut parser = Parser::new(&tokens);
-    let result = parser.parse_expr_mul().unwrap();
-    let one = Term::Number(Num(1.0, None));
-    let two = Term::Number(Num(2.0, None));
-    let six = Term::Number(Num(6.0, None));
-    let lhs = Term::bin_op(BinTerm(one, BinOp::Exp, six));
-    let rhs = Term::un_op(UnTerm(UnOp::Neg, two));
-    let expected = Term::bin_op(BinTerm(lhs, BinOp::Mul, rhs));
-    assert!(result == expected);
-    assert_eq!(parser.cursor, 6);
-}
+    #[test]
+    fn parse_fails_at_not_put() {
+        let tokens = lex(b"at 1 place 2").unwrap();
+        let mut parser = Parser::new(&tokens);
+        let result = parser.parse_put_at();
+        assert_eq!(result.err().unwrap().token_index, 2);
+    }
 
-#[test]
-fn parse_parses_binop_single_mul() {
-    let tokens = lex(b"1").unwrap();
-    let mut parser = Parser::new(&tokens);
-    let mul = parser.parse_expr_mul().unwrap();
-    let one = Term::Number(Num(1.0, None));
-    assert!(mul == one);
-    assert_eq!(parser.cursor, 1);
-}
+    #[test]
+    fn parse_fails_put_not_at() {
+        let tokens = lex(b"put 1 on 2").unwrap();
+        let mut parser = Parser::new(&tokens);
+        let result = parser.parse_put_at();
+        assert_eq!(result.err().unwrap().token_index, 2);
+    }
 
-#[test]
-fn parse_parses_binop_add() {
-    let tokens = lex(b"1 + 2").unwrap();
-    let mut parser = Parser::new(&tokens);
-    let add = parser.parse_expr_add().unwrap();
-    let one = Term::Number(Num(1.0, None));
-    let two = Term::Number(Num(2.0, None));
-    let bt = BinTerm(one, BinOp::Add, two);
-    assert!(add == Term::bin_op(bt));
-    assert_eq!(parser.cursor, 3);
-}
+    #[test]
+    fn parse_parses_unop_neg() {
+        let tokens = lex(b"-1").unwrap();
+        let mut parser = Parser::new(&tokens);
+        let unterm = parser.parse_unop().unwrap();
+        let one = Term::Number(Num(1.0, None));
+        assert!(unterm.0 == UnOp::Neg);
+        assert!(unterm.1 == one);
+        assert_eq!(parser.cursor, 2);
+    }
 
-#[test]
-fn parse_parses_binop_sub() {
-    let tokens = lex(b"1 - 2").unwrap();
-    let mut parser = Parser::new(&tokens);
-    let add = parser.parse_expr_add().unwrap();
-    let one = Term::Number(Num(1.0, None));
-    let two = Term::Number(Num(2.0, None));
-    let bt = BinTerm(one, BinOp::Sub, two);
-    assert!(add == Term::bin_op(bt));
-    assert_eq!(parser.cursor, 3);
-}
+    #[test]
+    fn parse_parses_binop_exp() {
+        let tokens = lex(b"1 ^ 2").unwrap();
+        let mut parser = Parser::new(&tokens);
+        let exp = parser.parse_expr_exp().unwrap();
+        let one = Term::Number(Num(1.0, None));
+        let two = Term::Number(Num(2.0, None));
+        let bt = BinTerm(one, BinOp::Exp, two);
+        assert!(exp == Term::bin_op(bt));
+        assert_eq!(parser.cursor, 3);
+    }
 
-#[test]
-fn parse_parses_binop_adj() {
-    let tokens = lex(b"1 ~ 2").unwrap();
-    let mut parser = Parser::new(&tokens);
-    let add = parser.parse_expr_add().unwrap();
-    let one = Term::Number(Num(1.0, None));
-    let two = Term::Number(Num(2.0, None));
-    let bt = BinTerm(one, BinOp::Adj, two);
-    assert!(add == Term::bin_op(bt));
-    assert_eq!(parser.cursor, 3);
-}
+    #[test]
+    fn parse_parses_fn_call() {
+        let tokens = lex(b"1(2, 6)").unwrap();
+        let mut parser = Parser::new(&tokens);
+        let exp = parser.parse_expr_exp().unwrap();
+        let one = Term::Number(Num(1.0, None));
+        let two = Term::Number(Num(2.0, None));
+        let six = Term::Number(Num(6.0, None));
+        let fc = FnCall(one, vec![two, six]);
+        assert!(exp == Term::fn_call(fc));
+        assert_eq!(parser.cursor, 6);
+    }
 
-#[test]
-fn parse_parses_binop_single_add() {
-    let tokens = lex(b"1").unwrap();
-    let mut parser = Parser::new(&tokens);
-    let add = parser.parse_expr_add().unwrap();
-    let one = Term::Number(Num(1.0, None));
-    assert!(add == one);
-    assert_eq!(parser.cursor, 1);
-}
+    #[test]
+    fn parse_parses_single_exp() {
+        let tokens = lex(b"1").unwrap();
+        let mut parser = Parser::new(&tokens);
+        let exp = parser.parse_expr_exp().unwrap();
+        let one = Term::Number(Num(1.0, None));
+        assert!(exp == one);
+        assert_eq!(parser.cursor, 1);
+    }
 
-#[test]
-fn parse_parses_binop_add_mixed_precedence() {
-    let tokens = lex(b"1 * 2 + 6 / 10").unwrap();
-    let mut parser = Parser::new(&tokens);
-    let result = parser.parse_expr_add().unwrap();
-    let one = Term::Number(Num(1.0, None));
-    let two = Term::Number(Num(2.0, None));
-    let six = Term::Number(Num(6.0, None));
-    let ten = Term::Number(Num(10.0, None));
-    let lhs = Term::bin_op(BinTerm(one, BinOp::Mul, two));
-    let rhs = Term::bin_op(BinTerm(six, BinOp::Div, ten));
-    let expected = Term::bin_op(BinTerm(lhs, BinOp::Add, rhs));
-    assert!(result == expected);
-    assert_eq!(parser.cursor, 7);
-}
+    #[test]
+    fn parse_parses_binop_mul() {
+        let tokens = lex(b"1 * 2").unwrap();
+        let mut parser = Parser::new(&tokens);
+        let mul = parser.parse_expr_mul().unwrap();
+        let one = Term::Number(Num(1.0, None));
+        let two = Term::Number(Num(2.0, None));
+        let bt = BinTerm(one, BinOp::Mul, two);
+        assert!(mul == Term::bin_op(bt));
+        assert_eq!(parser.cursor, 3);
+    }
 
-#[test]
-fn parse_parses_block_empty() {
-    let tokens = lex(b"{}").unwrap();
-    let mut parser = Parser::new(&tokens);
-    let block = parser.parse_block().unwrap();
-    assert_eq!(block.0.len(), 0);
-    assert_eq!(parser.cursor, 2);
-}
+    #[test]
+    fn parse_parses_binop_div() {
+        let tokens = lex(b"1 / 2").unwrap();
+        let mut parser = Parser::new(&tokens);
+        let mul = parser.parse_expr_mul().unwrap();
+        let one = Term::Number(Num(1.0, None));
+        let two = Term::Number(Num(2.0, None));
+        let bt = BinTerm(one, BinOp::Div, two);
+        assert!(mul == Term::bin_op(bt));
+        assert_eq!(parser.cursor, 3);
+    }
 
-#[test]
-fn parse_parses_block_single_statement() {
-    let tokens = lex(b"{ x = 1 }").unwrap();
-    let mut parser = Parser::new(&tokens);
-    let block = parser.parse_block().unwrap();
-    let one = Term::Number(Num(1.0, None));
-    assert_eq!(block.0.len(), 1);
-    assert!(block.0[0] == Stmt::Assign(Assign("x", one)));
-    assert_eq!(parser.cursor, 5);
-}
+    #[test]
+    fn parse_parses_binop_mul_mixed_precedence() {
+        let tokens = lex(b"1^6 * -2").unwrap();
+        let mut parser = Parser::new(&tokens);
+        let result = parser.parse_expr_mul().unwrap();
+        let one = Term::Number(Num(1.0, None));
+        let two = Term::Number(Num(2.0, None));
+        let six = Term::Number(Num(6.0, None));
+        let lhs = Term::bin_op(BinTerm(one, BinOp::Exp, six));
+        let rhs = Term::un_op(UnTerm(UnOp::Neg, two));
+        let expected = Term::bin_op(BinTerm(lhs, BinOp::Mul, rhs));
+        assert!(result == expected);
+        assert_eq!(parser.cursor, 6);
+    }
 
-#[test]
-fn parse_parses_block_double_statement() {
-    let tokens = lex(b"{ x = 1 y = 2 }").unwrap();
-    let mut parser = Parser::new(&tokens);
-    let block = parser.parse_block().unwrap();
-    let one = Term::Number(Num(1.0, None));
-    let two = Term::Number(Num(2.0, None));
-    assert_eq!(block.0.len(), 2);
-    assert!(block.0[0] == Stmt::Assign(Assign("x", one)));
-    assert!(block.0[1] == Stmt::Assign(Assign("y", two)));
-    assert_eq!(parser.cursor, 8);
-}
+    #[test]
+    fn parse_parses_binop_single_mul() {
+        let tokens = lex(b"1").unwrap();
+        let mut parser = Parser::new(&tokens);
+        let mul = parser.parse_expr_mul().unwrap();
+        let one = Term::Number(Num(1.0, None));
+        assert!(mul == one);
+        assert_eq!(parser.cursor, 1);
+    }
 
-#[test]
-fn parse_block_can_separate_statements() {
-    // In this case the most greedy expression is '1 * y',
-    // and the parse error occurs at the unexpected '=' token.
-    let tokens = lex(b"{ x = 1 * y = 2 }").unwrap();
-    let mut parser = Parser::new(&tokens);
-    let result = parser.parse_block();
-    assert_eq!(result.err().unwrap().token_index, 6);
-}
+    #[test]
+    fn parse_parses_binop_add() {
+        let tokens = lex(b"1 + 2").unwrap();
+        let mut parser = Parser::new(&tokens);
+        let add = parser.parse_expr_add().unwrap();
+        let one = Term::Number(Num(1.0, None));
+        let two = Term::Number(Num(2.0, None));
+        let bt = BinTerm(one, BinOp::Add, two);
+        assert!(add == Term::bin_op(bt));
+        assert_eq!(parser.cursor, 3);
+    }
 
-#[test]
-fn parse_block_requires_closing_brace() {
-    let tokens = lex(b"{ x = 1 ").unwrap();
-    let mut parser = Parser::new(&tokens);
-    let result = parser.parse_block();
-    assert_eq!(result.err().unwrap().token_index, 4);
-}
+    #[test]
+    fn parse_parses_binop_sub() {
+        let tokens = lex(b"1 - 2").unwrap();
+        let mut parser = Parser::new(&tokens);
+        let add = parser.parse_expr_add().unwrap();
+        let one = Term::Number(Num(1.0, None));
+        let two = Term::Number(Num(2.0, None));
+        let bt = BinTerm(one, BinOp::Sub, two);
+        assert!(add == Term::bin_op(bt));
+        assert_eq!(parser.cursor, 3);
+    }
 
-#[test]
-fn parse_parses_document_double_statement() {
-    let tokens = lex(b"x = 1 y = 2").unwrap();
-    let mut parser = Parser::new(&tokens);
-    let doc = parser.parse_document().unwrap();
-    let one = Term::Number(Num(1.0, None));
-    let two = Term::Number(Num(2.0, None));
-    assert_eq!(doc.0.len(), 2);
-    assert!(doc.0[0] == Stmt::Assign(Assign("x", one)));
-    assert!(doc.0[1] == Stmt::Assign(Assign("y", two)));
-    assert_eq!(parser.cursor, 6);
-}
+    #[test]
+    fn parse_parses_binop_adj() {
+        let tokens = lex(b"1 ~ 2").unwrap();
+        let mut parser = Parser::new(&tokens);
+        let add = parser.parse_expr_add().unwrap();
+        let one = Term::Number(Num(1.0, None));
+        let two = Term::Number(Num(2.0, None));
+        let bt = BinTerm(one, BinOp::Adj, two);
+        assert!(add == Term::bin_op(bt));
+        assert_eq!(parser.cursor, 3);
+    }
 
-#[test]
-fn parse_parses_fn_call_args_empty() {
-    let tokens = lex(b"()").unwrap();
-    let mut parser = Parser::new(&tokens);
-    let args = parser.parse_fn_call_args().unwrap();
-    assert_eq!(args.len(), 0);
-    assert_eq!(parser.cursor, 2);
-}
+    #[test]
+    fn parse_parses_binop_single_add() {
+        let tokens = lex(b"1").unwrap();
+        let mut parser = Parser::new(&tokens);
+        let add = parser.parse_expr_add().unwrap();
+        let one = Term::Number(Num(1.0, None));
+        assert!(add == one);
+        assert_eq!(parser.cursor, 1);
+    }
 
-#[test]
-fn parse_parses_fn_call_args_single() {
-    let tokens = lex(b"(1)").unwrap();
-    let mut parser = Parser::new(&tokens);
-    let args = parser.parse_fn_call_args().unwrap();
-    assert_eq!(args.len(), 1);
-    assert!(args[0] == Term::Number(Num(1.0, None)));
-    assert_eq!(parser.cursor, 3);
-}
+    #[test]
+    fn parse_parses_binop_add_mixed_precedence() {
+        let tokens = lex(b"1 * 2 + 6 / 10").unwrap();
+        let mut parser = Parser::new(&tokens);
+        let result = parser.parse_expr_add().unwrap();
+        let one = Term::Number(Num(1.0, None));
+        let two = Term::Number(Num(2.0, None));
+        let six = Term::Number(Num(6.0, None));
+        let ten = Term::Number(Num(10.0, None));
+        let lhs = Term::bin_op(BinTerm(one, BinOp::Mul, two));
+        let rhs = Term::bin_op(BinTerm(six, BinOp::Div, ten));
+        let expected = Term::bin_op(BinTerm(lhs, BinOp::Add, rhs));
+        assert!(result == expected);
+        assert_eq!(parser.cursor, 7);
+    }
 
-#[test]
-fn parse_parses_fn_call_args_double() {
-    let tokens = lex(b"(1, 2)").unwrap();
-    let mut parser = Parser::new(&tokens);
-    let args = parser.parse_fn_call_args().unwrap();
-    assert_eq!(args.len(), 2);
-    assert!(args[0] == Term::Number(Num(1.0, None)));
-    assert!(args[1] == Term::Number(Num(2.0, None)));
-    assert_eq!(parser.cursor, 5);
+    #[test]
+    fn parse_parses_block_empty() {
+        let tokens = lex(b"{}").unwrap();
+        let mut parser = Parser::new(&tokens);
+        let block = parser.parse_block().unwrap();
+        assert_eq!(block.0.len(), 0);
+        assert_eq!(parser.cursor, 2);
+    }
+
+    #[test]
+    fn parse_parses_block_single_statement() {
+        let tokens = lex(b"{ x = 1 }").unwrap();
+        let mut parser = Parser::new(&tokens);
+        let block = parser.parse_block().unwrap();
+        let one = Term::Number(Num(1.0, None));
+        assert_eq!(block.0.len(), 1);
+        assert!(block.0[0] == Stmt::Assign(Assign("x", one)));
+        assert_eq!(parser.cursor, 5);
+    }
+
+    #[test]
+    fn parse_parses_block_double_statement() {
+        let tokens = lex(b"{ x = 1 y = 2 }").unwrap();
+        let mut parser = Parser::new(&tokens);
+        let block = parser.parse_block().unwrap();
+        let one = Term::Number(Num(1.0, None));
+        let two = Term::Number(Num(2.0, None));
+        assert_eq!(block.0.len(), 2);
+        assert!(block.0[0] == Stmt::Assign(Assign("x", one)));
+        assert!(block.0[1] == Stmt::Assign(Assign("y", two)));
+        assert_eq!(parser.cursor, 8);
+    }
+
+    #[test]
+    fn parse_block_can_separate_statements() {
+        // In this case the most greedy expression is '1 * y',
+        // and the parse error occurs at the unexpected '=' token.
+        let tokens = lex(b"{ x = 1 * y = 2 }").unwrap();
+        let mut parser = Parser::new(&tokens);
+        let result = parser.parse_block();
+        assert_eq!(result.err().unwrap().token_index, 6);
+    }
+
+    #[test]
+    fn parse_block_requires_closing_brace() {
+        let tokens = lex(b"{ x = 1 ").unwrap();
+        let mut parser = Parser::new(&tokens);
+        let result = parser.parse_block();
+        assert_eq!(result.err().unwrap().token_index, 4);
+    }
+
+    #[test]
+    fn parse_parses_document_double_statement() {
+        let tokens = lex(b"x = 1 y = 2").unwrap();
+        let mut parser = Parser::new(&tokens);
+        let doc = parser.parse_document().unwrap();
+        let one = Term::Number(Num(1.0, None));
+        let two = Term::Number(Num(2.0, None));
+        assert_eq!(doc.0.len(), 2);
+        assert!(doc.0[0] == Stmt::Assign(Assign("x", one)));
+        assert!(doc.0[1] == Stmt::Assign(Assign("y", two)));
+        assert_eq!(parser.cursor, 6);
+    }
+
+    #[test]
+    fn parse_parses_fn_call_args_empty() {
+        let tokens = lex(b"()").unwrap();
+        let mut parser = Parser::new(&tokens);
+        let args = parser.parse_fn_call_args().unwrap();
+        assert_eq!(args.len(), 0);
+        assert_eq!(parser.cursor, 2);
+    }
+
+    #[test]
+    fn parse_parses_fn_call_args_single() {
+        let tokens = lex(b"(1)").unwrap();
+        let mut parser = Parser::new(&tokens);
+        let args = parser.parse_fn_call_args().unwrap();
+        assert_eq!(args.len(), 1);
+        assert!(args[0] == Term::Number(Num(1.0, None)));
+        assert_eq!(parser.cursor, 3);
+    }
+
+    #[test]
+    fn parse_parses_fn_call_args_double() {
+        let tokens = lex(b"(1, 2)").unwrap();
+        let mut parser = Parser::new(&tokens);
+        let args = parser.parse_fn_call_args().unwrap();
+        assert_eq!(args.len(), 2);
+        assert!(args[0] == Term::Number(Num(1.0, None)));
+        assert!(args[1] == Term::Number(Num(2.0, None)));
+        assert_eq!(parser.cursor, 5);
+    }
 }
