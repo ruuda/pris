@@ -7,9 +7,13 @@
 
 //! This module contains the Pris parser.
 //!
-//! The parser is a hand-written recursive descent parser. This is not the most
-//! efficient kind of parser, but it is doable to maintain it by hand, and it
-//! can generate helpful error messages.
+//! The parser is a hand-written recursive descent parser. As the grammar is
+//! LL(1), it runs in linear time (in the number of tokens). Pris used a
+//! generated parser before, but it was replaced, mainly because it contributed
+//! disproportionately to the build time and number of transitive dependencies.
+//! Furthermore, a hand-written parser can generate more helpful error messages,
+//! and a simple recursive descent parser like this one is still maintainable by
+//! hand.
 //!
 //! A formal description of the grammar is available in the form of a Bison
 //! grammar in etc/pris.y.
