@@ -9,11 +9,14 @@
 //! pretty-printing code, because they do not support indentation in a proper
 //! way. This module provides an alternative abstraction for pretty printing
 //! that automatically inserts indents after newlines. It also assumes that
-//! printing cannot fail, which avoid clumsy error handling.
+//! printing cannot fail, which avoids clumsy error handling.
 
 use std::fmt::Write;
 use std::rc::Rc;
 
+// The compiler is wrong, this function *is* used, from the macro at the end of
+// this file. And that macro itself is also used, in tests.
+#[allow(dead_code)]
 pub fn print<P: Print>(content: P) -> String {
     let mut f = Formatter::new();
     f.print(content);
@@ -108,5 +111,23 @@ impl Formatter {
 
     pub fn into_string(self) -> String {
         self.target
+    }
+}
+
+/// Assert that two values of type `P: Print` are equal.
+///
+/// This is similar to `assert_eq!`, but using `Print` rather than `fmt::Debug`.
+#[macro_export]
+macro_rules! assert_preq {
+    ($left: expr, $right: expr) => {
+        {
+            use pretty;
+            let left = &$left;
+            let right = &$right;
+            assert!(left == right,
+                    "\nExpected:\n\n{}\n\nBut found:\n\n{}\n\n",
+                    pretty::print(left),
+                    pretty::print(right));
+        }
     }
 }

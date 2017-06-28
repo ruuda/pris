@@ -574,7 +574,7 @@ mod test {
         let tokens = lex(b"\"foo\"").unwrap();
         let mut parser = Parser::new(&tokens);
         let lit = parser.parse_term().unwrap();
-        assert!(lit == Term::String(String::from("foo")));
+        assert_preq!(lit, Term::String(String::from("foo")));
         assert_eq!(parser.cursor, 1);
     }
 
@@ -583,7 +583,7 @@ mod test {
         let tokens = lex(b"  ---\n  foo\n  --- appendix").unwrap();
         let mut parser = Parser::new(&tokens);
         let lit = parser.parse_term().unwrap();
-        assert!(lit == Term::String(String::from("foo")));
+        assert_preq!(lit, Term::String(String::from("foo")));
         assert_eq!(parser.cursor, 1);
     }
 
@@ -592,7 +592,7 @@ mod test {
         let tokens = lex(b"#c0ffee").unwrap();
         let mut parser = Parser::new(&tokens);
         let color = parser.parse_term().unwrap();
-        assert!(color == Term::Color(Color(0xc0, 0xff, 0xee)));
+        assert_preq!(color, Term::Color(Color(0xc0, 0xff, 0xee)));
         assert_eq!(parser.cursor, 1);
     }
 
@@ -613,7 +613,7 @@ mod test {
         let tokens = lex(b"31seconds").unwrap();
         let mut parser = Parser::new(&tokens);
         let lit = parser.parse_term().unwrap();
-        assert!(lit == Term::Number(Num(31.0, None)));
+        assert_preq!(lit, Term::Number(Num(31.0, None)));
         assert_eq!(parser.cursor, 1);
     }
 
@@ -622,7 +622,7 @@ mod test {
         let tokens = lex(b"0.5em").unwrap();
         let mut parser = Parser::new(&tokens);
         let lit = parser.parse_term().unwrap();
-        assert!(lit == Term::Number(Num(0.5, Some(Unit::Em))));
+        assert_preq!(lit, Term::Number(Num(0.5, Some(Unit::Em))));
         assert_eq!(parser.cursor, 2);
     }
 
@@ -631,7 +631,7 @@ mod test {
         let tokens = lex(b"17").unwrap();
         let mut parser = Parser::new(&tokens);
         let lit = parser.parse_term().unwrap();
-        assert!(lit == Term::Number(Num(17.0, None)));
+        assert_preq!(lit, Term::Number(Num(17.0, None)));
         assert_eq!(parser.cursor, 1);
     }
 
@@ -680,7 +680,7 @@ mod test {
         let coord = parser.parse_term().unwrap();
         let one = Term::Number(Num(1.0, None));
         let two = Term::Number(Num(2.0, None));
-        assert!(coord == Term::coord(Coord(one, two)));
+        assert_preq!(coord, Term::coord(Coord(one, two)));
         assert_eq!(parser.cursor, 5);
     }
 
@@ -690,7 +690,7 @@ mod test {
         let mut parser = Parser::new(&tokens);
         let term = parser.parse_term().unwrap();
         let one = Term::Number(Num(1.0, None));
-        assert!(term == one);
+        assert_preq!(term, one);
         assert_eq!(parser.cursor, 3);
     }
 
@@ -701,8 +701,8 @@ mod test {
         let put_at = parser.parse_put_at().unwrap();
         let one = Term::Number(Num(1.0, None));
         let two = Term::Number(Num(2.0, None));
-        assert!(put_at.0 == one);
-        assert!(put_at.1 == two);
+        assert_preq!(put_at.0, one);
+        assert_preq!(put_at.1, two);
         assert_eq!(parser.cursor, 4);
     }
 
@@ -713,8 +713,8 @@ mod test {
         let put_at = parser.parse_put_at().unwrap();
         let one = Term::Number(Num(1.0, None));
         let two = Term::Number(Num(2.0, None));
-        assert!(put_at.0 == two);
-        assert!(put_at.1 == one);
+        assert_preq!(put_at.0, two);
+        assert_preq!(put_at.1, one);
         assert_eq!(parser.cursor, 4);
     }
 
@@ -740,8 +740,8 @@ mod test {
         let mut parser = Parser::new(&tokens);
         let unterm = parser.parse_unop().unwrap();
         let one = Term::Number(Num(1.0, None));
-        assert!(unterm.0 == UnOp::Neg);
-        assert!(unterm.1 == one);
+        assert_preq!(unterm.0, UnOp::Neg);
+        assert_preq!(unterm.1, one);
         assert_eq!(parser.cursor, 2);
     }
 
@@ -753,7 +753,7 @@ mod test {
         let one = Term::Number(Num(1.0, None));
         let two = Term::Number(Num(2.0, None));
         let bt = BinTerm(one, BinOp::Exp, two);
-        assert!(exp == Term::bin_op(bt));
+        assert_preq!(exp, Term::bin_op(bt));
         assert_eq!(parser.cursor, 3);
     }
 
@@ -766,7 +766,7 @@ mod test {
         let two = Term::Number(Num(2.0, None));
         let six = Term::Number(Num(6.0, None));
         let fc = FnCall(one, vec![two, six]);
-        assert!(exp == Term::fn_call(fc));
+        assert_preq!(exp, Term::fn_call(fc));
         assert_eq!(parser.cursor, 6);
     }
 
@@ -776,7 +776,7 @@ mod test {
         let mut parser = Parser::new(&tokens);
         let exp = parser.parse_expr_exp().unwrap();
         let one = Term::Number(Num(1.0, None));
-        assert!(exp == one);
+        assert_preq!(exp, one);
         assert_eq!(parser.cursor, 1);
     }
 
@@ -788,7 +788,7 @@ mod test {
         let one = Term::Number(Num(1.0, None));
         let two = Term::Number(Num(2.0, None));
         let bt = BinTerm(one, BinOp::Mul, two);
-        assert!(mul == Term::bin_op(bt));
+        assert_preq!(mul, Term::bin_op(bt));
         assert_eq!(parser.cursor, 3);
     }
 
@@ -800,7 +800,7 @@ mod test {
         let one = Term::Number(Num(1.0, None));
         let two = Term::Number(Num(2.0, None));
         let bt = BinTerm(one, BinOp::Div, two);
-        assert!(mul == Term::bin_op(bt));
+        assert_preq!(mul, Term::bin_op(bt));
         assert_eq!(parser.cursor, 3);
     }
 
@@ -815,7 +815,7 @@ mod test {
         let lhs = Term::bin_op(BinTerm(one, BinOp::Exp, six));
         let rhs = Term::un_op(UnTerm(UnOp::Neg, two));
         let expected = Term::bin_op(BinTerm(lhs, BinOp::Mul, rhs));
-        assert!(result == expected);
+        assert_preq!(result, expected);
         assert_eq!(parser.cursor, 6);
     }
 
@@ -825,7 +825,7 @@ mod test {
         let mut parser = Parser::new(&tokens);
         let mul = parser.parse_expr_mul().unwrap();
         let one = Term::Number(Num(1.0, None));
-        assert!(mul == one);
+        assert_preq!(mul, one);
         assert_eq!(parser.cursor, 1);
     }
 
@@ -837,7 +837,7 @@ mod test {
         let one = Term::Number(Num(1.0, None));
         let two = Term::Number(Num(2.0, None));
         let bt = BinTerm(one, BinOp::Add, two);
-        assert!(add == Term::bin_op(bt));
+        assert_preq!(add, Term::bin_op(bt));
         assert_eq!(parser.cursor, 3);
     }
 
@@ -849,7 +849,7 @@ mod test {
         let one = Term::Number(Num(1.0, None));
         let two = Term::Number(Num(2.0, None));
         let bt = BinTerm(one, BinOp::Sub, two);
-        assert!(add == Term::bin_op(bt));
+        assert_preq!(add, Term::bin_op(bt));
         assert_eq!(parser.cursor, 3);
     }
 
@@ -861,7 +861,7 @@ mod test {
         let one = Term::Number(Num(1.0, None));
         let two = Term::Number(Num(2.0, None));
         let bt = BinTerm(one, BinOp::Adj, two);
-        assert!(add == Term::bin_op(bt));
+        assert_preq!(add, Term::bin_op(bt));
         assert_eq!(parser.cursor, 3);
     }
 
@@ -871,7 +871,7 @@ mod test {
         let mut parser = Parser::new(&tokens);
         let add = parser.parse_expr_add().unwrap();
         let one = Term::Number(Num(1.0, None));
-        assert!(add == one);
+        assert_preq!(add, one);
         assert_eq!(parser.cursor, 1);
     }
 
@@ -887,7 +887,7 @@ mod test {
         let lhs = Term::bin_op(BinTerm(one, BinOp::Mul, two));
         let rhs = Term::bin_op(BinTerm(six, BinOp::Div, ten));
         let expected = Term::bin_op(BinTerm(lhs, BinOp::Add, rhs));
-        assert!(result == expected);
+        assert_preq!(result, expected);
         assert_eq!(parser.cursor, 7);
     }
 
@@ -907,7 +907,7 @@ mod test {
         let block = parser.parse_block().unwrap();
         let one = Term::Number(Num(1.0, None));
         assert_eq!(block.0.len(), 1);
-        assert!(block.0[0] == Stmt::Assign(Assign("x", one)));
+        assert_preq!(block.0[0], Stmt::Assign(Assign("x", one)));
         assert_eq!(parser.cursor, 5);
     }
 
@@ -919,8 +919,8 @@ mod test {
         let one = Term::Number(Num(1.0, None));
         let two = Term::Number(Num(2.0, None));
         assert_eq!(block.0.len(), 2);
-        assert!(block.0[0] == Stmt::Assign(Assign("x", one)));
-        assert!(block.0[1] == Stmt::Assign(Assign("y", two)));
+        assert_preq!(block.0[0], Stmt::Assign(Assign("x", one)));
+        assert_preq!(block.0[1], Stmt::Assign(Assign("y", two)));
         assert_eq!(parser.cursor, 8);
     }
 
@@ -950,8 +950,8 @@ mod test {
         let one = Term::Number(Num(1.0, None));
         let two = Term::Number(Num(2.0, None));
         assert_eq!(doc.0.len(), 2);
-        assert!(doc.0[0] == Stmt::Assign(Assign("x", one)));
-        assert!(doc.0[1] == Stmt::Assign(Assign("y", two)));
+        assert_preq!(doc.0[0], Stmt::Assign(Assign("x", one)));
+        assert_preq!(doc.0[1], Stmt::Assign(Assign("y", two)));
         assert_eq!(parser.cursor, 6);
     }
 
@@ -970,7 +970,7 @@ mod test {
         let mut parser = Parser::new(&tokens);
         let args = parser.parse_fn_call_args().unwrap();
         assert_eq!(args.len(), 1);
-        assert!(args[0] == Term::Number(Num(1.0, None)));
+        assert_preq!(args[0], Term::Number(Num(1.0, None)));
         assert_eq!(parser.cursor, 3);
     }
 
@@ -980,8 +980,8 @@ mod test {
         let mut parser = Parser::new(&tokens);
         let args = parser.parse_fn_call_args().unwrap();
         assert_eq!(args.len(), 2);
-        assert!(args[0] == Term::Number(Num(1.0, None)));
-        assert!(args[1] == Term::Number(Num(2.0, None)));
+        assert_preq!(args[0], Term::Number(Num(1.0, None)));
+        assert_preq!(args[1], Term::Number(Num(2.0, None)));
         assert_eq!(parser.cursor, 5);
     }
 }

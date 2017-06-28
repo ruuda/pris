@@ -12,9 +12,11 @@ mod elements;
 mod fontconfig;
 mod harfbuzz;
 mod parser_utils;
-mod pretty;
 mod rsvg;
 mod types;
+
+#[macro_use]
+mod pretty;
 
 pub mod ast;
 pub mod cairo;
