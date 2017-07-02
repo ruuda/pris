@@ -22,15 +22,31 @@ use std::result;
 
 use ast::{Assign, BinOp, BinTerm, Block, Coord, Document, FnCall, FnDef};
 use ast::{Idents, Import, Num, PutAt, Return, Stmt, Term, UnOp, UnTerm, Unit};
+use error::{Error, Result};
 use lexer::Token;
 
 /// Parse a token stream into a document.
-pub fn parse<'a>(tokens: &[(usize, Token<'a>, usize)]) -> Document<'a> {
+pub fn parse<'a>(tokens: &[(usize, Token<'a>, usize)]) -> Result<Document<'a>> {
     // TODO: Have a pre-pass that checks for balanced parens and brackets.
     // That will produce more helpful error messages than "unexpected token"
     // at the mismatched closing bracket.
-    // TODO: Do not unwrap, pack the error as a proper parse error.
-    Parser::new(tokens).parse_document().unwrap()
+    match Parser::new(tokens).parse_document() {
+        Ok(doc) => Ok(doc),
+        Err(perr) => {
+            assert!(perr.token_index <= tokens.len());
+            let mut message = perr.message.into();
+            let (start, end) = if perr.token_index == tokens.len() {
+                message += " Found end of input instead.";
+                let (_start, _tok, end) = tokens[tokens.len() - 1];
+                (end, end)
+            } else {
+                let (start, _token, end) = tokens[perr.token_index];
+                (start, end)
+            };
+            let err = Error::parse(start, end, message);
+            Err(err)
+        }
+    }
 }
 
 struct Parser<'t, 'a: 't> {

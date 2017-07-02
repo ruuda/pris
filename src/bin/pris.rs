@@ -141,15 +141,13 @@ fn report_error(input: &[u8], location: usize, len: usize) {
 }
 
 fn parse_or_abort<'a>(input: &'a [u8]) -> ast::Document<'a> {
-    use std::str;
-    let tokens = match lexer::lex(input) {
-        Ok(ts) => ts,
+    match lexer::lex(input).and_then(|tokens| parser::parse(&tokens[..])) {
+        Ok(doc) => doc,
         Err(Error::Parse(e)) => {
             report_error(input, e.start, e.end - e.start);
             Error::Parse(e).print();
             std::process::exit(1)
         }
         _ => unreachable!(),
-    };
-    parser::parse(&tokens[..])
+    }
 }
