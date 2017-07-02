@@ -440,14 +440,21 @@ impl<'t, 'a: 't> Parser<'t, 'a> {
 
         let mut args = Vec::new();
 
+        // Short-circuit if there are no args, just the empty args list.
+        if self.peek() == Some(Token::RParen) {
+            self.consume();
+            return Ok(args)
+        }
+
         // Take one identifier. If it is followed by a comma, repeat. If we find
         // a closing paren instead, we are done.
         loop {
-            match self.take() {
+            match self.peek() {
                 Some(Token::Ident(ident)) => args.push(ident),
-                Some(Token::RParen) => break,
                 _ => return self.error("Parse error in function definition: expected argument name or ')'."),
             }
+
+            self.consume();
 
             match self.take() {
                 Some(Token::Comma) => continue,
@@ -677,6 +684,14 @@ mod test {
         let args = parser.parse_fn_def_args().unwrap();
         assert_eq!(&args[..], &["x", "y"]);
         assert_eq!(parser.cursor, 5);
+    }
+
+    #[test]
+    fn parse_fails_fn_def_args_trailing_comma() {
+        let tokens = lex(b"(a,)").unwrap();
+        let mut parser = Parser::new(&tokens);
+        let err = parser.parse_fn_def_args().err().unwrap();
+        assert_eq!(err.token_index, 3);
     }
 
     #[test]
