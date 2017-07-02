@@ -6,7 +6,6 @@
 // of the License is available in the root of the repository.
 
 extern crate docopt;
-extern crate lalrpop_util;
 extern crate rustc_serialize;
 extern crate pris;
 
@@ -17,15 +16,14 @@ use std::io;
 use std::path::{Path, PathBuf};
 
 use docopt::Docopt;
-use lalrpop_util::ParseError;
 
 use pris::ast;
 use pris::cairo;
 use pris::driver;
-use pris::interpreter;
 use pris::error::Error;
+use pris::interpreter;
 use pris::lexer;
-use pris::syntax;
+use pris::parser;
 use pris::runtime;
 
 const USAGE: &'static str = "
@@ -149,55 +147,9 @@ fn parse_or_abort<'a>(input: &'a [u8]) -> ast::Document<'a> {
         Err(Error::Parse(e)) => {
             report_error(input, e.start, e.end - e.start);
             Error::Parse(e).print();
-            panic!("Aborting due to parse error.");
+            std::process::exit(1)
         }
         _ => unreachable!(),
     };
-    let input_str = match str::from_utf8(input) {
-        Ok(s) => s,
-        Err(..) => {
-            // TODO: This should not occur any more when the lexer verifies its
-            // slices properly at all times. Currently it does verify string
-            // literals, but it skips over comments. Which is actually fine, it
-            // is just that Lalrpop insists on string slices.
-            panic!("Input is not valid UTF-8.");
-        }
-    };
-    match syntax::parse_document(input_str, tokens) {
-        Ok(doc) => return doc,
-        Err(err) => {
-            match err {
-                ParseError::InvalidToken { location } => {
-                    report_error(input, location, 1);
-                    println!("invalid token.");
-                }
-                ParseError::UnrecognizedToken { token, expected } => {
-                    if let Some((location, _, loc2)) = token {
-                        report_error(input, location, loc2 - location);
-                        println!("unrecognized token.");
-                        if expected.len() > 0 {
-                            println!("Expected one of ");
-                            let mut exp_i = expected.iter();
-                            print!("\"{}\"", exp_i.next().unwrap());
-                            for e in exp_i {
-                                print!(", \"{}\"", e);
-                            }
-                            println!(".");
-                        }
-                    } else {
-                        println!("Parse error somewhere. That is all I know.");
-                    }
-                }
-                ParseError::ExtraToken { token } => {
-                    let (location, _, loc2) = token;
-                    report_error(input, location, loc2 - location);
-                    println!("extra token (whatever that means).");
-                }
-                ParseError::User { error } => {
-                    println!("Parse error: {}", error);
-                }
-            }
-            std::process::exit(1)
-        }
-    }
+    parser::parse(&tokens[..])
 }
