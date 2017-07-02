@@ -5,8 +5,5 @@
 # Build output
 /target
 
-# Generated files
-/src/syntax.rs
-
 # Pris output files
 *.pdf
