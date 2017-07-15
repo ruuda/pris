@@ -23,10 +23,10 @@ use std::result;
 use ast::{Assign, BinOp, BinTerm, Block, Coord, Document, FnCall, FnDef};
 use ast::{Idents, Import, Num, PutAt, Return, Stmt, Term, UnOp, UnTerm, Unit};
 use error::{Error, Result};
-use lexer::Token;
+use lexer::{Span, Token};
 
 /// Parse a token stream into a document.
-pub fn parse<'a>(tokens: &[(usize, Token<'a>, usize)]) -> Result<Document<'a>> {
+pub fn parse<'a>(tokens: &[(Token<'a>, Span)]) -> Result<Document<'a>> {
     // TODO: Have a pre-pass that checks for balanced parens and brackets.
     // That will produce more helpful error messages than "unexpected token"
     // at the mismatched closing bracket.
@@ -35,22 +35,22 @@ pub fn parse<'a>(tokens: &[(usize, Token<'a>, usize)]) -> Result<Document<'a>> {
         Err(perr) => {
             assert!(perr.token_index <= tokens.len());
             let mut message = perr.message.into();
-            let (start, end) = if perr.token_index == tokens.len() {
+            let span = if perr.token_index == tokens.len() {
                 message += " Found end of input instead.";
-                let (_start, _tok, end) = tokens[tokens.len() - 1];
-                (end, end)
+                let span = tokens[tokens.len() - 1].1;
+                Span::new(span.end, span.end)
             } else {
-                let (start, _token, end) = tokens[perr.token_index];
-                (start, end)
+                tokens[perr.token_index].1
             };
-            let err = Error::parse(start, end, message);
+            // TODO: Make error take a span instead.
+            let err = Error::parse(span.start, span.end, message);
             Err(err)
         }
     }
 }
 
 struct Parser<'t, 'a: 't> {
-    tokens: &'t [(usize, Token<'a>, usize)],
+    tokens: &'t [(Token<'a>, Span)],
     cursor: usize,
 }
 
@@ -86,7 +86,7 @@ impl<T> ReplaceError for PResult<T> {
 }
 
 impl<'t, 'a: 't> Parser<'t, 'a> {
-    fn new(tokens: &'t [(usize, Token<'a>, usize)]) -> Parser<'t, 'a> {
+    fn new(tokens: &'t [(Token<'a>, Span)]) -> Parser<'t, 'a> {
         Parser {
             tokens: tokens,
             cursor: 0,
@@ -106,7 +106,7 @@ impl<'t, 'a: 't> Parser<'t, 'a> {
     fn parse_statement(&mut self) -> PResult<Stmt<'a>> {
         debug_assert!(self.cursor < self.tokens.len());
 
-        match self.tokens[self.cursor].1 {
+        match self.tokens[self.cursor].0 {
             Token::KwImport => self.parse_import().map(Stmt::Import),
             Token::Ident(..) => self.parse_assign().map(Stmt::Assign),
             Token::KwReturn => self.parse_return().map(Stmt::Return),
@@ -491,7 +491,7 @@ impl<'t, 'a: 't> Parser<'t, 'a> {
 
     /// Return the token under the cursor, if there is one.
     fn peek(&self) -> Option<Token<'a>> {
-        self.tokens.get(self.cursor).map(|t| t.1)
+        self.tokens.get(self.cursor).map(|t| t.0)
     }
 
     /// Advance the cursor by one token, consuming the token under the cursor.
@@ -507,7 +507,7 @@ impl<'t, 'a: 't> Parser<'t, 'a> {
         if self.cursor < self.tokens.len() {
             let token = self.tokens[self.cursor];
             self.consume();
-            Some(token.1)
+            Some(token.0)
         } else {
             None
         }

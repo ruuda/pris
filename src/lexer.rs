@@ -29,6 +29,24 @@
 
 use error::{Error, Result};
 
+/// Represents a contiguous region of source code.
+#[derive(Copy, Clone, Debug, PartialEq, Eq)]
+pub struct Span {
+    /// Index of the first byte.
+    pub start: usize,
+    /// Index after the last byte.
+    pub end: usize,
+}
+
+impl Span {
+    pub fn new(start: usize, end: usize) -> Span {
+        Span {
+            start: start,
+            end: end,
+        }
+    }
+}
+
 #[derive(Copy, Clone, Debug, Eq, PartialEq)]
 pub enum Token<'a> {
     // TODO: These should not contain slices, that information is redundant and
@@ -68,7 +86,7 @@ pub enum Token<'a> {
 }
 
 /// Lexes a UTF-8 input file into (start_index, token, past_end_index) tokens.
-pub fn lex(input: &[u8]) -> Result<Vec<(usize, Token, usize)>> {
+pub fn lex(input: &[u8]) -> Result<Vec<(Token, Span)>> {
     Lexer::new(input).run()
 }
 
@@ -89,7 +107,7 @@ struct Lexer<'a> {
     input: &'a [u8],
     start: usize,
     state: State,
-    tokens: Vec<(usize, Token<'a>, usize)>,
+    tokens: Vec<(Token<'a>, Span)>,
 }
 
 impl<'a> Lexer<'a> {
@@ -103,9 +121,7 @@ impl<'a> Lexer<'a> {
     }
 
     /// Run the lexer on the full input and return the tokens.
-    ///
-    /// Returns tuples of (start_index, token, past_end_index).
-    fn run(mut self) -> Result<Vec<(usize, Token<'a>, usize)>> {
+    fn run(mut self) -> Result<Vec<(Token<'a>, Span)>> {
         loop {
             let (start, state) = match self.state {
                 State::Base => self.lex_base()?,
@@ -148,9 +164,26 @@ impl<'a> Lexer<'a> {
         true
     }
 
+    /// Push a token where `start` is the index of its first byte and `end` the
+    /// index past the last one.
+    fn push_from(&mut self, start: usize, token: Token<'a>, end: usize) {
+        let span = Span {
+            start: start,
+            end: end,
+        };
+        self.tokens.push((token, span));
+    }
+
+
+    /// Push a token starting at `self.start`.
+    fn push(&mut self, token: Token<'a>, end: usize) {
+        let start = self.start;
+        self.push_from(start, token, end);
+    }
+
     /// Push a single-byte token, and set the start of the next token past it.
-    fn push_single(&mut self, at: usize, tok: Token<'a>) {
-        self.tokens.push((at, tok, at + 1));
+    fn push_single(&mut self, at: usize, token: Token<'a>) {
+        self.push_from(at, token, at + 1);
         self.start = at + 1;
     }
 
@@ -268,7 +301,7 @@ impl<'a> Lexer<'a> {
                 // if the source available to the parser. (Which it needs to be
                 // anyway to generate errors.)
                 let inner = self.parse_utf8_str(self.start, i).unwrap();
-                self.tokens.push((self.start, Token::Color(inner), i));
+                self.push(Token::Color(inner), i);
                 return change_state(i, State::Base)
             }
 
@@ -278,7 +311,7 @@ impl<'a> Lexer<'a> {
         if self.start + 7 == self.input.len() {
             // The input ends in a color.
             let inner = self.parse_utf8_str(self.start, self.input.len()).unwrap();
-            self.tokens.push((self.start, Token::Color(inner), self.input.len()));
+            self.push(Token::Color(inner), self.input.len());
             done_at_end_of_input()
         } else {
             // The input ends in a color, but we were still expecting digits.
@@ -318,14 +351,14 @@ impl<'a> Lexer<'a> {
                 // underscores, so at the first one that is not one of those,
                 // change to the base state and re-inspect it.
                 let inner = self.parse_utf8_str(self.start, i).unwrap();
-                self.tokens.push((self.start, make_keyword_or_ident(inner), i));
+                self.push(make_keyword_or_ident(inner), i);
                 return change_state(i, State::Base)
             }
         }
 
         // The input ended in an identifier.
         let inner = self.parse_utf8_str(self.start, self.input.len()).unwrap();
-        self.tokens.push((self.start, make_keyword_or_ident(inner), self.input.len()));
+        self.push(make_keyword_or_ident(inner), self.input.len());
         done_at_end_of_input()
     }
 
@@ -353,25 +386,25 @@ impl<'a> Lexer<'a> {
                 // state and continue after the suffix.
                 b'e' if self.has_at(i + 1, b"m") => {
                     let inner = self.parse_utf8_str(self.start, i).unwrap();
-                    self.tokens.push((self.start, Token::Number(inner), i));
-                    self.tokens.push((i, Token::UnitEm, i + 2));
+                    self.push(Token::Number(inner), i);
+                    self.push_from(i, Token::UnitEm, i + 2);
                     return change_state(i + 2, State::Base)
                 }
                 b'p' if self.has_at(i + 1, b"t") => {
                     let inner = self.parse_utf8_str(self.start, i).unwrap();
-                    self.tokens.push((self.start, Token::Number(inner), i));
-                    self.tokens.push((i, Token::UnitPt, i + 2));
+                    self.push(Token::Number(inner), i);
+                    self.push_from(i, Token::UnitPt, i + 2);
                     return change_state(i + 2, State::Base)
                 }
                 b'h' => {
                     let inner = self.parse_utf8_str(self.start, i).unwrap();
-                    self.tokens.push((self.start, Token::Number(inner), i));
+                    self.push(Token::Number(inner), i);
                     self.push_single(i, Token::UnitH);
                     return change_state(i + 1, State::Base)
                 }
                 b'w' => {
                     let inner = self.parse_utf8_str(self.start, i).unwrap();
-                    self.tokens.push((self.start, Token::Number(inner), i));
+                    self.push(Token::Number(inner), i);
                     self.push_single(i, Token::UnitW);
                     return change_state(i + 1, State::Base)
                 }
@@ -379,7 +412,7 @@ impl<'a> Lexer<'a> {
                     // Not a digit or first period, re-inspect this byte in the
                     // base state.
                     let inner = self.parse_utf8_str(self.start, i).unwrap();
-                    self.tokens.push((self.start, Token::Number(inner), i));
+                    self.push(Token::Number(inner), i);
                     return change_state(i, State::Base)
                 }
             }
@@ -387,7 +420,7 @@ impl<'a> Lexer<'a> {
 
         // The input ended in a number.
         let inner = self.parse_utf8_str(self.start, self.input.len()).unwrap();
-        self.tokens.push((self.start, Token::Number(inner), self.input.len()));
+        self.push(Token::Number(inner), self.input.len());
         done_at_end_of_input()
     }
 
@@ -402,7 +435,7 @@ impl<'a> Lexer<'a> {
                     // Another "---" marks the end of the raw string. Continue
                     // in the base state after the last dash.
                     let inner = self.parse_utf8_str(self.start, i + 3)?;
-                    self.tokens.push((self.start, Token::RawString(inner), i + 3));
+                    self.push(Token::RawString(inner), i + 3);
                     return change_state(i + 3, State::Base)
                 }
                 _ => continue,
@@ -434,7 +467,7 @@ impl<'a> Lexer<'a> {
                 }
                 b'"' => {
                     let inner = self.parse_utf8_str(self.start, i + 1)?;
-                    self.tokens.push((self.start, Token::String(inner), i + 1));
+                    self.push(Token::String(inner), i + 1);
                     // Continue in the base state after the closing quote.
                     return change_state(i + 1, State::Base)
                 }
@@ -607,8 +640,8 @@ fn lex_handles_a_simple_input() {
     let input = b"foo bar";
     let tokens = lex(input).unwrap();
     assert_eq!(tokens.len(), 2);
-    assert_eq!(tokens[0], (0, Token::Ident("foo"), 3));
-    assert_eq!(tokens[1], (4, Token::Ident("bar"), 7));
+    assert_eq!(tokens[0], (Token::Ident("foo"), Span::new(0, 3)));
+    assert_eq!(tokens[1], (Token::Ident("bar"), Span::new(4, 7)));
 }
 
 #[test]
@@ -616,8 +649,8 @@ fn lex_handles_a_string_literal() {
     let input = br#"foo "bar""#;
     let tokens = lex(input).unwrap();
     assert_eq!(tokens.len(), 2);
-    assert_eq!(tokens[0], (0, Token::Ident("foo"), 3));
-    assert_eq!(tokens[1], (4, Token::String("\"bar\""), 9));
+    assert_eq!(tokens[0], (Token::Ident("foo"), Span::new(0, 3)));
+    assert_eq!(tokens[1], (Token::String("\"bar\""), Span::new(4, 9)));
 }
 
 #[test]
@@ -625,7 +658,7 @@ fn lex_handles_a_string_literal_with_escaped_quote() {
     let input = br#""bar\"baz""#;
     let tokens = lex(input).unwrap();
     assert_eq!(tokens.len(), 1);
-    assert_eq!(tokens[0], (0, Token::String(r#""bar\"baz""#), 10));
+    assert_eq!(tokens[0], (Token::String(r#""bar\"baz""#), Span::new(0, 10)));
 }
 
 #[test]
@@ -633,9 +666,9 @@ fn lex_handles_a_raw_string_literal() {
     let input = b"foo---bar---baz";
     let tokens = lex(input).unwrap();
     assert_eq!(tokens.len(), 3);
-    assert_eq!(tokens[0], (0, Token::Ident("foo"), 3));
-    assert_eq!(tokens[1], (3, Token::RawString("---bar---"), 12));
-    assert_eq!(tokens[2], (12, Token::Ident("baz"), 15));
+    assert_eq!(tokens[0], (Token::Ident("foo"), Span::new(0, 3)));
+    assert_eq!(tokens[1], (Token::RawString("---bar---"), Span::new(3, 12)));
+    assert_eq!(tokens[2], (Token::Ident("baz"), Span::new(12, 15)));
 }
 
 #[test]
@@ -643,8 +676,8 @@ fn lex_strips_a_comment() {
     let input = b"foo\n// This is comment\nbar";
     let tokens = lex(input).unwrap();
     assert_eq!(tokens.len(), 2);
-    assert_eq!(tokens[0], (0, Token::Ident("foo"), 3));
-    assert_eq!(tokens[1], (23, Token::Ident("bar"), 26));
+    assert_eq!(tokens[0], (Token::Ident("foo"), Span::new(0, 3)));
+    assert_eq!(tokens[1], (Token::Ident("bar"), Span::new(23, 26)));
 }
 
 #[test]
@@ -652,8 +685,8 @@ fn lex_handles_a_color() {
     let input = b"#f8f8f8 #cfcfcf";
     let tokens = lex(input).unwrap();
     assert_eq!(tokens.len(), 2);
-    assert_eq!(tokens[0], (0, Token::Color("#f8f8f8"), 7));
-    assert_eq!(tokens[1], (8, Token::Color("#cfcfcf"), 15));
+    assert_eq!(tokens[0], (Token::Color("#f8f8f8"), Span::new(0, 7)));
+    assert_eq!(tokens[1], (Token::Color("#cfcfcf"), Span::new(8, 15)));
 }
 
 #[test]
@@ -661,17 +694,17 @@ fn lex_handles_numbers() {
     let input = b"31 31.0 2w 2h 2em 2pt 17";
     let tokens = lex(input).unwrap();
     assert_eq!(tokens.len(), 11);
-    assert_eq!(tokens[0], (0, Token::Number("31"), 2));
-    assert_eq!(tokens[1], (3, Token::Number("31.0"), 7));
-    assert_eq!(tokens[2], (8, Token::Number("2"), 9));
-    assert_eq!(tokens[3], (9, Token::UnitW, 10));
-    assert_eq!(tokens[4], (11, Token::Number("2"), 12));
-    assert_eq!(tokens[5], (12, Token::UnitH, 13));
-    assert_eq!(tokens[6], (14, Token::Number("2"), 15));
-    assert_eq!(tokens[7], (15, Token::UnitEm, 17));
-    assert_eq!(tokens[8], (18, Token::Number("2"), 19));
-    assert_eq!(tokens[9], (19, Token::UnitPt, 21));
-    assert_eq!(tokens[10], (22, Token::Number("17"), 24));
+    assert_eq!(tokens[0], (Token::Number("31"), Span::new(0, 2)));
+    assert_eq!(tokens[1], (Token::Number("31.0"), Span::new(3, 7)));
+    assert_eq!(tokens[2], (Token::Number("2"), Span::new(8, 9)));
+    assert_eq!(tokens[3], (Token::UnitW, Span::new(9, 10)));
+    assert_eq!(tokens[4], (Token::Number("2"), Span::new(11, 12)));
+    assert_eq!(tokens[5], (Token::UnitH, Span::new(12, 13)));
+    assert_eq!(tokens[6], (Token::Number("2"), Span::new(14, 15)));
+    assert_eq!(tokens[7], (Token::UnitEm, Span::new(15, 17)));
+    assert_eq!(tokens[8], (Token::Number("2"), Span::new(18, 19)));
+    assert_eq!(tokens[9], (Token::UnitPt, Span::new(19, 21)));
+    assert_eq!(tokens[10], (Token::Number("17"), Span::new(22, 24)));
 }
 
 #[test]
@@ -679,8 +712,8 @@ fn lex_handles_braces() {
     let input = b"{ }\n";
     let tokens = lex(input).unwrap();
     assert_eq!(tokens.len(), 2);
-    assert_eq!(tokens[0], (0, Token::LBrace, 1));
-    assert_eq!(tokens[1], (2, Token::RBrace, 3));
+    assert_eq!(tokens[0], (Token::LBrace, Span::new(0, 1)));
+    assert_eq!(tokens[1], (Token::RBrace, Span::new(2, 3)));
 }
 
 #[test]
@@ -688,13 +721,13 @@ fn lex_handles_keywords() {
     let input = b"return the function put at the import";
     let tokens = lex(input).unwrap();
     assert_eq!(tokens.len(), 7);
-    assert_eq!(tokens[0], (0, Token::KwReturn, 6));
-    assert_eq!(tokens[1], (7, Token::Ident("the"), 10));
-    assert_eq!(tokens[2], (11, Token::KwFunction, 19));
-    assert_eq!(tokens[3], (20, Token::KwPut, 23));
-    assert_eq!(tokens[4], (24, Token::KwAt, 26));
-    assert_eq!(tokens[5], (27, Token::Ident("the"), 30));
-    assert_eq!(tokens[6], (31, Token::KwImport, 37));
+    assert_eq!(tokens[0], (Token::KwReturn, Span::new(0, 6)));
+    assert_eq!(tokens[1], (Token::Ident("the"), Span::new(7, 10)));
+    assert_eq!(tokens[2], (Token::KwFunction, Span::new(11, 19)));
+    assert_eq!(tokens[3], (Token::KwPut, Span::new(20, 23)));
+    assert_eq!(tokens[4], (Token::KwAt, Span::new(24, 26)));
+    assert_eq!(tokens[5], (Token::Ident("the"), Span::new(27, 30)));
+    assert_eq!(tokens[6], (Token::KwImport, Span::new(31, 37)));
 }
 
 #[test]
