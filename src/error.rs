@@ -22,12 +22,19 @@ pub type Result<T> = result::Result<T, Error>;
 #[derive(Debug)]
 pub enum Error {
     Arity(ArityError),
+    Format(FormatError),
     MissingFile(MissingFileError),
     MissingFont(MissingFontError),
     Parse(ParseError),
     Type(TypeError),
     Value(ValueError),
     Other(String),
+}
+
+#[derive(Debug)]
+pub struct FormatError {
+    path: String,
+    message: &'static str,
 }
 
 #[derive(Debug)]
@@ -194,6 +201,14 @@ impl Error {
         Error::MissingFile(err)
     }
 
+    pub fn format(path: String, message: &'static str) -> Error {
+        let err = FormatError {
+            path: path,
+            message: message,
+        };
+        Error::Format(err)
+    }
+
     pub fn parse(start: usize, end: usize, message: String) -> Error {
         let err = ParseError {
             start: start,
@@ -208,6 +223,7 @@ impl Error {
         print!("\x1b[31;1mError: \x1b[0m");
         match *self {
             Error::Arity(ref ae) => println!("{}\n", ae.message),
+            Error::Format(ref f) => println!("The file '{}' is invalid. {}\n", f.path, f.message),
             Error::MissingFile(ref mf) => println!("The file '{}' does not exist.\n", mf.path),
             Error::MissingFont(ref mf) => println!("The font '{} {}' cannot be found.\n", mf.family, mf.style),
             Error::Other(ref ot) => println!("{}\n", ot),
