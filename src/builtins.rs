@@ -5,8 +5,6 @@
 // it under the terms of the GNU General Public License version 3. A copy
 // of the License is available in the root of the repository.
 
-use std::fs::File;
-use std::io::Read;
 use std::path::PathBuf;
 use std::rc::Rc;
 
@@ -16,6 +14,7 @@ use elements::{Element, FillPolygon, StrokePolygon, Text, Vec2};
 use error::{Error, Result};
 use freetype;
 use harfbuzz;
+use png;
 use pretty::Formatter;
 use rsvg;
 use runtime::{BoundingBox, Frame, Subframe, Val};
@@ -441,18 +440,6 @@ fn image_svg<'a>(path: String) -> Result<(f64, f64, Element)> {
  }
 
 fn image_png<'a>(path: String) -> Result<(f64, f64, Element)> {
-    // Read the file contents into a vector, so Cairo can create a surface from
-    // it later. We also need it to determine the dimensions.
-    let mut data = Vec::new();
-    match File::open(&path) {
-        Ok(mut f) => {
-            // TODO: Proper error handling.
-            f.read_to_end(&mut data).unwrap();
-        }
-        // TODO: This failing does not necessarily mean that the file did not
-        // exist.
-        Err(_) => return Err(Error::missing_file(path)),
-    }
-
-    Ok((100.0, 100.0, Element::Png(PathBuf::from(path))))
+    let (width, height) = png::get_dimensions(&path)?;
+    Ok((width as f64, height as f64, Element::Png(PathBuf::from(path))))
 }
