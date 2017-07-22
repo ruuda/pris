@@ -5,6 +5,8 @@
 // it under the terms of the GNU General Public License version 3. A copy
 // of the License is available in the root of the repository.
 
+use std::fs::File;
+use std::io::Read;
 use std::rc::Rc;
 
 use ast::Idents;
@@ -400,15 +402,31 @@ pub fn image<'i, 'a>(_interpreter: &mut ExprInterpreter<'i, 'a>,
         _ => unreachable!(),
     };
 
-    if !path.ends_with(".svg") {
-        let msg = format!("Cannot load '{}', only svg images are supported for now.", path);
-        return Err(Error::Other(msg))
-    }
-
     // TODO: Make path relative to the source file. Some kind of state would be
     // required for this. Time to replace the FontMap everywhere with a more
     // elaborate state structure.
 
+    let (width, height, element) = match () {
+        _ if path.ends_with(".svg") => image_svg(path)?,
+        _ if path.ends_with(".png") => image_png(path)?,
+        _ => {
+            let msg = format!("Cannot load '{}', only svg and png images are supported for now.", path);
+            return Err(Error::Other(msg))
+        }
+    };
+
+    let mut frame = Frame::new();
+    frame.place_element_on_last_subframe(Vec2::zero(), element);
+    frame.union_bounding_box(&BoundingBox::sized(width, height));
+
+    // The image anchor is in the top right, so images can be adjoined easily:
+    // the origin is top left.
+    frame.set_anchor(Vec2::new(width, 0.0));
+
+    Ok(Val::Frame(Rc::new(frame)))
+}
+
+fn image_svg<'a>(path: String) -> Result<(f64, f64, Element)> {
     let svg = match rsvg::Svg::open(&path) {
         Ok(svg) => svg,
         // TODO: Actually, the cause does not have to be a missing file, it
@@ -418,13 +436,22 @@ pub fn image<'i, 'a>(_interpreter: &mut ExprInterpreter<'i, 'a>,
     };
     let (width, height) = svg.size();
 
-    let mut frame = Frame::new();
-    frame.place_element_on_last_subframe(Vec2::zero(), Element::Svg(svg));
-    frame.union_bounding_box(&BoundingBox::sized(width as f64, height as f64));
+    Ok((width as f64, height as f64, Element::Svg(svg)))
+ }
 
-    // The image anchor is in the top right, so images can be adjoined easily:
-    // the origin is top left.
-    frame.set_anchor(Vec2::new(width as f64, 0.0));
+fn image_png<'a>(path: String) -> Result<(f64, f64, Element)> {
+    // Read the file contents into a vector, so Cairo can create a surface from
+    // it later. We also need it to determine the dimensions.
+    let mut data = Vec::new();
+    match File::open(&path) {
+        Ok(mut f) => {
+            // TODO: Proper error handling.
+            f.read_to_end(&mut data).unwrap();
+        }
+        // TODO: This failing does not necessarily mean that the file did not
+        // exist.
+        Err(_) => return Err(Error::missing_file(path)),
+    }
 
-    Ok(Val::Frame(Rc::new(frame)))
+    Ok((0.0, 0.0, unimplemented!()))
 }
