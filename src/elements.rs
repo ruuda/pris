@@ -7,7 +7,9 @@
 
 use cairo;
 use rsvg::Svg;
+
 use std::ops;
+use std::path::PathBuf;
 
 #[derive(Clone)]
 pub struct PlacedElement {
@@ -25,10 +27,11 @@ pub struct Vec2 {
 #[derive(Clone)]
 pub enum Element {
     FillPolygon(FillPolygon),
-    StrokePolygon(StrokePolygon),
-    Text(Text),
-    Svg(Svg),
+    Png(PathBuf),
     Scaled(Vec<PlacedElement>, f64),
+    StrokePolygon(StrokePolygon),
+    Svg(Svg),
+    Text(Text),
 }
 
 #[derive(Clone)]

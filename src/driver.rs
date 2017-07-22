@@ -6,7 +6,7 @@
 // of the License is available in the root of the repository.
 
 use ast::Idents;
-use cairo::{Cairo, FontFace};
+use cairo::{Cairo, FontFace, Surface};
 use elements::{Color, Element, PlacedElement, Vec2};
 use runtime::{FontMap, Frame};
 
@@ -100,6 +100,13 @@ fn draw_element(fm: &mut FontMap, cr: &mut Cairo, pe: &PlacedElement) {
             cr.translate(pe.position.x, pe.position.y);
             svg.draw(cr);
             cr.set_matrix(&matrix);
+        }
+
+        Element::Png(ref path) => {
+            // TODO: This will need error handling.
+            let png_surface = Surface::from_png(path);
+            cr.set_source_surface(&png_surface, pe.position.x, pe.position.y);
+            cr.paint();
         }
     }
 }

@@ -1,3 +1,7 @@
 {
   put image("examples/image.svg") at (0.1w, 0.5h)
 }
+
+{
+  put image("examples/image.png") at (0.1w, 0.5h)
+}

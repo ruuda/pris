@@ -93,7 +93,7 @@ fn main() {
         }
     }
 
-    let surf = cairo::Surface::new(&outfile, 1920.0, 1080.0);
+    let surf = cairo::Surface::new_pdf(&outfile, 1920.0, 1080.0);
     let mut cr = cairo::Cairo::new(surf);
     cr.set_source_rgb(0.0, 0.0, 0.0);
     cr.set_line_width(6.0);

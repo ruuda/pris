@@ -23,7 +23,6 @@ type gboolean = c_int;
 type gsize = c_ulong;
 
 #[repr(C)]
-#[allow(non_camel_case_types)]
 #[derive(Copy, Clone)]
 pub struct RsvgDimensionData {
     width: c_int,

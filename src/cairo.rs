@@ -43,8 +43,10 @@ pub struct cairo_matrix_t {
 
 #[link(name = "cairo")]
 extern {
-    fn cairo_pdf_surface_create(fname: *const c_char, width: f64, height: f64) -> *mut cairo_surface_t;
     fn cairo_create(surf: *mut cairo_surface_t) -> *mut cairo_t;
+    fn cairo_image_surface_create_from_png(fname: *const c_char) -> *mut cairo_surface_t;
+    fn cairo_pdf_surface_create(fname: *const c_char, width: f64, height: f64) -> *mut cairo_surface_t;
+    fn cairo_set_source_surface(cr: *mut cairo_t, surface: *mut cairo_surface_t, x: f64, y: f64);
     fn cairo_set_source_rgb(cr: *mut cairo_t, r: f64, g: f64, b: f64);
     fn cairo_set_line_width(cr: *mut cairo_t, width: f64);
     fn cairo_move_to(cr: *mut cairo_t, x: f64, y: f64);
@@ -53,6 +55,7 @@ extern {
     fn cairo_rectangle(cr: *mut cairo_t, x: f64, y: f64, w: f64, h: f64);
     fn cairo_stroke(cr: *mut cairo_t);
     fn cairo_fill(cr: *mut cairo_t);
+    fn cairo_paint(cr: *mut cairo_t);
     fn cairo_show_page(cr: *mut cairo_t);
     fn cairo_destroy(cr: *mut cairo_t);
     fn cairo_surface_destroy(surf: *mut cairo_surface_t);
@@ -89,11 +92,20 @@ pub struct Glyph(cairo_glyph_t);
 pub struct Matrix(cairo_matrix_t);
 
 impl Surface {
-    pub fn new(fname: &Path, width: f64, height: f64) -> Surface {
+    pub fn new_pdf(fname: &Path, width: f64, height: f64) -> Surface {
         use std::ffi::CString;
         let fname_cstr = CString::new(fname.to_str().unwrap()).unwrap();
         Surface {
             ptr: unsafe { cairo_pdf_surface_create(fname_cstr.as_ptr(), width, height) }
+        }
+    }
+
+    pub fn from_png(fname: &Path) -> Surface {
+        use std::ffi::CString;
+        let fname_cstr = CString::new(fname.to_str().unwrap()).unwrap();
+        Surface {
+            // TODO: Check cairo_surface_status, see the manual.
+            ptr: unsafe { cairo_image_surface_create_from_png(fname_cstr.as_ptr()) }
         }
     }
 }
@@ -119,6 +131,10 @@ impl Cairo {
 
     pub fn set_source_rgb(&mut self, r: f64, g: f64, b: f64) {
         unsafe { cairo_set_source_rgb(self.ptr, r, g, b) }
+    }
+
+    pub fn set_source_surface(&mut self, surface: &Surface, x: f64, y: f64) {
+        unsafe { cairo_set_source_surface(self.ptr, surface.ptr, x, y) }
     }
 
     pub fn set_line_width(&mut self, width: f64) {
@@ -147,6 +163,10 @@ impl Cairo {
 
     pub fn fill(&mut self) {
         unsafe { cairo_fill(self.ptr) }
+    }
+
+    pub fn paint(&mut self) {
+        unsafe { cairo_paint(self.ptr) }
     }
 
     pub fn show_page(&mut self) {

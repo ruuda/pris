@@ -7,6 +7,7 @@
 
 use std::fs::File;
 use std::io::Read;
+use std::path::PathBuf;
 use std::rc::Rc;
 
 use ast::Idents;
@@ -453,5 +454,5 @@ fn image_png<'a>(path: String) -> Result<(f64, f64, Element)> {
         Err(_) => return Err(Error::missing_file(path)),
     }
 
-    Ok((0.0, 0.0, unimplemented!()))
+    Ok((100.0, 100.0, Element::Png(PathBuf::from(path))))
 }
