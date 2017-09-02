@@ -107,7 +107,7 @@ impl<'i, 'a> ExprInterpreter<'i, 'a> {
                     if frame.get_subframes().len() <= i {
                         frame.push_subframe(Subframe::new());
                     }
-                    let mut subframe = frame.get_subframe_mut(i);
+                    let subframe = frame.get_subframe_mut(i);
                     for pe in sf1.get_elements() {
                         subframe.place_element(anchor + pe.position, pe.element.clone());
                     }

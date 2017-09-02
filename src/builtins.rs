@@ -256,7 +256,7 @@ pub fn t<'i, 'a>(interpreter: &mut ExprInterpreter<'i, 'a>,
     let font_size = interpreter.env.lookup_len(&Idents(vec!["font_size"]))?;
     let line_height = interpreter.env.lookup_len(&Idents(vec!["line_height"]))?;
     let text_align = interpreter.env.lookup_str(&Idents(vec!["text_align"]))?;
-    let mut ft_face = match interpreter.font_map.get(&font_family, &font_style) {
+    let ft_face = match interpreter.font_map.get(&font_family, &font_style) {
         Some(face) => face,
         None => return Err(Error::missing_font(font_family, font_style)),
     };

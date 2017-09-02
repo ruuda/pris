@@ -127,7 +127,7 @@ pub struct Glyph {
 
 impl Font {
     // TODO: Figure out ft_face ownership rules.
-    pub fn from_ft_face(mut ft_face: &mut freetype::Face<'static>) -> Font {
+    pub fn from_ft_face(ft_face: &mut freetype::Face<'static>) -> Font {
         Font {
             ptr: unsafe { hb_ft_font_create(ft_face.raw_mut(), ptr::null_mut()) },
         }
