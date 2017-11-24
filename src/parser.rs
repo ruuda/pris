@@ -232,43 +232,47 @@ impl<'t, 'a: 't> Parser<'t, 'a> {
     }
 
     fn parse_expr_add(&mut self) -> PResult<Term<'a>> {
-        let term = self.parse_expr_mul()?;
+        let mut term = self.parse_expr_mul()?;
 
-        // The term so far could be it, or it could be part of a bigger binary
-        // expression, if we encounter the right operator next.
-        let maybe_op = match self.peek() {
-            Some(Token::Plus) => Some(BinOp::Add),
-            Some(Token::Minus) => Some(BinOp::Sub),
-            Some(Token::Tilde) => Some(BinOp::Adj),
-            _ => None,
-        };
+        loop {
+            // The term so far could be it, or it could be part of a bigger
+            // binary expression, if we encounter the right operator next.
+            let maybe_op = match self.peek() {
+                Some(Token::Plus) => Some(BinOp::Add),
+                Some(Token::Minus) => Some(BinOp::Sub),
+                Some(Token::Tilde) => Some(BinOp::Adj),
+                _ => None,
+            };
 
-        if let Some(op) = maybe_op {
-            self.consume();
-            let rhs = self.parse_expr_add()?;
-            Ok(Term::bin_op(BinTerm(term, op, rhs)))
-        } else {
-            Ok(term)
+            if let Some(op) = maybe_op {
+                self.consume();
+                let rhs = self.parse_expr_mul()?;
+                term = Term::bin_op(BinTerm(term, op, rhs));
+            } else {
+                return Ok(term)
+            }
         }
     }
 
     fn parse_expr_mul(&mut self) -> PResult<Term<'a>> {
-        let term = self.parse_expr_exp()?;
+        let mut term = self.parse_expr_exp()?;
 
-        // The term so far could be it, or it could be part of a bigger binary
-        // expression, if we encounter the right operator next.
-        let maybe_op = match self.peek() {
-            Some(Token::Star) => Some(BinOp::Mul),
-            Some(Token::Slash) => Some(BinOp::Div),
-            _ => None,
-        };
+        loop {
+            // The term so far could be it, or it could be part of a bigger
+            // binary expression, if we encounter the right operator next.
+            let maybe_op = match self.peek() {
+                Some(Token::Star) => Some(BinOp::Mul),
+                Some(Token::Slash) => Some(BinOp::Div),
+                _ => None,
+            };
 
-        if let Some(op) = maybe_op {
-            self.consume();
-            let rhs = self.parse_expr_mul()?;
-            Ok(Term::bin_op(BinTerm(term, op, rhs)))
-        } else {
-            Ok(term)
+            if let Some(op) = maybe_op {
+                self.consume();
+                let rhs = self.parse_expr_exp()?;
+                term = Term::bin_op(BinTerm(term, op, rhs));
+            } else {
+                return Ok(term)
+            }
         }
     }
 
@@ -897,7 +901,7 @@ mod test {
     }
 
     #[test]
-    fn parse_binop_associates_left() {
+    fn parse_binop_add_associates_left() {
         let tokens = lex(b"1 + 2 + 6").unwrap();
         let mut parser = Parser::new(&tokens);
         let add = parser.parse_expr_add().unwrap();
@@ -906,6 +910,20 @@ mod test {
         let six = Term::Number(Num(6.0, None));
         let inner = BinTerm(one, BinOp::Add, two);
         let outer = BinTerm(Term::bin_op(inner), BinOp::Add, six);
+        assert_preq!(add, Term::bin_op(outer));
+        assert_eq!(parser.cursor, 5);
+    }
+
+    #[test]
+    fn parse_binop_mul_associates_left() {
+        let tokens = lex(b"1 * 2 * 6").unwrap();
+        let mut parser = Parser::new(&tokens);
+        let add = parser.parse_expr_mul().unwrap();
+        let one = Term::Number(Num(1.0, None));
+        let two = Term::Number(Num(2.0, None));
+        let six = Term::Number(Num(6.0, None));
+        let inner = BinTerm(one, BinOp::Mul, two);
+        let outer = BinTerm(Term::bin_op(inner), BinOp::Mul, six);
         assert_preq!(add, Term::bin_op(outer));
         assert_eq!(parser.cursor, 5);
     }
