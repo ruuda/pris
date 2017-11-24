@@ -897,6 +897,20 @@ mod test {
     }
 
     #[test]
+    fn parse_binop_associates_left() {
+        let tokens = lex(b"1 + 2 + 6").unwrap();
+        let mut parser = Parser::new(&tokens);
+        let add = parser.parse_expr_add().unwrap();
+        let one = Term::Number(Num(1.0, None));
+        let two = Term::Number(Num(2.0, None));
+        let six = Term::Number(Num(6.0, None));
+        let inner = BinTerm(one, BinOp::Add, two);
+        let outer = BinTerm(Term::bin_op(inner), BinOp::Add, six);
+        assert_preq!(add, Term::bin_op(outer));
+        assert_eq!(parser.cursor, 5);
+    }
+
+    #[test]
     fn parse_parses_binop_single_add() {
         let tokens = lex(b"1").unwrap();
         let mut parser = Parser::new(&tokens);

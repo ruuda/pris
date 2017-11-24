@@ -126,8 +126,8 @@ macro_rules! assert_preq {
             let right = &$right;
             assert!(left == right,
                     "\nExpected:\n\n{}\n\nBut found:\n\n{}\n\n",
-                    pretty::print(left),
-                    pretty::print(right));
+                    pretty::print(right),
+                    pretty::print(left));
         }
     }
 }
