@@ -26,15 +26,15 @@ expr: expr_add;
 
 expr_add
   : expr_mul
-  | expr_mul '+' expr_add
-  | expr_mul '-' expr_add
-  | expr_mul '~' expr_add
+  | expr_add '+' expr_mul
+  | expr_add '-' expr_mul
+  | expr_add '~' expr_mul
   ;
 
 expr_mul
   : expr_exp
-  | expr_exp '*' expr_mul
-  | expr_exp '/' expr_mul
+  | expr_mul '*' expr_exp
+  | expr_mul '/' expr_exp
   ;
 
 expr_exp
