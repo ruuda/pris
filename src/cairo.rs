@@ -52,6 +52,7 @@ extern {
     fn cairo_pdf_surface_create(fname: *const c_char, width: f64, height: f64) -> *mut cairo_surface_t;
     fn cairo_set_source_surface(cr: *mut cairo_t, surface: *mut cairo_surface_t, x: f64, y: f64);
     fn cairo_set_source_rgb(cr: *mut cairo_t, r: f64, g: f64, b: f64);
+    fn cairo_set_source_rgba(cr: *mut cairo_t, r: f64, g: f64, b: f64, a: f64);
     fn cairo_set_line_width(cr: *mut cairo_t, width: f64);
     fn cairo_move_to(cr: *mut cairo_t, x: f64, y: f64);
     fn cairo_line_to(cr: *mut cairo_t, x: f64, y: f64);
@@ -72,6 +73,8 @@ extern {
     fn cairo_set_matrix(cr: *mut cairo_t, matrix: *const cairo_matrix_t);
     fn cairo_translate(cr: *mut cairo_t, tx: f64, ty: f64);
     fn cairo_scale(cr: *mut cairo_t, sx: f64, sy: f64);
+    fn cairo_user_to_device(cr: *mut cairo_t, x: *mut f64, y: *mut f64);
+    fn cairo_user_to_device_distance(cr: *mut cairo_t, dx: *mut f64, dy: *mut f64);
     fn cairo_tag_begin(cr: *mut cairo_t, tag_name: *const c_char, attributes: *const c_char);
     fn cairo_tag_end(cr: *mut cairo_t, tag_name: *const c_char);
     fn cairo_status(cr: *mut cairo_t) -> cairo_status_t;
@@ -149,6 +152,10 @@ impl Cairo {
 
     pub fn set_source_rgb(&mut self, r: f64, g: f64, b: f64) {
         unsafe { cairo_set_source_rgb(self.ptr, r, g, b) }
+    }
+
+    pub fn set_source_rgba(&mut self, r: f64, g: f64, b: f64, a: f64) {
+        unsafe { cairo_set_source_rgba(self.ptr, r, g, b, a) }
     }
 
     pub fn set_source_surface(&mut self, surface: &Surface, x: f64, y: f64) {
@@ -242,6 +249,22 @@ impl Cairo {
 
     pub fn scale(&mut self, sx: f64, sy: f64) {
         unsafe { cairo_scale(self.ptr, sx, sy) }
+    }
+
+    pub fn user_to_device(&mut self, x: f64, y: f64) -> (f64, f64) {
+        unsafe {
+            let (mut x_, mut y_) = (x, y);
+            cairo_user_to_device(self.ptr, &mut x_, &mut y_);
+            (x_, y_)
+        }
+    }
+
+    pub fn user_to_device_distance(&mut self, dx: f64, dy: f64) -> (f64, f64) {
+        unsafe {
+            let (mut x_, mut y_) = (dx, dy);
+            cairo_user_to_device_distance(self.ptr, &mut x_, &mut y_);
+            (x_, y_)
+        }
     }
 }
 
