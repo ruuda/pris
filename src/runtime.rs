@@ -203,11 +203,12 @@ impl<'a> Env<'a> {
         bindings.insert("line_width", Val::Num(10.8, 1));
         bindings.insert("color", Val::Col(Color::new(0.0, 0.0, 0.0)));
         bindings.insert("fit", Val::FnIntrin(Builtin(builtins::fit)));
+        bindings.insert("glyph", Val::FnIntrin(Builtin(builtins::glyph)));
+        bindings.insert("hyperlink", Val::FnIntrin(Builtin(builtins::hyperlink)));
         bindings.insert("image", Val::FnIntrin(Builtin(builtins::image)));
         bindings.insert("line", Val::FnIntrin(Builtin(builtins::line)));
         bindings.insert("str", Val::FnIntrin(Builtin(builtins::str)));
         bindings.insert("t", Val::FnIntrin(Builtin(builtins::t)));
-        bindings.insert("glyph", Val::FnIntrin(Builtin(builtins::glyph)));
         Env { bindings: bindings }
     }
 

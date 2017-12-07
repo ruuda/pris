@@ -110,9 +110,14 @@ fn draw_element(fm: &mut FontMap, cr: &mut Cairo, pe: &PlacedElement) {
         }
 
         Element::Hyperlink(ref hyperlink) => {
-            let attributes = format!("uri='{}'\0", hyperlink.uri);
+            let (x, y) = cr.user_to_device(pe.position.x, pe.position.y);
+            let (w, h) = cr.user_to_device_distance(hyperlink.size.x, hyperlink.size.y);
+            let attributes = format!(
+                "uri='{}' rect=[{:0.3} {:0.3} {:0.3} {:0.3}]\0",
+                hyperlink.uri,
+                x, y, w, h
+            );
             cr.tag_begin_link(&attributes);
-            cr.rectangle(pe.position.x, pe.position.y, hyperlink.size.x, hyperlink.size.y);
             cr.tag_end_link();
         }
     }
