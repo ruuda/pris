@@ -32,6 +32,7 @@ pub enum Element {
     StrokePolygon(StrokePolygon),
     Svg(Svg),
     Text(Text),
+    Hyperlink(Hyperlink),
 }
 
 #[derive(Clone)]
@@ -63,6 +64,12 @@ pub struct Text {
     pub font_style: String,
     pub font_size: f64,
     pub glyphs: Vec<cairo::Glyph>,
+}
+
+#[derive(Clone)]
+pub struct Hyperlink {
+    pub size: Vec2,
+    pub uri: String,
 }
 
 impl Vec2 {
