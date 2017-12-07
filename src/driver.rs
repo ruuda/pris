@@ -121,9 +121,12 @@ pub fn render_frame<'a>(fm: &mut FontMap, cr: &mut Cairo, frame: &Frame<'a>) {
             draw_background(cr, bgcolor);
         }
 
+        cr.tag_begin_link(&"uri='https://github.com'\0");
         for pe in subframe.get_elements() {
             draw_element(fm, cr, pe);
         }
-        cr.show_page()
+        cr.tag_end_link();
+        cr.show_page();
+        cr.assert_status_success();
     }
 }

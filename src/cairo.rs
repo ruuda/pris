@@ -10,6 +10,7 @@ use freetype::freetype_sys::FT_Face;
 use std::mem;
 use std::os::raw::{c_char, c_int, c_ulong};
 use std::path::Path;
+use std::ffi::{CStr, CString};
 
 #[allow(non_camel_case_types)]
 enum cairo_surface_t {}
@@ -19,6 +20,9 @@ pub enum cairo_t {}
 
 #[allow(non_camel_case_types)]
 enum cairo_font_face_t {}
+
+#[allow(non_camel_case_types)]
+type cairo_status_t = c_int;
 
 #[repr(C)]
 #[allow(non_camel_case_types)]
@@ -68,6 +72,10 @@ extern {
     fn cairo_set_matrix(cr: *mut cairo_t, matrix: *const cairo_matrix_t);
     fn cairo_translate(cr: *mut cairo_t, tx: f64, ty: f64);
     fn cairo_scale(cr: *mut cairo_t, sx: f64, sy: f64);
+    fn cairo_tag_begin(cr: *mut cairo_t, tag_name: *const c_char, attributes: *const c_char);
+    fn cairo_tag_end(cr: *mut cairo_t, tag_name: *const c_char);
+    fn cairo_status(cr: *mut cairo_t) -> cairo_status_t;
+    fn cairo_status_to_string(status: cairo_status_t) -> *const c_char;
 }
 
 pub struct Surface {
@@ -93,7 +101,6 @@ pub struct Matrix(cairo_matrix_t);
 
 impl Surface {
     pub fn new_pdf(fname: &Path, width: f64, height: f64) -> Surface {
-        use std::ffi::CString;
         let fname_cstr = CString::new(fname.to_str().unwrap()).unwrap();
         Surface {
             ptr: unsafe { cairo_pdf_surface_create(fname_cstr.as_ptr(), width, height) }
@@ -101,7 +108,6 @@ impl Surface {
     }
 
     pub fn from_png(fname: &Path) -> Surface {
-        use std::ffi::CString;
         let fname_cstr = CString::new(fname.to_str().unwrap()).unwrap();
         Surface {
             // TODO: Check cairo_surface_status, see the manual.
@@ -127,6 +133,18 @@ impl Cairo {
 
     pub unsafe fn get_raw_ptr(&mut self) -> *mut cairo_t {
         self.ptr
+    }
+
+    pub fn assert_status_success(&mut self) {
+        unsafe {
+            let status = cairo_status(self.ptr);
+            if status == 0 { return }
+            let message_ptr = cairo_status_to_string(status);
+            match CStr::from_ptr(message_ptr).to_str() {
+                Ok(msg) => panic!("Cairo status is not success: {}.", msg),
+                Err(_) => panic!("Cairo status is not success."),
+            }
+        }
     }
 
     pub fn set_source_rgb(&mut self, r: f64, g: f64, b: f64) {
@@ -171,6 +189,23 @@ impl Cairo {
 
     pub fn show_page(&mut self) {
         unsafe { cairo_show_page(self.ptr) }
+    }
+
+    pub fn tag_begin_link(&mut self, attributes: &str) {
+        unsafe {
+            let tag_name = CStr::from_bytes_with_nul_unchecked(b"Link\0");
+            let attrs = CStr::from_bytes_with_nul(attributes.as_bytes()).unwrap();
+            cairo_tag_begin(self.ptr, tag_name.as_ptr(), attrs.as_ptr());
+        }
+        self.assert_status_success();
+    }
+
+    pub fn tag_end_link(&mut self) {
+        unsafe {
+            let tag_name = CStr::from_bytes_with_nul_unchecked(b"Link\0");
+            cairo_tag_end(self.ptr, tag_name.as_ptr());
+        }
+        self.assert_status_success();
     }
 
     pub fn set_font_face(&mut self, face: &FontFace) {
