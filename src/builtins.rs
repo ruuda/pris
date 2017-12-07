@@ -171,9 +171,6 @@ pub fn hyperlink<'i, 'a>(_interpreter: &mut ExprInterpreter<'i, 'a>,
         _ => unreachable!(),
     };
 
-    // TODO: Validate that the uri contains no single quotes or backslashes,
-    // or escape those.
-
     let link = Hyperlink {
         size: size,
         uri: uri,

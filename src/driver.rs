@@ -110,11 +110,26 @@ fn draw_element(fm: &mut FontMap, cr: &mut Cairo, pe: &PlacedElement) {
         }
 
         Element::Hyperlink(ref hyperlink) => {
+            // Escape the uri: backslashes and single quotes must be escaped
+            // with a backslash, to fit the format of the tag "attributes".
+            let mut uri_escaped = String::with_capacity(hyperlink.uri.len());
+            for ch in hyperlink.uri.chars() {
+                match ch {
+                    '\'' => uri_escaped.push_str("\\'"),
+                    // Not sure why a single backslash should turn into *four*
+                    // instead of two, but when I push two backslashes, nothing
+                    // shows up in Evince. Could be a bug in Cairo or Evince
+                    // too.
+                    '\\' => uri_escaped.push_str("\\\\\\\\"),
+                    _ => uri_escaped.push(ch),
+                }
+            }
+
             let (x, y) = cr.user_to_device(pe.position.x, pe.position.y);
             let (w, h) = cr.user_to_device_distance(hyperlink.size.x, hyperlink.size.y);
             let attributes = format!(
                 "uri='{}' rect=[{:0.3} {:0.3} {:0.3} {:0.3}]\0",
-                hyperlink.uri,
+                uri_escaped,
                 x, y, w, h
             );
             cr.tag_begin_link(&attributes);
