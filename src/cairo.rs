@@ -10,6 +10,7 @@ use freetype::freetype_sys::FT_Face;
 use std::mem;
 use std::os::raw::{c_char, c_int, c_ulong};
 use std::path::Path;
+use std::ffi::{CStr, CString};
 
 #[allow(non_camel_case_types)]
 enum cairo_surface_t {}
@@ -19,6 +20,9 @@ pub enum cairo_t {}
 
 #[allow(non_camel_case_types)]
 enum cairo_font_face_t {}
+
+#[allow(non_camel_case_types)]
+type cairo_status_t = c_int;
 
 #[repr(C)]
 #[allow(non_camel_case_types)]
@@ -48,6 +52,7 @@ extern {
     fn cairo_pdf_surface_create(fname: *const c_char, width: f64, height: f64) -> *mut cairo_surface_t;
     fn cairo_set_source_surface(cr: *mut cairo_t, surface: *mut cairo_surface_t, x: f64, y: f64);
     fn cairo_set_source_rgb(cr: *mut cairo_t, r: f64, g: f64, b: f64);
+    fn cairo_set_source_rgba(cr: *mut cairo_t, r: f64, g: f64, b: f64, a: f64);
     fn cairo_set_line_width(cr: *mut cairo_t, width: f64);
     fn cairo_move_to(cr: *mut cairo_t, x: f64, y: f64);
     fn cairo_line_to(cr: *mut cairo_t, x: f64, y: f64);
@@ -68,6 +73,19 @@ extern {
     fn cairo_set_matrix(cr: *mut cairo_t, matrix: *const cairo_matrix_t);
     fn cairo_translate(cr: *mut cairo_t, tx: f64, ty: f64);
     fn cairo_scale(cr: *mut cairo_t, sx: f64, sy: f64);
+    fn cairo_user_to_device(cr: *mut cairo_t, x: *mut f64, y: *mut f64);
+    fn cairo_user_to_device_distance(cr: *mut cairo_t, dx: *mut f64, dy: *mut f64);
+    fn cairo_status(cr: *mut cairo_t) -> cairo_status_t;
+    fn cairo_status_to_string(status: cairo_status_t) -> *const c_char;
+}
+
+// Support for hyperlinks requires Cairo 1.15.4 or later, so it is not
+// included by default.
+#[cfg(feature = "hyperlink")]
+#[link(name = "cairo")]
+extern {
+    fn cairo_tag_begin(cr: *mut cairo_t, tag_name: *const c_char, attributes: *const c_char);
+    fn cairo_tag_end(cr: *mut cairo_t, tag_name: *const c_char);
 }
 
 pub struct Surface {
@@ -93,7 +111,6 @@ pub struct Matrix(cairo_matrix_t);
 
 impl Surface {
     pub fn new_pdf(fname: &Path, width: f64, height: f64) -> Surface {
-        use std::ffi::CString;
         let fname_cstr = CString::new(fname.to_str().unwrap()).unwrap();
         Surface {
             ptr: unsafe { cairo_pdf_surface_create(fname_cstr.as_ptr(), width, height) }
@@ -101,7 +118,6 @@ impl Surface {
     }
 
     pub fn from_png(fname: &Path) -> Surface {
-        use std::ffi::CString;
         let fname_cstr = CString::new(fname.to_str().unwrap()).unwrap();
         Surface {
             // TODO: Check cairo_surface_status, see the manual.
@@ -129,8 +145,24 @@ impl Cairo {
         self.ptr
     }
 
+    pub fn assert_status_success(&mut self) {
+        unsafe {
+            let status = cairo_status(self.ptr);
+            if status == 0 { return }
+            let message_ptr = cairo_status_to_string(status);
+            match CStr::from_ptr(message_ptr).to_str() {
+                Ok(msg) => panic!("Cairo status is not success: {}.", msg),
+                Err(_) => panic!("Cairo status is not success."),
+            }
+        }
+    }
+
     pub fn set_source_rgb(&mut self, r: f64, g: f64, b: f64) {
         unsafe { cairo_set_source_rgb(self.ptr, r, g, b) }
+    }
+
+    pub fn set_source_rgba(&mut self, r: f64, g: f64, b: f64, a: f64) {
+        unsafe { cairo_set_source_rgba(self.ptr, r, g, b, a) }
     }
 
     pub fn set_source_surface(&mut self, surface: &Surface, x: f64, y: f64) {
@@ -173,6 +205,18 @@ impl Cairo {
         unsafe { cairo_show_page(self.ptr) }
     }
 
+    #[cfg(feature = "hyperlink")]
+    pub fn tag_link(&mut self, attributes: &str) {
+        unsafe {
+            let tag_name = CStr::from_bytes_with_nul_unchecked(b"Link\0");
+            let attrs = CStr::from_bytes_with_nul(attributes.as_bytes()).unwrap();
+            cairo_tag_begin(self.ptr, tag_name.as_ptr(), attrs.as_ptr());
+            self.assert_status_success();
+            cairo_tag_end(self.ptr, tag_name.as_ptr());
+            self.assert_status_success();
+        }
+    }
+
     pub fn set_font_face(&mut self, face: &FontFace) {
         unsafe { cairo_set_font_face(self.ptr, face.ptr) }
     }
@@ -207,6 +251,22 @@ impl Cairo {
 
     pub fn scale(&mut self, sx: f64, sy: f64) {
         unsafe { cairo_scale(self.ptr, sx, sy) }
+    }
+
+    pub fn user_to_device(&mut self, x: f64, y: f64) -> (f64, f64) {
+        unsafe {
+            let (mut x_, mut y_) = (x, y);
+            cairo_user_to_device(self.ptr, &mut x_, &mut y_);
+            (x_, y_)
+        }
+    }
+
+    pub fn user_to_device_distance(&mut self, dx: f64, dy: f64) -> (f64, f64) {
+        unsafe {
+            let (mut x_, mut y_) = (dx, dy);
+            cairo_user_to_device_distance(self.ptr, &mut x_, &mut y_);
+            (x_, y_)
+        }
     }
 }
 

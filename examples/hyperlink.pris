@@ -1,0 +1,19 @@
+link = function(text, uri)
+{
+  color = #114488
+  line_width = 0.07em
+  label = t(text)
+  at (0em, 0em) put label
+  at (0em, 0.3em) + label.offset put hyperlink(uri, label.size)
+  at (0em, 0.1em) put line((label.width, 0em))
+}
+
+{
+  font_family = "Cantarell"
+  font_style = "Regular"
+  color = #440000
+  at (0.1w, 0.1w + font_size) put
+    t("Visit ") ~
+    link("the repository", "https://github.com/ruuda/pris") ~
+    t(".")
+}

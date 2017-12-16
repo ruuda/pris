@@ -10,7 +10,7 @@ use std::rc::Rc;
 
 use ast::Idents;
 use cairo;
-use elements::{Element, FillPolygon, StrokePolygon, Text, Vec2};
+use elements::{Element, FillPolygon, Hyperlink, StrokePolygon, Text, Vec2};
 use error::{Error, Result};
 use freetype;
 use harfbuzz;
@@ -154,6 +154,33 @@ pub fn fill_rectangle<'i, 'a>(interpreter: &mut ExprInterpreter<'i, 'a>,
     frame.set_anchor(Vec2::new(w, h));
     // TODO: Make bounding box take Vec2.
     frame.union_bounding_box(&BoundingBox::sized(w, h));
+
+    Ok(Val::Frame(Rc::new(frame)))
+}
+
+pub fn hyperlink<'i, 'a>(_interpreter: &mut ExprInterpreter<'i, 'a>,
+                         mut args: Vec<Val<'a>>)
+                         -> Result<Val<'a>> {
+    validate_args("hyperlink", &[ValType::Str, ValType::Coord(1)], &args)?;
+    let uri = match args.remove(0) {
+        Val::Str(s) => s,
+        _ => unreachable!(),
+    };
+    let size = match args.remove(0) {
+        Val::Coord(w, h, 1) => Vec2::new(w, h),
+        _ => unreachable!(),
+    };
+
+    let link = Hyperlink {
+        size: size,
+        uri: uri,
+    };
+
+    let mut frame = Frame::new();
+    frame.place_element_on_last_subframe(Vec2::zero(), Element::Hyperlink(link));
+    frame.set_anchor(size);
+    // TODO: Make bounding box take Vec2.
+    frame.union_bounding_box(&BoundingBox::sized(size.x, size.y));
 
     Ok(Val::Frame(Rc::new(frame)))
 }
