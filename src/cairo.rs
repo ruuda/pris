@@ -75,10 +75,17 @@ extern {
     fn cairo_scale(cr: *mut cairo_t, sx: f64, sy: f64);
     fn cairo_user_to_device(cr: *mut cairo_t, x: *mut f64, y: *mut f64);
     fn cairo_user_to_device_distance(cr: *mut cairo_t, dx: *mut f64, dy: *mut f64);
-    fn cairo_tag_begin(cr: *mut cairo_t, tag_name: *const c_char, attributes: *const c_char);
-    fn cairo_tag_end(cr: *mut cairo_t, tag_name: *const c_char);
     fn cairo_status(cr: *mut cairo_t) -> cairo_status_t;
     fn cairo_status_to_string(status: cairo_status_t) -> *const c_char;
+}
+
+// Support for hyperlinks requires Cairo 1.15.4 or later, so it is not
+// included by default.
+#[cfg(feature = "hyperlink")]
+#[link(name = "cairo")]
+extern {
+    fn cairo_tag_begin(cr: *mut cairo_t, tag_name: *const c_char, attributes: *const c_char);
+    fn cairo_tag_end(cr: *mut cairo_t, tag_name: *const c_char);
 }
 
 pub struct Surface {
@@ -198,21 +205,16 @@ impl Cairo {
         unsafe { cairo_show_page(self.ptr) }
     }
 
-    pub fn tag_begin_link(&mut self, attributes: &str) {
+    #[cfg(feature = "hyperlink")]
+    pub fn tag_link(&mut self, attributes: &str) {
         unsafe {
             let tag_name = CStr::from_bytes_with_nul_unchecked(b"Link\0");
             let attrs = CStr::from_bytes_with_nul(attributes.as_bytes()).unwrap();
             cairo_tag_begin(self.ptr, tag_name.as_ptr(), attrs.as_ptr());
-        }
-        self.assert_status_success();
-    }
-
-    pub fn tag_end_link(&mut self) {
-        unsafe {
-            let tag_name = CStr::from_bytes_with_nul_unchecked(b"Link\0");
+            self.assert_status_success();
             cairo_tag_end(self.ptr, tag_name.as_ptr());
+            self.assert_status_success();
         }
-        self.assert_status_success();
     }
 
     pub fn set_font_face(&mut self, face: &FontFace) {

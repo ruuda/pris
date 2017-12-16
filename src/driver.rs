@@ -109,6 +109,14 @@ fn draw_element(fm: &mut FontMap, cr: &mut Cairo, pe: &PlacedElement) {
             cr.paint();
         }
 
+        #[cfg(not(feature = "hyperlink"))]
+        Element::Hyperlink(..) => {
+            println!(
+                "Warning: hyperlink not created, Pris was compiled without \
+                hyperlink support.");
+        }
+
+        #[cfg(feature = "hyperlink")]
         Element::Hyperlink(ref hyperlink) => {
             // Escape the uri: backslashes and single quotes must be escaped
             // with a backslash, to fit the format of the tag "attributes".
@@ -132,8 +140,7 @@ fn draw_element(fm: &mut FontMap, cr: &mut Cairo, pe: &PlacedElement) {
                 uri_escaped,
                 x, y, w, h
             );
-            cr.tag_begin_link(&attributes);
-            cr.tag_end_link();
+            cr.tag_link(&attributes);
         }
     }
 }
