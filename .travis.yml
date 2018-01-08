@@ -11,10 +11,11 @@ language: rust
 cache: cargo
 
 rust:
+  # Test every fourth release since the earliest supported version, to not waste
+  # too much resources.
   - 1.13.0
-  - 1.15.1
   - 1.17.0
-  - 1.19.0
+  - 1.21.0
   - beta
   - nightly
 
