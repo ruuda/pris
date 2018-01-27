@@ -86,17 +86,17 @@ pub struct BinTerm<'a>(pub Term<'a>, pub BinOp, pub Term<'a>);
 
 #[derive(Copy, Clone, PartialEq, Eq)]
 pub enum BinOp {
-    /// Adjoin, '~'.
+    /// Adjoin, `~`.
     Adj,
-    /// Add, '+'.
+    /// Add, `+`.
     Add,
-    /// Subtract, '-'.
+    /// Subtract, `-`.
     Sub,
-    /// Multiply, '*'.
+    /// Multiply, `*`.
     Mul,
-    /// Divide, '/'.
+    /// Divide, `/`.
     Div,
-    /// Exponentiate, '^'.
+    /// Exponentiate, `^`.
     Exp,
 }
 
