@@ -242,24 +242,8 @@ impl<'a> Env<'a> {
                 if idents.0.len() == 1 {
                     Ok(val.clone())
                 } else {
-                    match *val {
-                        Val::Frame(ref frame) => {
-                            let mut more = idents.0.clone();
-                            more.remove(0);
-                            frame.lookup(&Idents(more))
-                        }
-                        _ => {
-                            let mut f = Formatter::new();
-                            f.print("Type error while reading variable '");
-                            f.print(idents);
-                            f.print("'. Cannot look up '");
-                            f.print(idents.0[1]);
-                            f.print("' in '");
-                            f.print(idents.0[0]);
-                            f.print("' because it is not a frame.");
-                            Err(Error::Other(f.into_string()))
-                        }
-                    }
+                    let tail = Idents(idents.0.iter().cloned().skip(1).collect());
+                    val.lookup(&tail)
                 }
             }
             None => Err(Error::Other(format!("Variable '{}' does not exist.", idents.0[0]))),

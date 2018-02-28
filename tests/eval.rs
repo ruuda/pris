@@ -14,7 +14,6 @@ use pris::ast::Idents;
 use pris::interpreter;
 use pris::lexer;
 use pris::parser;
-use pris::runtime::Val;
 use pris::runtime;
 use pris::pretty;
 
@@ -39,9 +38,24 @@ fn eval<'a>(input: &'a [u8]) -> String {
 }
 
 #[test]
-fn foobar() {
+fn eval_num() {
+    assert_eq!(eval(b"result = 32"), "32 : num");
+}
+
+#[test]
+fn eval_coord_x() {
     let src = br#"
-    result = 32
+    coord = (1w, 2w)
+    result = coord.x
     "#;
-    assert_eq!(eval(src), "32 : num");
+    assert_eq!(eval(src), "1920 : len");
+}
+
+#[test]
+fn eval_coord_y() {
+    let src = br#"
+    coord = (1w, 2w)
+    result = coord.y
+    "#;
+    assert_eq!(eval(src), "3840 : len");
 }
