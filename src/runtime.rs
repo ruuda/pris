@@ -90,6 +90,31 @@ impl<'a> Val<'a> {
             Val::FnIntrin(..) => ValType::Fn,
         }
     }
+
+    /// Look up a possibly nested field.
+    pub fn lookup(&self, idents: &Idents<'a>) -> Result<Val<'a>> {
+        if idents.0.is_empty() { return Ok(self.clone()) }
+
+        match (self, idents.0[0]) {
+            (&Val::Frame(ref frame), _) => frame.lookup(idents),
+            (&Val::Coord(x, _, d), "x") => Ok(Val::Num(x, d)),
+            (&Val::Coord(_, y, d), "y") => Ok(Val::Num(y, d)),
+            // TODO: Could add string length, num dimension, etc. But I could
+            // also provide builtin functions for those. What is the best way to
+            // go there?
+            _ => {
+                let mut f = Formatter::new();
+                f.print("Type error while reading field '");
+                f.print(idents);
+                f.print("'. '");
+                f.print(self);
+                f.print("' does not have a field '");
+                f.print(idents.0[0]);
+                f.print("'.");
+                Err(Error::Other(f.into_string()))
+            }
+        }
+    }
 }
 
 impl<'a> Frame<'a> {
@@ -125,26 +150,24 @@ impl<'a> Frame<'a> {
     pub fn lookup(&self, idents: &Idents<'a>) -> Result<Val<'a>> {
         assert!(idents.0.len() > 0);
 
-        // When the identifier matches one of the read-only fields, we compute
-        // it here on the fly.
-        let ro_field = match idents.0[0] {
-            "width" => Some(Val::Num(self.bounding_box.width, 1)),
-            "height" => Some(Val::Num(self.bounding_box.height, 1)),
-            "size" => Some(Val::Coord(self.bounding_box.width, self.bounding_box.height, 1)),
-            "offset" => Some(Val::Coord(self.bounding_box.x, self.bounding_box.y, 1)),
-            _ => None
+        let value = match idents.0[0] {
+            // When the identifier matches one of the read-only fields, we
+            // compute it here on the fly.
+            "width" => Val::Num(self.bounding_box.width, 1),
+            "height" => Val::Num(self.bounding_box.height, 1),
+            "size" => Val::Coord(self.bounding_box.width, self.bounding_box.height, 1),
+            "offset" => Val::Coord(self.bounding_box.x, self.bounding_box.y, 1),
+            // If the identifier does not refer to a generated read-only field,
+            // look up in the environment.
+            _ => return self.env.lookup(idents),
         };
 
-        if let Some(val) = ro_field {
-            // TODO: Assert that there are no more parts in the identifier,
-            // extract the field lookup error message from Env::lookup to be
-            // generic, and reuse it here.
-            return Ok(val)
+        if idents.0.len() > 1 {
+            let tail = Idents(idents.0.iter().cloned().skip(1).collect());
+            value.lookup(&tail)
+        } else {
+            Ok(value)
         }
-
-        // If the identifier does not refer to a generated read-only field,
-        // look up in the environment.
-        self.env.lookup(idents)
     }
 
     pub fn put_in_env(&mut self, ident: &'a str, val: Val<'a>) {
