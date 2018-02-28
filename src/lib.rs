@@ -17,7 +17,7 @@ mod rsvg;
 mod types;
 
 #[macro_use]
-mod pretty;
+pub mod pretty;
 
 pub mod ast;
 pub mod cairo;

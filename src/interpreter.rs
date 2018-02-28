@@ -322,6 +322,13 @@ impl<'i, 'a> StmtInterpreter<'i, 'a> {
         }
     }
 
+    /// Return the top-level environment.
+    // TODO: Name consistently. It seems that Rust does not use `get` prefixes,
+    // e.g. `len` does not.
+    pub fn env(&self) -> &Env<'a> {
+        self.frame.get_env()
+    }
+
     fn get_expr_interpreter<'j>(&'j mut self) -> ExprInterpreter<'j, 'a> {
         let env = self.frame.get_env();
         ExprInterpreter {
