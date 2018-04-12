@@ -75,7 +75,7 @@ pub struct Builtin(pub for<'i, 'a> fn(&mut ExprInterpreter<'i, 'a>, Vec<Val<'a>>
 /// Keeps track of loaded Freetype fonts, indexed by (family name, style) pairs.
 pub struct FontMap {
     freetype: freetype::Library,
-    fonts: HashMap<(String, String), freetype::Face<'static>>,
+    fonts: HashMap<(String, String), freetype::Face>,
 }
 
 impl<'a> Val<'a> {
@@ -382,7 +382,7 @@ impl FontMap {
         }
     }
 
-    pub fn get(&mut self, family: &str, style: &str) -> Option<&mut freetype::Face<'static>> {
+    pub fn get(&mut self, family: &str, style: &str) -> Option<&mut freetype::Face> {
         let key = (family.to_string(), style.to_string());
 
         let entry = match self.fonts.entry(key) {

@@ -201,7 +201,7 @@ pub fn str<'i, 'a>(_interpreter: &mut ExprInterpreter<'i, 'a>,
 /// Typesets a single line of text.
 ///
 /// Returns the glyphs as well as the width of the line.
-fn typeset_line(ft_face: &mut freetype::Face<'static>,
+fn typeset_line(ft_face: &mut freetype::Face,
                 font_size: f64,
                 text: &str)
                 -> (Vec<cairo::Glyph>, f64) {

@@ -5,8 +5,9 @@
 // it under the terms of the GNU General Public License version 3. A copy
 // of the License is available in the root of the repository.
 
+#[macro_use]
+extern crate serde_derive;
 extern crate docopt;
-extern crate rustc_serialize;
 extern crate pris;
 
 use std::fs::File;
@@ -38,7 +39,7 @@ Options:
   -o --output <outfile>  Write to the specified file, instead of infile.pdf.
 ";
 
-#[derive(Debug, RustcDecodable)]
+#[derive(Debug, Deserialize)]
 struct Args {
     arg_infile: String,
     flag_output: Option<String>,
@@ -46,7 +47,7 @@ struct Args {
 
 fn main() {
     let args: Args = Docopt::new(USAGE)
-                            .and_then(|d| d.decode())
+                            .and_then(|d| d.deserialize())
                             .unwrap_or_else(|e| e.exit());
 
     let mut input = Vec::new();

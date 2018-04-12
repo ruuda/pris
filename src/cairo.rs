@@ -100,7 +100,7 @@ pub struct FontFace {
     ptr: *mut cairo_font_face_t,
     // Own the FreeType face to keep it alive.
     #[allow(dead_code)]
-    ft_face: freetype::Face<'static>,
+    ft_face: freetype::Face,
 }
 
 #[derive(Copy, Clone)]
@@ -277,7 +277,7 @@ impl Drop for Cairo {
 }
 
 impl FontFace {
-    pub fn from_ft_face(mut ft_face: freetype::Face<'static>) -> FontFace {
+    pub fn from_ft_face(mut ft_face: freetype::Face) -> FontFace {
         FontFace {
             ptr: unsafe {
                 cairo_ft_font_face_create_for_ft_face(ft_face.raw_mut(), 0)
