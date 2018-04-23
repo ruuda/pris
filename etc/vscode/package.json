@@ -1,0 +1,26 @@
+{
+    "name": "pris",
+    "displayName": "pris",
+    "description": "pris language support",
+    "version": "0.0.1",
+    "publisher": "pris",
+    "engines": {
+        "vscode": "^1.22.0"
+    },
+    "categories": [
+        "Languages"
+    ],
+    "contributes": {
+        "languages": [{
+            "id": "pris",
+            "aliases": ["pris", "pris"],
+            "extensions": [".pris"],
+            "configuration": "./language-configuration.json"
+        }],
+        "grammars": [{
+            "language": "pris",
+            "scopeName": "source.pris",
+            "path": "./syntaxes/pris.tmLanguage.json"
+        }]
+    }
+}

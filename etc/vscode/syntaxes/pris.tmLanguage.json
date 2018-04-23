@@ -1,0 +1,54 @@
+{
+	"$schema": "https://raw.githubusercontent.com/martinring/tmlanguage/master/tmlanguage.json",
+	"name": "pris",
+	"patterns": [
+		{
+			"include": "#keywords"
+		},
+		{
+			"include": "#strings"
+		},
+		{
+			"include": "#comments"
+		},
+		{
+			"include": "#constants"
+		}
+	],
+	"repository": {
+		"keywords": {
+			"patterns": [{
+				"name": "keyword.control.pris",
+				"match": "\\b(at|function|import|put|return)\\b"
+			}]
+		},
+		"strings": {
+			"name": "string.quoted.double.pris",
+			"begin": "\"",
+			"end": "\"",
+			"patterns": [
+				{
+					"name": "constant.character.escape.pris",
+					"match": "\\\\."
+				}
+			]
+		},
+		"comments": {
+			"patterns": [{
+				"name": "comment",
+				"match": "//.*"
+			}]
+		},
+		"constants": {
+			"patterns": [{
+				"name": "constant.numeric.hex",
+				"match": "#[0-9a-fA-F]+"
+			},
+			{
+				"name": "constant.numeric",
+				"match": "(\\d+\\.)?\\d+(w|h|em|pt)?"	
+			}]
+		}
+	},
+	"scopeName": "source.pris"
+}
