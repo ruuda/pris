@@ -85,7 +85,7 @@ are installed:
     apt install fonts-cantarell libcairo2-dev libharfbuzz-dev librsvg2-dev
 
     # On Arch
-    pacman -S --needed cantarell-fonts cairo harfbuzz librsvg
+    pacman -S --needed cantarell-fonts cairo harfbuzz librsvg fontconfig freetype2
 
 Pris is written in [Rust][rust] and builds with Cargo, the build tool bundled
 with Rust.
