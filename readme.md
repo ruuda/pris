@@ -76,16 +76,23 @@ horizontal line. The first slide contains text in dark purple.
 
 ## Building
 
+Pris uses [Cairo][cairo] for drawing and [Harfbuzz][harfbuzz] for text shaping,
+and links against `libcairo.so` and `libharfbuzz.so`. It uses [Rsvg][rsvg] to
+render svg images, for which it links against `librsvg-2.so`. Ensure that these
+are installed:
+
+    # On Ubuntu
+    apt install fonts-cantarell libcairo2-dev libharfbuzz-dev librsvg2-dev
+
+    # On Arch
+    pacman -S --needed cantarell-fonts cairo harfbuzz librsvg
+
 Pris is written in [Rust][rust] and builds with Cargo, the build tool bundled
 with Rust.
 
     cargo build --release
     target/release/pris examples/lines.pris
     evince examples/lines.pdf
-
-Pris uses [Cairo][cairo] for drawing and [Harfbuzz][harfbuzz] for text shaping,
-and links against `libcairo.so` and `libharfbuzz.so`. It uses [Rsvg][rsvg] to
-render svg images, for which it links against `librsvg-2.so`.
 
 ## License
 
