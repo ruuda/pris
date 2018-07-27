@@ -1,5 +1,9 @@
 %{
-
+// This file contains a Bison grammar for Pris. It is not used; the actual
+// parser is a hand-written parser in src/parser.rs. We still keep this file
+// around because it is a nice and readable -- to humans and machines --
+// specification of the grammar. In particular, Bison will warn about
+// ambiguities that might sneak in.
 %}
 
 %token IDENT COLOR NUMBER STRING
@@ -13,7 +17,7 @@ statement
   | assign
   | return
   | block
-  | put_at
+  | put
   ;
 
 import: "import" idents;
@@ -22,7 +26,9 @@ idents: IDENT | idents '.' IDENT;
 
 assign: IDENT '=' expr;
 
-expr: expr_add;
+expr: expr_at | expr_add;
+
+expr_at: expr_add "at" expr_add;
 
 expr_add
   : expr_mul
@@ -84,8 +90,4 @@ block
 
 return: "return" expr;
 
-put_at
-  : "put" expr "at" expr
-  | "at" expr "put" expr
-  ;
-
+put: "put" expr;
