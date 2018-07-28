@@ -14,10 +14,10 @@ guide_lines = function()
 
 {
   color = #888888
-  put guide_lines() at (0w, 0w)
+  put guide_lines()
 }
 
 {
   color = #aaeeff
-  put guide_lines() at (0w, 0w)
+  put guide_lines()
 }

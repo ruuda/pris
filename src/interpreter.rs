@@ -348,7 +348,7 @@ impl<'i, 'a> ExprInterpreter<'i, 'a> {
                 // level.
                 Stmt::Block(..) => {
                     let msg = "Error: slides can only be introduced at the top level. \
-                               Note: use 'at (0w, 0w) put { ... }' to place a frame.";
+                               Note: use 'put { ... }' to place a frame.";
                     return Err(Error::Other(String::from(msg)));
                 }
                 // Otherwise, evaluating a statement only mutates the frame.
