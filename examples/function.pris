@@ -6,18 +6,18 @@ guide_lines = function()
   bl = (d, 1h - d)
   br = (1w - d, 1h - d)
 
-  at tl put line(tr - tl)
-  at tl put line(bl - tl)
-  at bl put line(br - bl)
-  at tr put line(br - tr)
+  put line(tr - tl) at tl
+  put line(bl - tl) at tl
+  put line(br - bl) at bl
+  put line(br - tr) at tr
 }
 
 {
   color = #888888
-  at (0w, 0w) put guide_lines()
+  put guide_lines() at (0w, 0w)
 }
 
 {
   color = #aaeeff
-  at (0w, 0w) put guide_lines()
+  put guide_lines() at (0w, 0w)
 }

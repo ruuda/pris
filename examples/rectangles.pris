@@ -1,6 +1,6 @@
 {
   background_color = #efcb68
   color = #5c415d
-  at (1em, 1em) put fill_rectangle((1em, 1em))
-  at (1em, 3em) put fill_rectangle((1em, 1em))
+  put fill_rectangle((1em, 1em)) at (1em, 1em)
+  put fill_rectangle((1em, 1em)) at (1em, 3em)
 }

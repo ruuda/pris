@@ -4,5 +4,5 @@
   text_align = "center"
   font_family = "Cantarell"
   font_size = 0.1h
-  at (0.5w, 0.55h) put t("Yellow text on a purple background")
+  put t("Yellow text on a purple background") at (1.5w, 0.55h)
 }

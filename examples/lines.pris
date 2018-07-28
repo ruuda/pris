@@ -5,11 +5,11 @@ bottom_right = (1w, 1h)
 
 {
   line_width = 0.01w
-  at top_left put line(bottom_right)
-  at bottom_left put line(top_right - bottom_left)
+  put line(bottom_right) at top_left
+  put line(top_right - bottom_left) at bottom_left
 }
 
 {
   line_width = 0.005w
-  at (0w, 0.5h) put line((1w, 0h))
+  put line((1w, 0h)) at (0w, 0.5h)
 }

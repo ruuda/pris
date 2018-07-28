@@ -3,9 +3,9 @@
 
   // Place three leaf ornaments. These all have the same code points, but
   // different glyph indices.
-  at (2em, 2.5em) put t("❧")
-  at (4em, 2.5em) put glyph(1253)
-  at (6em, 2.5em) put glyph(1260)
+  put t("❧")      at (2em, 2.5em)
+  put glyph(1253) at (4em, 2.5em)
+  put glyph(1260) at (6em, 2.5em)
 }
 
 {
@@ -15,6 +15,6 @@
 
   // Typesetting a string, or setting the glyphs manually,
   // has exactly the same result.
-  at (2em, 2.5em) put t("hello")
-  at (2em, 4.5em) put glyph(73) ~ glyph(70) ~ glyph(77) ~ glyph(77) ~ glyph(80)
+  put t("hello") at (2em, 2.5em)
+  put glyph(73) ~ glyph(70) ~ glyph(77) ~ glyph(77) ~ glyph(80) at (2em, 4.5em)
 }

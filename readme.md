@@ -23,18 +23,18 @@ program that also draws lines:
     bottom_right = (1w, 1h)
 
     {
-      at top_left put line(bottom_right)
-      at bottom_left put line(top_right - bottom_left)
+      put line(bottom_right) at top_left
+      put line(top_right - bottom_left) at bottom_left
 
       font_family = "Cantarell"
       font_size = 0.3h
       color = #882244
-      at (0.1w, 0.1w + font_size) put t("A language for designing slides.")
+      put t("A language for designing slides.") at (0.1w, 0.1w + font_size)
     }
 
     {
       color = #000000
-      at (0w, 0.5h) put line((1w, 0h))
+      put line((1w, 0h)) at (0w, 0.5h)
     }
 
 It creates two slides, the first one with a cross in it, the second one with a

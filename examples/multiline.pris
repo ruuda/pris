@@ -14,18 +14,18 @@
 
   color = #bbccdd
 
-  at (0.1w, 0.1w) put line((0.0w, t_left.height))
-  at (0.1w, 0.1w) put line((t_left.width, 0.0h))
+  put line((0.0w, t_left.height)) at (0.1w, 0.1w)
+  put line((t_left.width, 0.0h)) at (0.1w, 0.1w)
 
-  at (0.5w, 0.1w) put line((0.0w, t_center.height))
-  at (0.5w - 0.5 * t_center.width, 0.1w) put line((t_center.width, 0.0h))
+  put line((0.0w, t_center.height)) at (0.5w, 0.1w)
+  put line((t_center.width, 0.0h)) at (0.5w - 0.5 * t_center.width, 0.1w)
 
-  at (0.9w, 0.1w) put line((0.0w, t_right.height))
-  at (0.9w, 0.1w) put line((0.0w - t_right.width, 0.0h))
+  put line((0.0w, t_right.height)) at (0.9w, 0.1w)
+  put line((0.0w - t_right.width, 0.0h)) at (0.9w, 0.1w)
 
   color = #ff1155
 
-  at (0.1w, 0.1w + 0.05h) put t_left ~ t(".")
-  at (0.5w, 0.1w + 0.05h) put t_center ~ t(".")
-  at (0.9w, 0.1w + 0.05h) put t_right ~ t(".")
+  put t_left ~ t(".") at (0.1w, 0.1w + 0.05h)
+  put t_center ~ t(".") at (0.5w, 0.1w + 0.05h)
+  put t_right ~ t(".") at (0.9w, 0.1w + 0.05h)
 }

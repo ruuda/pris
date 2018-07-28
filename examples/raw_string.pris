@@ -16,5 +16,5 @@
   }
   ---
 
-  at (1em, 2em) put t(raw_string)
+  put t(raw_string) at (1em, 2em)
 }
