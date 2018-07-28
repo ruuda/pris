@@ -211,6 +211,10 @@ impl<'a> Frame<'a> {
     pub fn union_bounding_box(&mut self, bb: &BoundingBox) {
         self.bounding_box = self.bounding_box.union(bb);
     }
+
+    pub fn offset_bounding_box(&mut self, offset: Vec2) {
+        self.bounding_box = self.bounding_box.offset(offset);
+    }
 }
 
 impl<'a> Env<'a> {
