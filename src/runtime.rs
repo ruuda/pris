@@ -15,6 +15,7 @@ use builtins;
 use elements::{Color, Element, PlacedElement, Vec2};
 use error::{Error, Result};
 use fontconfig;
+use names;
 use pretty::{Formatter, Print};
 use types::{LenDim, ValType};
 
@@ -153,10 +154,10 @@ impl<'a> Frame<'a> {
         let value = match idents.0[0] {
             // When the identifier matches one of the read-only fields, we
             // compute it here on the fly.
-            "width" => Val::Num(self.bounding_box.width, 1),
-            "height" => Val::Num(self.bounding_box.height, 1),
-            "size" => Val::Coord(self.bounding_box.width, self.bounding_box.height, 1),
-            "offset" => Val::Coord(self.bounding_box.x, self.bounding_box.y, 1),
+            names::width => Val::Num(self.bounding_box.width, 1),
+            names::height => Val::Num(self.bounding_box.height, 1),
+            names::size => Val::Coord(self.bounding_box.width, self.bounding_box.height, 1),
+            names::offset => Val::Coord(self.bounding_box.x, self.bounding_box.y, 1),
             // If the identifier does not refer to a generated read-only field,
             // look up in the environment.
             _ => return self.env.lookup(idents),
@@ -216,23 +217,23 @@ impl<'a> Env<'a> {
     pub fn new() -> Env<'a> {
         let mut bindings = HashMap::new();
         // Default font size is 0.1h.
-        bindings.insert("font_size", Val::Num(108.0, 1));
+        bindings.insert(names::font_size, Val::Num(108.0, 1));
         // The default font is "sans roman", which is usually DejaVu Sans Book.
-        bindings.insert("font_family", Val::Str("sans".to_string()));
-        bindings.insert("font_style", Val::Str("roman".to_string()));
-        bindings.insert("fill_rectangle", Val::FnIntrin(Builtin(builtins::fill_rectangle)));
-        bindings.insert("text_align", Val::Str("left".to_string()));
-        bindings.insert("line_height", Val::Num(128.0, 1));
-        bindings.insert("line_width", Val::Num(10.8, 1));
-        bindings.insert("canvas_size", Val::Coord(1920.0, 1080.0, 0));
-        bindings.insert("color", Val::Col(Color::new(0.0, 0.0, 0.0)));
-        bindings.insert("fit", Val::FnIntrin(Builtin(builtins::fit)));
-        bindings.insert("glyph", Val::FnIntrin(Builtin(builtins::glyph)));
-        bindings.insert("hyperlink", Val::FnIntrin(Builtin(builtins::hyperlink)));
-        bindings.insert("image", Val::FnIntrin(Builtin(builtins::image)));
-        bindings.insert("line", Val::FnIntrin(Builtin(builtins::line)));
-        bindings.insert("str", Val::FnIntrin(Builtin(builtins::str)));
-        bindings.insert("t", Val::FnIntrin(Builtin(builtins::t)));
+        bindings.insert(names::font_family, Val::Str("sans".to_string()));
+        bindings.insert(names::font_style, Val::Str("roman".to_string()));
+        bindings.insert(names::fill_rectangle, Val::FnIntrin(Builtin(builtins::fill_rectangle)));
+        bindings.insert(names::text_align, Val::Str("left".to_string()));
+        bindings.insert(names::line_height, Val::Num(128.0, 1));
+        bindings.insert(names::line_width, Val::Num(10.8, 1));
+        bindings.insert(names::canvas_size, Val::Coord(1920.0, 1080.0, 0));
+        bindings.insert(names::color, Val::Col(Color::new(0.0, 0.0, 0.0)));
+        bindings.insert(names::fit, Val::FnIntrin(Builtin(builtins::fit)));
+        bindings.insert(names::glyph, Val::FnIntrin(Builtin(builtins::glyph)));
+        bindings.insert(names::hyperlink, Val::FnIntrin(Builtin(builtins::hyperlink)));
+        bindings.insert(names::image, Val::FnIntrin(Builtin(builtins::image)));
+        bindings.insert(names::line, Val::FnIntrin(Builtin(builtins::line)));
+        bindings.insert(names::str, Val::FnIntrin(Builtin(builtins::str)));
+        bindings.insert(names::t, Val::FnIntrin(Builtin(builtins::t)));
         Env { bindings: bindings }
     }
 

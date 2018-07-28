@@ -11,6 +11,7 @@ mod builtins;
 mod elements;
 mod fontconfig;
 mod harfbuzz;
+mod names;
 mod parser_utils;
 mod png;
 mod rsvg;
