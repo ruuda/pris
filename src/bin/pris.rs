@@ -82,6 +82,7 @@ fn main() {
 
     let mut frames = Vec::new();
     let mut fm = runtime::FontMap::new();
+    let canvas_size: (f64, f64);
 
     {
         let mut stmt_interpreter = interpreter::StmtInterpreter::new(&mut fm);
@@ -92,9 +93,17 @@ fn main() {
             };
             if let Some(frame) = result { frames.push(frame); }
         }
+
+        canvas_size = match stmt_interpreter
+            .env()
+            .lookup_coord_num(&ast::Idents(vec!["canvas_size"]))
+        {
+            Ok(sz) => sz,
+            Err(e) => { e.print(); panic!("Abort after error.") }
+        }
     }
 
-    let surf = cairo::Surface::new_pdf(&outfile, 1920.0, 1080.0);
+    let surf = cairo::Surface::new_pdf(&outfile, canvas_size.0, canvas_size.1);
     let mut cr = cairo::Cairo::new(surf);
     cr.set_source_rgb(0.0, 0.0, 0.0);
     cr.set_line_width(6.0);

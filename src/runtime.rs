@@ -224,6 +224,7 @@ impl<'a> Env<'a> {
         bindings.insert("text_align", Val::Str("left".to_string()));
         bindings.insert("line_height", Val::Num(128.0, 1));
         bindings.insert("line_width", Val::Num(10.8, 1));
+        bindings.insert("canvas_size", Val::Coord(1920.0, 1080.0, 1));
         bindings.insert("color", Val::Col(Color::new(0.0, 0.0, 0.0)));
         bindings.insert("fit", Val::FnIntrin(Builtin(builtins::fit)));
         bindings.insert("glyph", Val::FnIntrin(Builtin(builtins::glyph)));
@@ -261,6 +262,20 @@ impl<'a> Env<'a> {
         match self.lookup(idents)? {
             Val::Num(x, 1) => Ok(x),
             other => Err(Error::var_type(idents, ValType::Num(1), other.get_type())),
+        }
+    }
+
+    pub fn lookup_coord_num(&self, idents: &Idents<'a>) -> Result<(f64, f64)> {
+        match self.lookup(idents)? {
+            Val::Coord(x, y, 0) => Ok((x, y)),
+            other => Err(Error::var_type(idents, ValType::Coord(0), other.get_type())),
+        }
+    }
+
+    pub fn lookup_coord_len(&self, idents: &Idents<'a>) -> Result<(f64, f64)> {
+        match self.lookup(idents)? {
+            Val::Coord(x, y, 1) => Ok((x, y)),
+            other => Err(Error::var_type(idents, ValType::Coord(1), other.get_type())),
         }
     }
 
