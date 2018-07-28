@@ -85,7 +85,7 @@ pub enum Token<'a> {
     RBrace,
 }
 
-/// Lexes a UTF-8 input file into (start_index, token, past_end_index) tokens.
+/// Lexes a UTF-8 input file into tokens with source location.
 pub fn lex(input: &[u8]) -> Result<Vec<(Token, Span)>> {
     Lexer::new(input).run()
 }
