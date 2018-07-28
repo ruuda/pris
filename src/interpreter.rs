@@ -9,7 +9,7 @@ use std::rc::Rc;
 
 use ast;
 use ast::{Assign, BinOp, BinTerm, Block, Coord, FnCall, FnDef, Idents};
-use ast::{Num, PutAt, Return, Stmt, Term, UnOp, UnTerm, Unit};
+use ast::{Num, Put, Return, Stmt, Term, UnOp, UnTerm, Unit};
 use error::{Error, Result};
 use elements::{Color, Vec2};
 use pretty::Formatter;
@@ -378,8 +378,8 @@ impl<'i, 'a> StmtInterpreter<'i, 'a> {
                     Err(Error::Other(String::from(msg)))
                 }
             }
-            Stmt::PutAt(ref pa) => {
-                self.eval_put_at(pa)?;
+            Stmt::Put(ref put) => {
+                self.eval_put(put)?;
                 Ok(None)
             }
         }
@@ -392,21 +392,11 @@ impl<'i, 'a> StmtInterpreter<'i, 'a> {
         Ok(())
     }
 
-    fn eval_put_at(&mut self, put_at: &'a PutAt<'a>) -> Result<()> {
-        let content = match self.get_expr_interpreter().eval_expr(&put_at.0)? {
+    fn eval_put(&mut self, put: &'a Put<'a>) -> Result<()> {
+        let content = match self.get_expr_interpreter().eval_expr(&put.0)? {
             Val::Frame(f) => f,
             _ => {
                 let msg = "Cannot place <TODO>. Only frames can be placed.";
-                return Err(Error::Other(String::from(msg)));
-            }
-        };
-
-        let pos = match self.get_expr_interpreter().eval_expr(&put_at.1)? {
-            // TODO: Make Coord type carry Vec2 instead of separate x, y.
-            Val::Coord(x, y, 1) => Vec2::new(x, y),
-            _ => {
-                let msg = "Placement requires a coordinate with length units, \
-                           but a <TODO> was found instead.";
                 return Err(Error::Other(String::from(msg)));
             }
         };
@@ -425,15 +415,15 @@ impl<'i, 'a> StmtInterpreter<'i, 'a> {
             let dest_sf = self.frame.get_subframe_mut(sf_idx);
 
             for pe in subframe.get_elements() {
-                dest_sf.place_element(pos + pe.position, pe.element.clone());
+                dest_sf.place_element(pe.position, pe.element.clone());
             }
         }
 
-        self.frame.union_bounding_box(&content.get_bounding_box().offset(pos));
+        self.frame.union_bounding_box(&content.get_bounding_box());
 
         // Update the anchor of the frame: the anchor of a block is the anchor
         // of the element that was placed last.
-        self.frame.set_anchor(pos + content.get_anchor());
+        self.frame.set_anchor(content.get_anchor());
 
         Ok(())
     }

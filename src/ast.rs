@@ -15,7 +15,7 @@ pub enum Stmt<'a> {
     Assign(Assign<'a>),
     Return(Return<'a>),
     Block(Block<'a>),
-    PutAt(PutAt<'a>),
+    Put(Put<'a>),
 }
 
 #[derive(PartialEq, Eq)]
@@ -123,7 +123,7 @@ pub struct Block<'a>(pub Vec<Stmt<'a>>);
 pub struct Return<'a>(pub Term<'a>);
 
 #[derive(PartialEq)]
-pub struct PutAt<'a>(pub Term<'a>, pub Term<'a>);
+pub struct Put<'a>(pub Term<'a>);
 
 // Pretty-printers.
 
@@ -143,7 +143,7 @@ impl<'a> Print for Stmt<'a> {
             Stmt::Assign(ref a) => f.print(a),
             Stmt::Return(ref r) => f.print(r),
             Stmt::Block(ref bk) => f.print(bk),
-            Stmt::PutAt(ref pa) => f.print(pa),
+            Stmt::Put(ref put)  => f.print(put),
         }
     }
 }
@@ -323,11 +323,9 @@ impl<'a> Print for Return<'a> {
     }
 }
 
-impl<'a> Print for PutAt<'a> {
+impl<'a> Print for Put<'a> {
     fn print(&self, f: &mut Formatter) {
         f.print("put ");
         f.print(&self.0);
-        f.print(" at ");
-        f.print(&self.1);
     }
 }

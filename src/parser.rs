@@ -21,7 +21,7 @@
 use std::result;
 
 use ast::{Assign, BinOp, BinTerm, Block, Coord, Document, FnCall, FnDef};
-use ast::{Idents, Import, Num, PutAt, Return, Stmt, Term, UnOp, UnTerm, Unit};
+use ast::{Idents, Import, Num, Put, Return, Stmt, Term, UnOp, UnTerm, Unit};
 use error::{Error, Result};
 use lexer::{Span, Token};
 
@@ -111,10 +111,10 @@ impl<'t, 'a: 't> Parser<'t, 'a> {
             Token::Ident(..) => self.parse_assign().map(Stmt::Assign),
             Token::KwReturn => self.parse_return().map(Stmt::Return),
             Token::LBrace => self.parse_block().map(Stmt::Block),
-            Token::KwPut | Token::KwAt => self.parse_put_at().map(Stmt::PutAt),
+            Token::KwPut => self.parse_put().map(Stmt::Put),
             _ => {
                 let msg = "Parse error in statement: expected import, return, \
-                           assignment, block, or put-at.";
+                           assignment, block, or put.";
                 self.error(msg)
             }
         }
@@ -206,23 +206,13 @@ impl<'t, 'a: 't> Parser<'t, 'a> {
         Ok(Block(statements))
     }
 
-    fn parse_put_at(&mut self) -> PResult<PutAt<'a>> {
-        let (frame, coord) = match self.take() {
-            Some(Token::KwAt) => {
-                let coord = self.parse_expr()?;
-                self.expect_consume(Token::KwPut, "Parse error: expected 'put'.")?;
-                let frame = self.parse_expr()?;
-                (frame, coord)
-            }
-            Some(Token::KwPut) => {
-                let frame = self.parse_expr()?;
-                self.expect_consume(Token::KwAt, "Parse error: expected 'at'.")?;
-                let coord = self.parse_expr()?;
-                (frame, coord)
-            }
-            _ => unreachable!("parse_put_at must be called with cursor on put or at."),
-        };
-        Ok(PutAt(frame, coord))
+    fn parse_put(&mut self) -> PResult<Put<'a>> {
+        debug_assert!(self.peek() == Some(Token::KwPut));
+
+        // Step over the 'put' keyword.
+        self.consume();
+
+        self.parse_expr().map(Put)
     }
 
     fn parse_expr(&mut self) -> PResult<Term<'a>> {
@@ -551,7 +541,7 @@ mod test {
     use parser::Parser;
     use lexer::lex;
     use ast::{Assign, BinOp, BinTerm, Coord, Color, FnCall};
-    use ast::{Num, Stmt, Term, UnOp, UnTerm, Unit};
+    use ast::{Num, Put, Stmt, Term, UnOp, UnTerm, Unit};
 
     #[test]
     fn parse_parses_import() {
@@ -733,40 +723,44 @@ mod test {
     fn parse_parses_put_at() {
         let tokens = lex(b"put 1 at 2").unwrap();
         let mut parser = Parser::new(&tokens);
-        let put_at = parser.parse_put_at().unwrap();
+        let put = parser.parse_put().unwrap();
+        // TODO: Restore this by making "at" a binary operator.
         let one = Term::Number(Num(1.0, None));
         let two = Term::Number(Num(2.0, None));
-        assert_preq!(put_at.0, one);
-        assert_preq!(put_at.1, two);
-        assert_eq!(parser.cursor, 4);
+        assert_preq!(put.0, one);
+        // assert_preq!(put.1, two);
+        assert_eq!(parser.cursor, 2);
     }
 
     #[test]
-    fn parse_parses_at_put() {
+    fn does_not_parse_at_put() {
         let tokens = lex(b"at 1 put 2").unwrap();
         let mut parser = Parser::new(&tokens);
-        let put_at = parser.parse_put_at().unwrap();
-        let one = Term::Number(Num(1.0, None));
-        let two = Term::Number(Num(2.0, None));
-        assert_preq!(put_at.0, two);
-        assert_preq!(put_at.1, one);
-        assert_eq!(parser.cursor, 4);
+        let result = parser.parse_statement();
+        assert_eq!(result.err().unwrap().token_index, 0);
     }
 
     #[test]
-    fn parse_fails_at_not_put() {
+    fn does_not_parse_at_at_start_expr() {
         let tokens = lex(b"at 1 place 2").unwrap();
         let mut parser = Parser::new(&tokens);
-        let result = parser.parse_put_at();
-        assert_eq!(result.err().unwrap().token_index, 2);
+        let result = parser.parse_expr();
+        assert_eq!(result.err().unwrap().token_index, 0);
     }
 
     #[test]
-    fn parse_fails_put_not_at() {
+    fn parse_does_not_continue_at_invalid_binop() {
+        // "on" is not a valid binary operator.
         let tokens = lex(b"put 1 on 2").unwrap();
         let mut parser = Parser::new(&tokens);
-        let result = parser.parse_put_at();
-        assert_eq!(result.err().unwrap().token_index, 2);
+        let result = parser.parse_statement();
+        match result {
+          // Note, we can't match on the number here, that would break under a
+          // future Rust release. https://github.com/rust-lang/rust/issues/41620
+          Ok(Stmt::Put(Put(Term::Number(Num(_, None))))) => {}
+          _ => panic!("Unexpected parse result."),
+        }
+        assert_eq!(parser.cursor, 2); // Stopped at "on".
     }
 
     #[test]
