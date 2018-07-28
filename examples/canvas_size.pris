@@ -1,10 +1,23 @@
 // Set the canvas aspect ratio to 4:3.
 canvas_size = (4, 3)
 
+// Note: after changing the canvas_size variable, the font size and line height
+// are still relative to the previous canvas size, and so their values are now
+// nonsensical. Set the font size and line height again to fix this, now
+// relative to the new canvas height.
+font_size = 0.08h
+line_height = 1.2em
+
 {
   font_family = "Cantarell"
   font_style = "Regular"
-  font_size = 0.08h
   text_align = "center"
-  put t("suitable for old 4:3 projectors too") at (0.5w, 0.5h)
+
+  message =
+  ---
+  suitable for old 4:3 projectors too,
+  just set canvas_size
+  ---
+
+  put t(message) at (0.5w, 0.5h)
 }
