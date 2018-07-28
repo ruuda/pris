@@ -224,7 +224,7 @@ impl<'a> Env<'a> {
         bindings.insert("text_align", Val::Str("left".to_string()));
         bindings.insert("line_height", Val::Num(128.0, 1));
         bindings.insert("line_width", Val::Num(10.8, 1));
-        bindings.insert("canvas_size", Val::Coord(1920.0, 1080.0, 1));
+        bindings.insert("canvas_size", Val::Coord(1920.0, 1080.0, 0));
         bindings.insert("color", Val::Col(Color::new(0.0, 0.0, 0.0)));
         bindings.insert("fit", Val::FnIntrin(Builtin(builtins::fit)));
         bindings.insert("glyph", Val::FnIntrin(Builtin(builtins::glyph)));

@@ -43,15 +43,28 @@ impl<'i, 'a> ExprInterpreter<'i, 'a> {
 
     fn eval_num(&mut self, num: &'a Num) -> Result<Val<'a>> {
         let Num(x, opt_unit) = *num;
+        let ident_font_size = Idents(vec!["font_size"]);
+        let ident_canvas_size = Idents(vec!["canvas_size"]);
         if let Some(unit) = opt_unit {
             match unit {
-                Unit::W => Ok(Val::Num(1920.0 * x, 1)),
-                Unit::H => Ok(Val::Num(1080.0 * x, 1)),
-                Unit::Pt => Ok(Val::Num(1.0 * x, 1)),
+                Unit::W => {
+                    // The variable "canvas_size" should always be set, it is
+                    // present in the global environment.
+                    let (w, _h) = self.env.lookup_coord_num(&ident_canvas_size)?;
+                    Ok(Val::Num(x * w, 1))
+                }
+                Unit::H => {
+                    let (_w, h) = self.env.lookup_coord_num(&ident_canvas_size)?;
+                    Ok(Val::Num(x * h, 1))
+                }
+                Unit::Pt => {
+                    // A pt is h/1080, so on a 1920x1080 canvas, a pt is 1 px.
+                    let (_w, h) = self.env.lookup_coord_num(&ident_canvas_size)?;
+                    Ok(Val::Num((1.0 / 1080.0) * h, 1))
+                }
                 Unit::Em => {
                     // The variable "font_size" should always be set, it is present
                     // in the global environment.
-                    let ident_font_size = Idents(vec!["font_size"]);
                     let emsize = self.env.lookup_len(&ident_font_size)?;
                     Ok(Val::Num(emsize * x, 1))
                 }

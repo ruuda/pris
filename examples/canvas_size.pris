@@ -3,7 +3,8 @@ canvas_size = (4, 3)
 
 {
   font_family = "Cantarell"
-  text_align = "center"
+  font_style = "Regular"
   font_size = 0.08h
+  text_align = "center"
   put t("suitable for old 4:3 projectors too") at (0.5w, 0.5h)
 }
