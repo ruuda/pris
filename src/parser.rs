@@ -218,7 +218,28 @@ impl<'t, 'a: 't> Parser<'t, 'a> {
     fn parse_expr(&mut self) -> PResult<Term<'a>> {
         // Note: `parse_expr` is just a synonym for readability. There are
         // multiple levels of expressions to handle precedence.
-        self.parse_expr_add()
+        self.parse_expr_at()
+    }
+
+    fn parse_expr_at(&mut self) -> PResult<Term<'a>> {
+        let mut term = self.parse_expr_add()?;
+
+        loop {
+            // The term so far could be it, or it could be part of a bigger
+            // binary expression, if we encounter the right operator next.
+            let maybe_op = match self.peek() {
+                Some(Token::KwAt) => Some(BinOp::At),
+                _ => None,
+            };
+
+            if let Some(op) = maybe_op {
+                self.consume();
+                let rhs = self.parse_expr_add()?;
+                term = Term::bin_op(BinTerm(term, op, rhs));
+            } else {
+                return Ok(term)
+            }
+        }
     }
 
     fn parse_expr_add(&mut self) -> PResult<Term<'a>> {
@@ -724,12 +745,11 @@ mod test {
         let tokens = lex(b"put 1 at 2").unwrap();
         let mut parser = Parser::new(&tokens);
         let put = parser.parse_put().unwrap();
-        // TODO: Restore this by making "at" a binary operator.
         let one = Term::Number(Num(1.0, None));
         let two = Term::Number(Num(2.0, None));
-        assert_preq!(put.0, one);
-        // assert_preq!(put.1, two);
-        assert_eq!(parser.cursor, 2);
+        let at = BinTerm(one, BinOp::At, two);
+        assert_preq!(put.0, Term::bin_op(at));
+        assert_eq!(parser.cursor, 4);
     }
 
     #[test]
@@ -782,6 +802,18 @@ mod test {
         let one = Term::Number(Num(1.0, None));
         let two = Term::Number(Num(2.0, None));
         let bt = BinTerm(one, BinOp::Exp, two);
+        assert_preq!(exp, Term::bin_op(bt));
+        assert_eq!(parser.cursor, 3);
+    }
+
+    #[test]
+    fn parse_parses_binop_at() {
+        let tokens = lex(b"1 at 2").unwrap();
+        let mut parser = Parser::new(&tokens);
+        let exp = parser.parse_expr().unwrap();
+        let one = Term::Number(Num(1.0, None));
+        let two = Term::Number(Num(2.0, None));
+        let bt = BinTerm(one, BinOp::At, two);
         assert_preq!(exp, Term::bin_op(bt));
         assert_eq!(parser.cursor, 3);
     }

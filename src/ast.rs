@@ -86,6 +86,8 @@ pub struct BinTerm<'a>(pub Term<'a>, pub BinOp, pub Term<'a>);
 
 #[derive(Copy, Clone, PartialEq, Eq)]
 pub enum BinOp {
+    /// Translate, `at`.
+    At,
     /// Adjoin, `~`.
     Adj,
     /// Add, `+`.
@@ -247,6 +249,7 @@ impl<'a> Print for BinTerm<'a> {
 impl Print for BinOp {
     fn print(&self, f: &mut Formatter) {
         match *self {
+            BinOp::At  => f.print("at"),
             BinOp::Adj => f.print("~"),
             BinOp::Add => f.print("+"),
             BinOp::Sub => f.print("-"),

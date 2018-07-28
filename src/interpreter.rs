@@ -97,6 +97,7 @@ impl<'i, 'a> ExprInterpreter<'i, 'a> {
         let lhs = self.eval_expr(&binop.0)?;
         let rhs = self.eval_expr(&binop.2)?;
         match binop.1 {
+            BinOp::At  => ExprInterpreter::eval_at(lhs, rhs),
             BinOp::Adj => ExprInterpreter::eval_adj(lhs, rhs),
             BinOp::Add => ExprInterpreter::eval_add(lhs, rhs),
             BinOp::Sub => ExprInterpreter::eval_sub(lhs, rhs),
@@ -104,6 +105,11 @@ impl<'i, 'a> ExprInterpreter<'i, 'a> {
             BinOp::Div => ExprInterpreter::eval_div(lhs, rhs),
             BinOp::Exp => panic!("TODO: eval exp"),
         }
+    }
+
+    /// Translates a frame.
+    fn eval_at(lhs: Val<'a>, rhs: Val<'a>) -> Result<Val<'a>> {
+        unimplemented!();
     }
 
     /// Adjoins two frames.

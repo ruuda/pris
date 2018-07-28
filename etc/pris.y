@@ -28,7 +28,7 @@ assign: IDENT '=' expr;
 
 expr: expr_at | expr_add;
 
-expr_at: expr_add "at" expr_add;
+expr_at: expr_add "at" expr_at;
 
 expr_add
   : expr_mul
