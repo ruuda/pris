@@ -15,6 +15,7 @@ Highlights:
  * Subframe support (not finished).
  * There now is basic hosted documentation.
  * Support for loading png images, in addition to svg.
+ * Preliminary VS Code support, contributed by Thomas Vincent.
 
 Bugs fixed:
 
