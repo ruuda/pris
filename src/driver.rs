@@ -10,9 +10,8 @@ use cairo::{Cairo, FontFace, Surface};
 use elements::{Color, Element, PlacedElement, Vec2};
 use runtime::{FontMap, Frame};
 
-fn draw_background(cr: &mut Cairo, color: Color) {
-    // TODO: Do not hard-code the canvas dimensions.
-    cr.rectangle(0.0, 0.0, 1920.0, 1080.0);
+fn draw_background(cr: &mut Cairo, canvas_size: Vec2, color: Color) {
+    cr.rectangle(0.0, 0.0, canvas_size.x, canvas_size.y);
     cr.set_source_rgb(color.r, color.g, color.b);
     cr.fill();
 }
@@ -145,14 +144,19 @@ fn draw_element(fm: &mut FontMap, cr: &mut Cairo, pe: &PlacedElement) {
     }
 }
 
-pub fn render_frame<'a>(fm: &mut FontMap, cr: &mut Cairo, frame: &Frame<'a>) {
+pub fn render_frame<'a>(
+    fm: &mut FontMap,
+    cr: &mut Cairo,
+    canvas_size: Vec2,
+    frame: &Frame<'a>
+) {
     // TODO: Ensure that writing to background_color only accepts a color value,
     // so a lookup failure here is never a type error.
     let var_bgcolor = Idents(vec!["background_color"]);
 
     for subframe in frame.get_subframes() {
         if let Ok(bgcolor) = frame.get_env().lookup_color(&var_bgcolor) {
-            draw_background(cr, bgcolor);
+            draw_background(cr, canvas_size, bgcolor);
         }
 
         for pe in subframe.get_elements() {

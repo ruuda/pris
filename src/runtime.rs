@@ -270,16 +270,16 @@ impl<'a> Env<'a> {
         }
     }
 
-    pub fn lookup_coord_num(&self, idents: &Idents<'a>) -> Result<(f64, f64)> {
+    pub fn lookup_coord_num(&self, idents: &Idents<'a>) -> Result<Vec2> {
         match self.lookup(idents)? {
-            Val::Coord(x, y, 0) => Ok((x, y)),
+            Val::Coord(x, y, 0) => Ok(Vec2::new(x, y)),
             other => Err(Error::var_type(idents, ValType::Coord(0), other.get_type())),
         }
     }
 
-    pub fn lookup_coord_len(&self, idents: &Idents<'a>) -> Result<(f64, f64)> {
+    pub fn lookup_coord_len(&self, idents: &Idents<'a>) -> Result<Vec2> {
         match self.lookup(idents)? {
-            Val::Coord(x, y, 1) => Ok((x, y)),
+            Val::Coord(x, y, 1) => Ok(Vec2::new(x, y)),
             other => Err(Error::var_type(idents, ValType::Coord(1), other.get_type())),
         }
     }

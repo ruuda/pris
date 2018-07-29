@@ -50,17 +50,17 @@ impl<'i, 'a> ExprInterpreter<'i, 'a> {
                 Unit::W => {
                     // The variable "canvas_size" should always be set, it is
                     // present in the global environment.
-                    let (w, _h) = self.env.lookup_coord_num(&ident_canvas_size)?;
-                    Ok(Val::Num(x * w, 1))
+                    let canvas_size = self.env.lookup_coord_num(&ident_canvas_size)?;
+                    Ok(Val::Num(x * canvas_size.x, 1))
                 }
                 Unit::H => {
-                    let (_w, h) = self.env.lookup_coord_num(&ident_canvas_size)?;
-                    Ok(Val::Num(x * h, 1))
+                    let canvas_size = self.env.lookup_coord_num(&ident_canvas_size)?;
+                    Ok(Val::Num(x * canvas_size.y, 1))
                 }
                 Unit::Pt => {
                     // A pt is h/1080, so on a 1920x1080 canvas, a pt is 1 px.
-                    let (_w, h) = self.env.lookup_coord_num(&ident_canvas_size)?;
-                    Ok(Val::Num((1.0 / 1080.0) * h, 1))
+                    let canvas_size = self.env.lookup_coord_num(&ident_canvas_size)?;
+                    Ok(Val::Num((1.0 / 1080.0) * canvas_size.y, 1))
                 }
                 Unit::Em => {
                     // The variable "font_size" should always be set, it is present

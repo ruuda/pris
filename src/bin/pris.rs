@@ -82,7 +82,7 @@ fn main() {
 
     let mut frames = Vec::new();
     let mut fm = runtime::FontMap::new();
-    let canvas_size: (f64, f64);
+    let canvas_size: pris::Vec2;
 
     {
         let mut stmt_interpreter = interpreter::StmtInterpreter::new(&mut fm);
@@ -103,14 +103,14 @@ fn main() {
         }
     }
 
-    let surf = cairo::Surface::new_pdf(&outfile, canvas_size.0, canvas_size.1);
+    let surf = cairo::Surface::new_pdf(&outfile, canvas_size.x, canvas_size.y);
     let mut cr = cairo::Cairo::new(surf);
     cr.set_source_rgb(0.0, 0.0, 0.0);
     cr.set_line_width(6.0);
 
     for (i, frame) in frames.iter().enumerate() {
         println!("[{}/{}] Painting frame ...", i + 1, frames.len());
-        driver::render_frame(&mut fm, &mut cr, frame);
+        driver::render_frame(&mut fm, &mut cr, canvas_size, frame);
     }
 
     drop(cr);

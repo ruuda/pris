@@ -29,5 +29,7 @@ pub mod lexer;
 pub mod parser;
 pub mod runtime;
 
+pub use elements::Vec2;
+
 // This is the compiler entry point for the library, which is used by the
 // command-line program. The source for that program is in bin/pris.rs.
