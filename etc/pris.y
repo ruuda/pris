@@ -4,6 +4,9 @@
 // around because it is a nice and readable -- to humans and machines --
 // specification of the grammar. In particular, Bison will warn about
 // ambiguities that might sneak in.
+//
+// The grammar currently requires two tokens of lookahed in one case (see also
+// the comment below), and only one token for most other cases.
 %}
 
 %token IDENT COLOR NUMBER STRING
@@ -26,9 +29,20 @@ idents: IDENT | idents '.' IDENT;
 
 assign: IDENT '=' expr;
 
-expr: expr_at | expr_add;
+expr: expr_infix;
 
-expr_at: expr_add "at" expr_at;
+expr_infix
+  : expr_add
+  /* Note that the presence of IDENT here causes a shift/reduce conflict; it
+   * makes the grammar ambiguous in the case of a parser with one token
+   * lookahead, because the IDENT here could be either an infix call, or it
+   * could be the left-hand side of an assignment. But by looking ahead two
+   * tokens we can tell them apart: if the IDENT is followed by '=' then it is
+   * part of an assignment, otherwise it is an infix call. An other way to
+   * resolve the ambiguity, without resorting to an extra token of lookahead,
+   * would have been to terminate statements with semicolons.
+   */
+  | expr_infix IDENT expr_add;
 
 expr_add
   : expr_mul
