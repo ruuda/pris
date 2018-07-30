@@ -58,7 +58,6 @@ pub enum Token<'a> {
     Number(&'a str),
     Ident(&'a str),
 
-    KwAt,
     KwFunction,
     KwImport,
     KwPut,
@@ -560,7 +559,6 @@ fn is_hexadecimal(byte: u8) -> bool {
 /// Returns either a keyword if one matches, or an identifier token otherwise.
 fn make_keyword_or_ident(ident: &str) -> Token {
     match ident {
-        "at" => Token::KwAt,
         "function" => Token::KwFunction,
         "import" => Token::KwImport,
         "put" => Token::KwPut,
