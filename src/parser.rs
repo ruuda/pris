@@ -218,28 +218,32 @@ impl<'t, 'a: 't> Parser<'t, 'a> {
     fn parse_expr(&mut self) -> PResult<Term<'a>> {
         // Note: `parse_expr` is just a synonym for readability. There are
         // multiple levels of expressions to handle precedence.
-        self.parse_expr_at()
+        self.parse_expr_infix()
     }
 
-    fn parse_expr_at(&mut self) -> PResult<Term<'a>> {
+    fn parse_expr_infix(&mut self) -> PResult<Term<'a>> {
         let mut term = self.parse_expr_add()?;
 
         loop {
-            // The term so far could be it, or it could be part of a bigger
-            // binary expression, if we encounter the right operator next.
-            let maybe_op = match self.peek() {
-                Some(Token::KwAt) => Some(BinOp::At),
-                _ => None,
-            };
-
-            if let Some(op) = maybe_op {
-                self.consume();
-                let rhs = self.parse_expr_add()?;
-                term = Term::bin_op(BinTerm(term, op, rhs));
-            } else {
-                return Ok(term)
+            // The term so far could be it, or it could be the left-hand side
+            // of an infix call expression. If we find an identifier next, it
+            // might be an infix call. NOTE: This is the only place in the
+            // parser where we need more than one token lookahead.
+            match (self.peek(), self.peek_next()) {
+                // If there is a '=' after the identifier, then the identifier
+                // is not an infix call, but the target of an assignment.
+                (Some(Token::Ident(..)), Some(Token::Equals)) => break,
+                (Some(Token::Ident(..)), _) => {
+                    // If there is no '=', then we expect identifiers for the
+                    // function to call.
+                    let infix = self.parse_idents().map(BinOp::Infix)?;
+                    let rhs = self.parse_expr_add()?;
+                    term = Term::bin_op(BinTerm(term, infix, rhs));
+                }
+                _ => break,
             }
         }
+        Ok(term)
     }
 
     fn parse_expr_add(&mut self) -> PResult<Term<'a>> {
@@ -507,6 +511,11 @@ impl<'t, 'a: 't> Parser<'t, 'a> {
     /// Return the token under the cursor, if there is one.
     fn peek(&self) -> Option<Token<'a>> {
         self.tokens.get(self.cursor).map(|t| t.0)
+    }
+
+    /// Return the token after the cursor, if there is one.
+    fn peek_next(&self) -> Option<Token<'a>> {
+        self.tokens.get(self.cursor + 1).map(|t| t.0)
     }
 
     /// Advance the cursor by one token, consuming the token under the cursor.

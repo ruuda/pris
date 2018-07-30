@@ -103,7 +103,8 @@ impl<'i, 'a> ExprInterpreter<'i, 'a> {
             BinOp::Sub => ExprInterpreter::eval_sub(lhs, rhs),
             BinOp::Mul => ExprInterpreter::eval_mul(lhs, rhs),
             BinOp::Div => ExprInterpreter::eval_div(lhs, rhs),
-            BinOp::Exp => panic!("TODO: eval exp"),
+            BinOp::Exp => unimplemented!("TODO: eval exp"),
+            BinOp::Infix(ref op) => self.eval_infix(lhs, op, rhs),
         }
     }
 
@@ -257,6 +258,11 @@ impl<'i, 'a> ExprInterpreter<'i, 'a> {
         }
     }
 
+    fn eval_infix(&mut self, lhs: Val<'a>, op: &Idents<'a>, rhs: Val<'a>) -> Result<Val<'a>> {
+        let func = self.env.lookup(op)?;
+        self.eval_call_values(func, vec![lhs, rhs])
+    }
+
     fn eval_unop(&mut self, unop: &'a UnTerm<'a>) -> Result<Val<'a>> {
         let rhs = self.eval_expr(&unop.1)?;
         match unop.0 {
@@ -282,6 +288,10 @@ impl<'i, 'a> ExprInterpreter<'i, 'a> {
             args.push(self.eval_expr(arg)?);
         }
         let func = self.eval_expr(&call.0)?;
+        self.eval_call_values(func, args)
+    }
+
+    fn eval_call_values(&mut self, func: Val<'a>, args: Vec<Val<'a>>) -> Result<Val<'a>> {
         match func {
             // For a user-defined function, we evaluate the function body.
             Val::FnExtrin(fn_def) => self.eval_call_extrin(fn_def, args),
