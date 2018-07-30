@@ -138,6 +138,8 @@ impl<'i, 'a> ExprInterpreter<'i, 'a> {
             new_frame.push_subframe(dest_sf);
         }
 
+        new_frame.union_bounding_box(&content.get_bounding_box().offset(off));
+
         // Pris always included the origin in the bounding box. This has
         // advantages and disadvantages. For example, you can create a space to
         // ajoin between elements by doing
