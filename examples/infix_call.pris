@@ -1,0 +1,22 @@
+{
+  background_color = #efcb68
+  color = #5c415d
+
+  rect = fill_rectangle((1em, 1em))
+
+  // Option 1: Call as regular function.
+  put fit(rect, (0.5em, 0.5em)) at (1em, 1em)
+
+  // Option 2: Infix call.
+  put rect fit (0.5em, 0.5em) at (1em, 2em)
+
+  // Note that "at" is also just a function.
+  put at(rect fit (0.5em, 0.5em), (1em, 3em))
+
+  // It works for user-defined functions too.
+  line_to = function(begin, end)
+  {
+    return line(end - begin) at begin
+  }
+  put (1em, 4em) line_to (1.5em, 4em)
+}
