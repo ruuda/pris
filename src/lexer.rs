@@ -723,7 +723,7 @@ fn lex_handles_keywords() {
     assert_eq!(tokens[1], (Token::Ident("the"), Span::new(7, 10)));
     assert_eq!(tokens[2], (Token::KwFunction, Span::new(11, 19)));
     assert_eq!(tokens[3], (Token::KwPut, Span::new(20, 23)));
-    assert_eq!(tokens[4], (Token::KwAt, Span::new(24, 26)));
+    assert_eq!(tokens[4], (Token::Ident("at"), Span::new(24, 26)));
     assert_eq!(tokens[5], (Token::Ident("the"), Span::new(27, 30)));
     assert_eq!(tokens[6], (Token::KwImport, Span::new(31, 37)));
 }
