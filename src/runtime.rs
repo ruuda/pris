@@ -231,6 +231,7 @@ impl<'a> Env<'a> {
         bindings.insert(names::line_width, Val::Num(10.8, 1));
         bindings.insert(names::canvas_size, Val::Coord(1920.0, 1080.0, 0));
         bindings.insert(names::color, Val::Col(Color::new(0.0, 0.0, 0.0)));
+        bindings.insert(names::at, Val::FnIntrin(Builtin(builtins::at)));
         bindings.insert(names::fit, Val::FnIntrin(Builtin(builtins::fit)));
         bindings.insert(names::glyph, Val::FnIntrin(Builtin(builtins::glyph)));
         bindings.insert(names::hyperlink, Val::FnIntrin(Builtin(builtins::hyperlink)));

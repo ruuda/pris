@@ -10,6 +10,7 @@
 // grep for if they map 1:1.
 #![allow(non_upper_case_globals)]
 
+pub const at: &'static str = "at";
 pub const canvas_size: &'static str = "canvas_size";
 pub const color: &'static str = "color";
 pub const fill_rectangle: &'static str = "fill_rectangle";

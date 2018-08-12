@@ -43,6 +43,54 @@ fn validate_args<'a>(fn_name: &str,
     Ok(())
 }
 
+pub fn at<'i, 'a>(_interpreter: &mut ExprInterpreter<'i, 'a>,
+                  mut args: Vec<Val<'a>>)
+                  -> Result<Val<'a>> {
+
+    // TODO: This generic `validate_args` does lose a bit on good error
+    // messages. Write a custom one, as "at" is so prevalent?
+    validate_args(names::at, &[ValType::Frame, ValType::Coord(1)], &args)?;
+    // let msg = "Cannot translate (at) <something else>. Only frames can be translated.";
+    // let msg = "Translation (at) requires a coordinate with length units, \
+    //            but a <something else> was found instead.";
+    let frame = match args.remove(0) {
+        Val::Frame(f) => f,
+        _ => unreachable!(),
+    };
+    let off = match args.remove(0) {
+        Val::Coord(x, y, 1) => Vec2::new(x, y),
+        _ => unreachable!(),
+    };
+
+    let mut new_frame = Frame::from_env(frame.get_env().clone());
+
+    for subframe in frame.get_subframes() {
+        let mut dest_sf = Subframe::new();
+        for pe in subframe.get_elements() {
+            dest_sf.place_element(pe.position + off, pe.element.clone());
+        }
+        new_frame.push_subframe(dest_sf);
+    }
+
+    new_frame.union_bounding_box(&frame.get_bounding_box().offset(off));
+
+    // Pris always included the origin in the bounding box. This has
+    // advantages and disadvantages. For example, you can create a space to
+    // ajoin between elements by doing
+    //
+    //     hspace = function(dx) { put {} at (dx, 0em) }
+    //
+    // However, I am now leaning towards removing this behavior; I don't
+    // like the special case, and there should just be a primitive to create
+    // an empty bounding box.
+    let bb = BoundingBox::new(off, Vec2::new(0.0, 0.0));
+    new_frame.union_bounding_box(&bb);
+
+    new_frame.set_anchor(frame.get_anchor() + off);
+
+    Ok(Val::Frame(Rc::new(new_frame)))
+}
+
 pub fn fit<'i, 'a>(_interpreter: &mut ExprInterpreter<'i, 'a>,
                    mut args: Vec<Val<'a>>)
                    -> Result<Val<'a>> {

@@ -82,12 +82,10 @@ pub struct Coord<'a>(pub Term<'a>, pub Term<'a>);
 
 /// A binary operation applied to two terms.
 #[derive(PartialEq)]
-pub struct BinTerm<'a>(pub Term<'a>, pub BinOp, pub Term<'a>);
+pub struct BinTerm<'a>(pub Term<'a>, pub BinOp<'a>, pub Term<'a>);
 
-#[derive(Copy, Clone, PartialEq, Eq)]
-pub enum BinOp {
-    /// Translate, `at`.
-    At,
+#[derive(PartialEq, Eq)]
+pub enum BinOp<'a> {
     /// Adjoin, `~`.
     Adj,
     /// Add, `+`.
@@ -100,6 +98,8 @@ pub enum BinOp {
     Div,
     /// Exponentiate, `^`.
     Exp,
+    /// Infix function call.
+    Infix(Idents<'a>),
 }
 
 /// A unary operation applied to a term.
@@ -246,16 +246,16 @@ impl<'a> Print for BinTerm<'a> {
     }
 }
 
-impl Print for BinOp {
+impl<'a> Print for BinOp<'a> {
     fn print(&self, f: &mut Formatter) {
         match *self {
-            BinOp::At  => f.print("at"),
             BinOp::Adj => f.print("~"),
             BinOp::Add => f.print("+"),
             BinOp::Sub => f.print("-"),
             BinOp::Mul => f.print("*"),
             BinOp::Div => f.print("/"),
             BinOp::Exp => f.print("^"),
+            BinOp::Infix(ref op) => op.print(f),
         }
     }
 }

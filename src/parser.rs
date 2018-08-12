@@ -218,28 +218,32 @@ impl<'t, 'a: 't> Parser<'t, 'a> {
     fn parse_expr(&mut self) -> PResult<Term<'a>> {
         // Note: `parse_expr` is just a synonym for readability. There are
         // multiple levels of expressions to handle precedence.
-        self.parse_expr_at()
+        self.parse_expr_infix()
     }
 
-    fn parse_expr_at(&mut self) -> PResult<Term<'a>> {
+    fn parse_expr_infix(&mut self) -> PResult<Term<'a>> {
         let mut term = self.parse_expr_add()?;
 
         loop {
-            // The term so far could be it, or it could be part of a bigger
-            // binary expression, if we encounter the right operator next.
-            let maybe_op = match self.peek() {
-                Some(Token::KwAt) => Some(BinOp::At),
-                _ => None,
-            };
-
-            if let Some(op) = maybe_op {
-                self.consume();
-                let rhs = self.parse_expr_add()?;
-                term = Term::bin_op(BinTerm(term, op, rhs));
-            } else {
-                return Ok(term)
+            // The term so far could be it, or it could be the left-hand side
+            // of an infix call expression. If we find an identifier next, it
+            // might be an infix call. NOTE: This is the only place in the
+            // parser where we need more than one token lookahead.
+            match (self.peek(), self.peek_next()) {
+                // If there is a '=' after the identifier, then the identifier
+                // is not an infix call, but the target of an assignment.
+                (Some(Token::Ident(..)), Some(Token::Equals)) => break,
+                (Some(Token::Ident(..)), _) => {
+                    // If there is no '=', then we expect identifiers for the
+                    // function to call.
+                    let infix = self.parse_idents().map(BinOp::Infix)?;
+                    let rhs = self.parse_expr_add()?;
+                    term = Term::bin_op(BinTerm(term, infix, rhs));
+                }
+                _ => break,
             }
         }
+        Ok(term)
     }
 
     fn parse_expr_add(&mut self) -> PResult<Term<'a>> {
@@ -509,6 +513,11 @@ impl<'t, 'a: 't> Parser<'t, 'a> {
         self.tokens.get(self.cursor).map(|t| t.0)
     }
 
+    /// Return the token after the cursor, if there is one.
+    fn peek_next(&self) -> Option<Token<'a>> {
+        self.tokens.get(self.cursor + 1).map(|t| t.0)
+    }
+
     /// Advance the cursor by one token, consuming the token under the cursor.
     fn consume(&mut self) {
         self.cursor += 1;
@@ -562,7 +571,7 @@ mod test {
     use parser::Parser;
     use lexer::lex;
     use ast::{Assign, BinOp, BinTerm, Coord, Color, FnCall};
-    use ast::{Num, Put, Stmt, Term, UnOp, UnTerm, Unit};
+    use ast::{Idents, Num, Put, Stmt, Term, UnOp, UnTerm, Unit};
 
     #[test]
     fn parse_parses_import() {
@@ -747,7 +756,7 @@ mod test {
         let put = parser.parse_put().unwrap();
         let one = Term::Number(Num(1.0, None));
         let two = Term::Number(Num(2.0, None));
-        let at = BinTerm(one, BinOp::At, two);
+        let at = BinTerm(one, BinOp::Infix(Idents(vec!["at"])), two);
         assert_preq!(put.0, Term::bin_op(at));
         assert_eq!(parser.cursor, 4);
     }
@@ -757,30 +766,36 @@ mod test {
         let tokens = lex(b"at 1 put 2").unwrap();
         let mut parser = Parser::new(&tokens);
         let result = parser.parse_statement();
-        assert_eq!(result.err().unwrap().token_index, 0);
+        assert_eq!(result.err().unwrap().token_index, 1);
     }
 
     #[test]
-    fn does_not_parse_at_at_start_expr() {
+    fn does_not_parse_beyond_ident_then_space() {
         let tokens = lex(b"at 1 place 2").unwrap();
         let mut parser = Parser::new(&tokens);
-        let result = parser.parse_expr();
-        assert_eq!(result.err().unwrap().token_index, 0);
+        let result = parser.parse_expr().unwrap();
+        assert_preq!(result, Term::Idents(Idents(vec!["at"])));
+        assert_eq!(parser.cursor, 1);
     }
 
     #[test]
-    fn parse_does_not_continue_at_invalid_binop() {
-        // "on" is not a valid binary operator.
+    fn parse_parses_infix_call_inside_statement() {
         let tokens = lex(b"put 1 on 2").unwrap();
         let mut parser = Parser::new(&tokens);
         let result = parser.parse_statement();
         match result {
           // Note, we can't match on the number here, that would break under a
           // future Rust release. https://github.com/rust-lang/rust/issues/41620
-          Ok(Stmt::Put(Put(Term::Number(Num(_, None))))) => {}
+          Ok(Stmt::Put(Put(Term::BinOp(binterm)))) => {
+              let one = Term::Number(Num(1.0, None));
+              let two = Term::Number(Num(2.0, None));
+              assert_preq!(binterm.0, one);
+              assert_preq!(binterm.1, BinOp::Infix(Idents(vec!["on"])));
+              assert_preq!(binterm.2, two);
+          }
           _ => panic!("Unexpected parse result."),
         }
-        assert_eq!(parser.cursor, 2); // Stopped at "on".
+        assert_eq!(parser.cursor, 4); // Stopped at "on".
     }
 
     #[test]
@@ -807,13 +822,13 @@ mod test {
     }
 
     #[test]
-    fn parse_parses_binop_at() {
+    fn parse_parses_binop_infix() {
         let tokens = lex(b"1 at 2").unwrap();
         let mut parser = Parser::new(&tokens);
         let exp = parser.parse_expr().unwrap();
         let one = Term::Number(Num(1.0, None));
         let two = Term::Number(Num(2.0, None));
-        let bt = BinTerm(one, BinOp::At, two);
+        let bt = BinTerm(one, BinOp::Infix(Idents(vec!["at"])), two);
         assert_preq!(exp, Term::bin_op(bt));
         assert_eq!(parser.cursor, 3);
     }

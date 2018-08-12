@@ -11,9 +11,9 @@ use ast;
 use ast::{Assign, BinOp, BinTerm, Block, Coord, FnCall, FnDef, Idents};
 use ast::{Num, Put, Return, Stmt, Term, UnOp, UnTerm, Unit};
 use error::{Error, Result};
-use elements::{Color, Vec2};
+use elements::Color;
 use pretty::Formatter;
-use runtime::{BoundingBox, Builtin, FontMap, Frame, Env, Subframe, Val};
+use runtime::{Builtin, FontMap, Frame, Env, Subframe, Val};
 use types::ValType;
 
 // Expression interpreter.
@@ -97,64 +97,14 @@ impl<'i, 'a> ExprInterpreter<'i, 'a> {
         let lhs = self.eval_expr(&binop.0)?;
         let rhs = self.eval_expr(&binop.2)?;
         match binop.1 {
-            BinOp::At  => ExprInterpreter::eval_at(lhs, rhs),
             BinOp::Adj => ExprInterpreter::eval_adj(lhs, rhs),
             BinOp::Add => ExprInterpreter::eval_add(lhs, rhs),
             BinOp::Sub => ExprInterpreter::eval_sub(lhs, rhs),
             BinOp::Mul => ExprInterpreter::eval_mul(lhs, rhs),
             BinOp::Div => ExprInterpreter::eval_div(lhs, rhs),
-            BinOp::Exp => panic!("TODO: eval exp"),
+            BinOp::Exp => unimplemented!("TODO: eval exp"),
+            BinOp::Infix(ref op) => self.eval_infix(lhs, op, rhs),
         }
-    }
-
-    /// Translates a frame.
-    fn eval_at(frame: Val<'a>, offset: Val<'a>) -> Result<Val<'a>> {
-
-        let off = match offset {
-            // TODO: Make Coord type carry Vec2 instead of separate x, y.
-            Val::Coord(x, y, 1) => Vec2::new(x, y),
-            _ => {
-                let msg = "Translation (at) requires a coordinate with length units, \
-                           but a <TODO> was found instead.";
-                return Err(Error::Other(String::from(msg)));
-            }
-        };
-
-        let content = match frame {
-            Val::Frame(f) => f,
-            _ => {
-                let msg = "Cannot translate (at) <TODO>. Only frames can be translated.";
-                return Err(Error::Other(String::from(msg)));
-            }
-        };
-
-        let mut new_frame = Frame::from_env(content.get_env().clone());
-
-        for subframe in content.get_subframes() {
-            let mut dest_sf = Subframe::new();
-            for pe in subframe.get_elements() {
-                dest_sf.place_element(pe.position + off, pe.element.clone());
-            }
-            new_frame.push_subframe(dest_sf);
-        }
-
-        new_frame.union_bounding_box(&content.get_bounding_box().offset(off));
-
-        // Pris always included the origin in the bounding box. This has
-        // advantages and disadvantages. For example, you can create a space to
-        // ajoin between elements by doing
-        //
-        //     hspace = function(dx) { put {} at (dx, 0em) }
-        //
-        // However, I am now leaning towards removing this behavior; I don't
-        // like the special case, and there should just be a primitive to create
-        // an empty bounding box.
-        let bb = BoundingBox::new(off, Vec2::new(0.0, 0.0));
-        new_frame.union_bounding_box(&bb);
-
-        new_frame.set_anchor(content.get_anchor() + off);
-
-        Ok(Val::Frame(Rc::new(new_frame)))
     }
 
     /// Adjoins two frames.
@@ -257,6 +207,11 @@ impl<'i, 'a> ExprInterpreter<'i, 'a> {
         }
     }
 
+    fn eval_infix(&mut self, lhs: Val<'a>, op: &Idents<'a>, rhs: Val<'a>) -> Result<Val<'a>> {
+        let func = self.env.lookup(op)?;
+        self.eval_call_values(func, vec![lhs, rhs])
+    }
+
     fn eval_unop(&mut self, unop: &'a UnTerm<'a>) -> Result<Val<'a>> {
         let rhs = self.eval_expr(&unop.1)?;
         match unop.0 {
@@ -282,6 +237,10 @@ impl<'i, 'a> ExprInterpreter<'i, 'a> {
             args.push(self.eval_expr(arg)?);
         }
         let func = self.eval_expr(&call.0)?;
+        self.eval_call_values(func, args)
+    }
+
+    fn eval_call_values(&mut self, func: Val<'a>, args: Vec<Val<'a>>) -> Result<Val<'a>> {
         match func {
             // For a user-defined function, we evaluate the function body.
             Val::FnExtrin(fn_def) => self.eval_call_extrin(fn_def, args),
