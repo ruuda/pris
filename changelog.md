@@ -4,6 +4,17 @@
 
 Not released yet.
 
+**Breaking changes**:
+
+ * The `put ... at ...` statement has been reworked. `at` is no longer part of
+   the statement, it can now be used in any expression to translate the
+   left-hand side by the right-hand side. `put` no longer accepts a coordinate,
+   and always places frames at `(0, 0)`. This means that you no longer need to
+   say `put frame at (0em, 0em)`, simply `put frame` will do. `put frame at pos`
+   will still behave as it did before. However, the `at ... put ...` syntax that
+   was accepted previously is no longer valid. To upgrade, swap the `at` and
+   `put` parts.
+
 Highlights:
 
  * The lexer and parser have been replaced with hand-written ones. This enables
@@ -16,6 +27,10 @@ Highlights:
  * There now is basic hosted documentation.
  * Support for loading png images, in addition to svg.
  * Preliminary VS Code support, contributed by Thomas Vincent.
+ * With the rework of `put at`, `at` became a regular function that can be
+   called with infix syntax: `frame at pos` is the same as `at(frame, pos)`.
+   Support for infix calls is not limited to `at`, it works for any function.
+   See also the new [infix example](examples/infix.pris).
 
 Bugs fixed:
 
