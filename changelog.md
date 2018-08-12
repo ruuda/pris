@@ -30,7 +30,7 @@ Highlights:
  * With the rework of `put at`, `at` became a regular function that can be
    called with infix syntax: `frame at pos` is the same as `at(frame, pos)`.
    Support for infix calls is not limited to `at`, it works for any function.
-   See also the new [infix example](examples/infix.pris).
+   See also the new [infix example](examples/infix_call.pris).
 
 Bugs fixed:
 
