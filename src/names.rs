@@ -24,6 +24,7 @@ pub const image: &'static str = "image";
 pub const line: &'static str = "line";
 pub const line_height: &'static str = "line_height";
 pub const line_width: &'static str = "line_width";
+pub const scale: &'static str = "scale";
 pub const str: &'static str = "str";
 pub const t: &'static str = "t";
 pub const text_align: &'static str = "text_align";

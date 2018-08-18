@@ -134,22 +134,7 @@ pub fn fit<'i, 'a>(_interpreter: &mut ExprInterpreter<'i, 'a>,
         return Err(Error::Other("Cannot fit a frame of size (0w, 0w).".into()))
     };
 
-    let mut scaled_frame = Frame::from_env(frame.get_env().clone());
-
-    // As the frame is immutable anyway, it would actually be possible to refer
-    // to the subframes in the frame, instead of copying them. If performance
-    // ever becomes a concern, this would be a good place to start.
-    for subframe in frame.get_subframes() {
-        let elements: Vec<_> = subframe.get_elements().iter().cloned().collect();
-        let mut new_sf = Subframe::new();
-        new_sf.place_element(Vec2::zero(), Element::Scaled(elements, scale));
-        scaled_frame.push_subframe(new_sf);
-    }
-
-    scaled_frame.set_anchor(frame.get_anchor() * scale);
-    scaled_frame.union_bounding_box(&frame.get_bounding_box().scale(scale));
-
-    Ok(Val::Frame(Rc::new(scaled_frame)))
+    Ok(scale_frame(&frame, scale))
 }
 
 pub fn line<'i, 'a>(interpreter: &mut ExprInterpreter<'i, 'a>,
@@ -234,6 +219,43 @@ pub fn hyperlink<'i, 'a>(_interpreter: &mut ExprInterpreter<'i, 'a>,
     frame.union_bounding_box(&BoundingBox::sized(size.x, size.y));
 
     Ok(Val::Frame(Rc::new(frame)))
+}
+
+pub fn scale<'i, 'a>(
+    _interpreter: &mut ExprInterpreter<'i, 'a>,
+    mut args: Vec<Val<'a>>
+    ) -> Result<Val<'a>>
+{
+    validate_args(names::scale, &[ValType::Frame, ValType::Num(0)], &args)?;
+    let frame = match args.remove(0) {
+        Val::Frame(f) => f,
+        _ => unreachable!(),
+    };
+    let factor = match args.remove(0) {
+        Val::Num(x, 0) => x,
+        _ => unreachable!(),
+    };
+    Ok(scale_frame(&frame, factor))
+}
+
+/// Return a copy of the frame scaled by the given factor.
+fn scale_frame<'a>(frame: &Frame<'a>, factor: f64) -> Val<'a> {
+    let mut scaled_frame = Frame::from_env(frame.get_env().clone());
+
+    // As the frame is immutable anyway, it would actually be possible to refer
+    // to the subframes in the frame, instead of copying them. If performance
+    // ever becomes a concern, this would be a good place to start.
+    for subframe in frame.get_subframes() {
+        let elements: Vec<_> = subframe.get_elements().iter().cloned().collect();
+        let mut new_sf = Subframe::new();
+        new_sf.place_element(Vec2::zero(), Element::Scaled(elements, factor));
+        scaled_frame.push_subframe(new_sf);
+    }
+
+    scaled_frame.set_anchor(frame.get_anchor() * factor);
+    scaled_frame.union_bounding_box(&frame.get_bounding_box().scale(factor));
+
+    Val::Frame(Rc::new(scaled_frame))
 }
 
 pub fn str<'i, 'a>(_interpreter: &mut ExprInterpreter<'i, 'a>,
