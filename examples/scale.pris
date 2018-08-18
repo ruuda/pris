@@ -1,0 +1,13 @@
+{
+  background_color = #efcb68
+  color = #5c415d
+
+  rect = fill_rectangle((2em, 2em))
+
+  put rect at (1em, 1em)
+
+  // Scale is a binary function, it can be called with regular
+  // function call syntax, or as infix call.
+  put scale(rect, 0.5) at (1em, 4em)
+  put rect scale 2.0 at (4em, 1em)
+}
