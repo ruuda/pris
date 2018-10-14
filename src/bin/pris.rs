@@ -10,6 +10,7 @@ extern crate serde_derive;
 extern crate docopt;
 extern crate pris;
 
+use std::cmp;
 use std::fs::File;
 use std::io::BufReader;
 use std::io::Read;
@@ -145,7 +146,7 @@ fn report_error(input: &[u8], location: usize, len: usize) {
     // The length of the mark can be longer than the line, for example when
     // token to mark was a multiline string literal. In that case, highlight
     // only up to the newline, don't extend the tildes too far.
-    let mark_len = len.min(line_content.len() + start - location);
+    let mark_len = cmp::min(len, line_content.len() + start - location);
 
     println!("Parse error at line {}:\n", line);
     println!("{}", line_content);
