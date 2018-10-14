@@ -142,11 +142,16 @@ fn report_error(input: &[u8], location: usize, len: usize) {
     // because the input was invalid UTF-8, there is little we can do.
     let line_content = String::from_utf8_lossy(&input[start..end]);
 
+    // The length of the mark can be longer than the line, for example when
+    // token to mark was a multiline string literal. In that case, highlight
+    // only up to the newline, don't extend the tildes too far.
+    let mark_len = len.min(line_content.len() + start - location);
+
     println!("Parse error at line {}:\n", line);
     println!("{}", line_content);
     for _ in 0..location - start { print!(" "); }
     print!("^");
-    for _ in 1..len { print!("~"); }
+    for _ in 1..mark_len { print!("~"); }
     print!("\n");
 }
 
