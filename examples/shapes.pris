@@ -3,4 +3,7 @@
   color = #5c415d
   put fill_rectangle((1em, 1em)) at (1em, 1em)
   put fill_rectangle((1em, 1em)) at (1em, 3em)
+
+  put fill_circle(0.5em) at (1w - 1.5em, 1.5em)
+  put fill_circle(0.5em) at (1w - 1.5em, 3.5em)
 }
