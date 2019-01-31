@@ -180,6 +180,33 @@ pub fn line<'i, 'a>(interpreter: &mut ExprInterpreter<'i, 'a>,
     Ok(Val::Frame(Rc::new(frame)))
 }
 
+pub fn fill_circle<'i, 'a>(interpreter: &mut ExprInterpreter<'i, 'a>,
+                           mut args: Vec<Val<'a>>)
+                           -> Result<Val<'a>> {
+    validate_args(names::fill_circle, &[ValType::Num(1)], &args)?;
+    let r = match args.remove(0) {
+        Val::Num(r, 1) => r,
+        _ => unreachable!(),
+    };
+
+    let circle = FillPolygon {
+        // TODO: Better idents type for non-ast use?
+        color: interpreter.env.lookup_color(&Idents(vec![names::color]))?,
+        vertices: vec![
+            Vec2::zero(),
+            // TODO: Approximate the circle with a Bezier.
+        ],
+    };
+
+    let mut frame = Frame::new();
+    frame.place_element_on_last_subframe(Vec2::zero(), Element::FillPolygon(circle));
+    frame.set_anchor(Vec2::zero());
+    let rr = Vec2::new(r, r);
+    frame.union_bounding_box(&BoundingBox::new(-rr, rr * 2.0));
+
+    Ok(Val::Frame(Rc::new(frame)))
+}
+
 pub fn fill_rectangle<'i, 'a>(interpreter: &mut ExprInterpreter<'i, 'a>,
                               mut args: Vec<Val<'a>>)
                               -> Result<Val<'a>> {
