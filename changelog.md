@@ -23,6 +23,7 @@ Highlights:
  * Unary negation is now supported on coordinates.
  * The bounding box offset is now exposed, enabling proper centering.
  * A `glyph()` function has been added to select a single glyph by glyph id.
+ * A `fill_circle()` function has been added to draw solid circles.
  * Subframe support (not finished).
  * There now is basic hosted documentation.
  * Support for loading png images, in addition to svg.
