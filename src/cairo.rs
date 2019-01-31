@@ -54,6 +54,7 @@ extern {
     fn cairo_set_source_rgb(cr: *mut cairo_t, r: f64, g: f64, b: f64);
     fn cairo_set_source_rgba(cr: *mut cairo_t, r: f64, g: f64, b: f64, a: f64);
     fn cairo_set_line_width(cr: *mut cairo_t, width: f64);
+    fn cairo_curve_to(cr: *mut cairo_t, x1: f64, y1: f64, x2: f64, y2: f64, x3: f64, y3: f64);
     fn cairo_move_to(cr: *mut cairo_t, x: f64, y: f64);
     fn cairo_line_to(cr: *mut cairo_t, x: f64, y: f64);
     fn cairo_close_path(cr: *mut cairo_t);
@@ -171,6 +172,10 @@ impl Cairo {
 
     pub fn set_line_width(&mut self, width: f64) {
         unsafe { cairo_set_line_width(self.ptr, width) }
+    }
+
+    pub fn curve_to(&mut self, x1: f64, y1: f64, x2: f64, y2: f64, x3: f64, y3: f64) {
+        unsafe { cairo_curve_to(self.ptr, x1, y1, x2, y2, x3, y3) }
     }
 
     pub fn move_to(&mut self, x: f64, y: f64) {
