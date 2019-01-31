@@ -10,7 +10,7 @@ use std::rc::Rc;
 
 use ast::Idents;
 use cairo;
-use elements::{Element, FillPolygon, Hyperlink, StrokePolygon, Text, Vec2};
+use elements::{Element, FillPolygon, Hyperlink, StrokePolygon, PolygonKind, Text, Vec2};
 use error::{Error, Result};
 use freetype;
 use harfbuzz;
@@ -169,6 +169,7 @@ pub fn line<'i, 'a>(interpreter: &mut ExprInterpreter<'i, 'a>,
         line_width: interpreter.env.lookup_len(&Idents(vec![names::line_width]))?,
         close: false,
         vertices: vec![Vec2::zero(), offset],
+        kind: PolygonKind::Lines,
     };
 
     let mut frame = Frame::new();
@@ -189,13 +190,28 @@ pub fn fill_circle<'i, 'a>(interpreter: &mut ExprInterpreter<'i, 'a>,
         _ => unreachable!(),
     };
 
+    // See also http://spencermortensen.com/articles/bezier-circle/.
+    let c = 0.551915024494 * r;
+    let z = 0.0;
+
     let circle = FillPolygon {
         // TODO: Better idents type for non-ast use?
         color: interpreter.env.lookup_color(&Idents(vec![names::color]))?,
         vertices: vec![
-            Vec2::zero(),
-            // TODO: Approximate the circle with a Bezier.
+            Vec2::new( r,  z), // Right
+            Vec2::new( r, -c),
+            Vec2::new( c, -r),
+            Vec2::new( z, -r), // Top
+            Vec2::new(-c, -r),
+            Vec2::new(-r, -c),
+            Vec2::new(-r,  z), // Left
+            Vec2::new(-r,  c),
+            Vec2::new(-c,  r),
+            Vec2::new( z,  r), // Bottom
+            Vec2::new( c,  r),
+            Vec2::new( r,  c),
         ],
+        kind: PolygonKind::Curves,
     };
 
     let mut frame = Frame::new();
@@ -225,6 +241,7 @@ pub fn fill_rectangle<'i, 'a>(interpreter: &mut ExprInterpreter<'i, 'a>,
             Vec2::new(w, h),
             Vec2::new(w, 0.0),
         ],
+        kind: PolygonKind::Lines,
     };
 
     let mut frame = Frame::new();

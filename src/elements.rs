@@ -35,10 +35,19 @@ pub enum Element {
     Hyperlink(Hyperlink),
 }
 
+#[derive(Copy, Clone)]
+pub enum PolygonKind {
+    /// The points are vertices are connected by lines.
+    Lines,
+    /// One point is an endpoint of a cubic Bézier segment, the next two are control points.
+    Curves,
+}
+
 #[derive(Clone)]
 pub struct FillPolygon {
     pub color: Color,
     pub vertices: Vec<Vec2>,
+    pub kind: PolygonKind,
 }
 
 #[derive(Clone)]
@@ -47,6 +56,7 @@ pub struct StrokePolygon {
     pub line_width: f64,
     pub close: bool,
     pub vertices: Vec<Vec2>,
+    pub kind: PolygonKind,
 }
 
 // TODO: What color space is this? A linear RGB space would be nice.

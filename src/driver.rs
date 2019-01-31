@@ -7,7 +7,7 @@
 
 use ast::Idents;
 use cairo::{Cairo, FontFace, Surface};
-use elements::{Color, Element, PlacedElement, Vec2};
+use elements::{Color, Element, PlacedElement, PolygonKind, Vec2};
 use runtime::{FontMap, Frame};
 
 fn draw_background(cr: &mut Cairo, canvas_size: Vec2, color: Color) {
@@ -17,7 +17,7 @@ fn draw_background(cr: &mut Cairo, canvas_size: Vec2, color: Color) {
 }
 
 /// Draw the lines for a polygon, but don't stroke or fill it yet.
-fn draw_polygon(cr: &mut Cairo, vertices: &[Vec2], close: bool) {
+fn draw_polygon_lines(cr: &mut Cairo, vertices: &[Vec2], close: bool) {
     debug_assert!(vertices.len() >= 2, "Polygon must have at least one line segment.");
 
     let v0 = vertices[0];
@@ -32,13 +32,57 @@ fn draw_polygon(cr: &mut Cairo, vertices: &[Vec2], close: bool) {
     }
 }
 
+/// Draw the curves for a polygon, but don't stroke or fill it yet.
+fn draw_polygon_curves(cr: &mut Cairo, vertices: &[Vec2], close: bool) {
+    debug_assert!(vertices.len() >= 3, "Polygon must have at least one curve segment.");
+
+    let v0 = vertices[0];
+    cr.move_to(v0.x, v0.y);
+
+    let mut i = 1;
+    loop {
+        if i + 2 >= vertices.len() { break }
+
+        let v1 = vertices[i + 0];
+        let v2 = vertices[i + 1];
+        let v3 = vertices[i + 2];
+
+        cr.curve_to(v1.x, v1.y, v2.x, v2.y, v3.x, v3.y);
+        i += 3;
+    }
+
+    if close {
+        assert_eq!(
+            i + 2, vertices.len(),
+            "Closed polygon must have 0 mod 3 control points (3 per segment).",
+        );
+        // Close the last segment, back to the first vertex.
+        let v1 = vertices[i + 0];
+        let v2 = vertices[i + 1];
+        cr.curve_to(v1.x, v1.y, v2.x, v2.y, v0.x, v0.y);
+        cr.close_path();
+    } else {
+        assert_eq!(
+            i, vertices.len(),
+            "Open polygon must have 1 mod 3 control points (3 per segment plus start).",
+        );
+    }
+}
+
+fn draw_polygon(cr: &mut Cairo, vertices: &[Vec2], kind: PolygonKind, close: bool) {
+    match kind {
+        PolygonKind::Lines => draw_polygon_lines(cr, vertices, close),
+        PolygonKind::Curves => draw_polygon_curves(cr, vertices, close),
+    }
+}
+
 fn draw_element(fm: &mut FontMap, cr: &mut Cairo, pe: &PlacedElement) {
     match pe.element {
         Element::StrokePolygon(ref polygon) => {
             let matrix = cr.get_matrix();
             cr.translate(pe.position.x, pe.position.y);
 
-            draw_polygon(cr, &polygon.vertices, polygon.close);
+            draw_polygon(cr, &polygon.vertices, polygon.kind, polygon.close);
 
             cr.set_source_rgb(polygon.color.r, polygon.color.g, polygon.color.b);
             cr.set_line_width(polygon.line_width);
@@ -52,7 +96,7 @@ fn draw_element(fm: &mut FontMap, cr: &mut Cairo, pe: &PlacedElement) {
             cr.translate(pe.position.x, pe.position.y);
 
             let close = true;
-            draw_polygon(cr, &polygon.vertices, close);
+            draw_polygon(cr, &polygon.vertices, polygon.kind, close);
 
             cr.set_source_rgb(polygon.color.r, polygon.color.g, polygon.color.b);
             cr.fill();
