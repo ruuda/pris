@@ -3,13 +3,13 @@
 Pris is a domain-specific language for designing slides and other graphics.
 
 Pris allows you to write drawing commands in a lightweight programming language
-tailored for the task, and compile that to <span class="smcp">PDF</span>.
-Graphics can be parametrized easily, and instead of copy-pasting, common
-elements can be extracted into reusable functions.
+tailored for the task, and compile that to <abbr>PDF</abbr>. Graphics can be
+parametrized easily, and instead of copy-pasting, common elements can be
+extracted into reusable functions.
 
 ## Features
 
- * Compiles to <span class="smcp">PDF</span>.
+ * Compiles to <abbr>PDF</abbr>.
  * Full typographic control.
  * First class graphics that can be inspected and manipulated as values.
  * First class functions.

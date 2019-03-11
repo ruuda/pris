@@ -4,9 +4,9 @@ mono_title: true
 
     image(fname: str) -> frame
 
-Load a <span class="smcp">PNG</span> or <span class="smcp">SVG</span> graphic
-from the file with path `fname`. Currently the path is relative to the working
-directory, but it should be made relative to the source file.
+Load a <abbr>PNG</abbr> or <abbr>SVG</abbr> graphic from the file with path
+`fname`. Currently the path is relative to the working directory, but it should
+be made relative to the source file.
 
 The origin of the returned frame is in the top-left corner.
 
