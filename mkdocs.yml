@@ -1,0 +1,28 @@
+site_name: Pris
+repo_url: https://github.com/ruuda/pris
+strict: true
+theme:
+  name: null
+  custom_dir: theme
+nav:
+  - Overview: index.md
+  - User Guide:
+    - Getting started: getting-started.md
+    - Building: building.md
+  - Examples: https://github.com/ruuda/pris/tree/master/examples
+  - Reference:
+    - at: reference/at.md
+    - fill_circle: reference/fill_circle.md
+    - fill_rectangle: reference/fill_rectangle.md
+    - fit: reference/fit.md
+    - glyph: reference/glyph.md
+    - hyperlink: reference/hyperlink.md
+    - image: reference/image.md
+    - line: reference/line.md
+    - str: reference/str.md
+    - t: reference/t.md
+  - About:
+    - Background: background.md
+    - Name: name.md
+  - Internals:
+    - Parser: parser.md
