@@ -1,5 +1,3 @@
-mono_title: true
-
 # fill_rectangle
 
     fill_rectangle(size: coord) -> frame

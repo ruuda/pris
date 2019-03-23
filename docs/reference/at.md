@@ -1,5 +1,3 @@
-mono_title: true
-
 # at
 
     at(frame: frame, offset: coord) -> frame

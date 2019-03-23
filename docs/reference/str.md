@@ -1,5 +1,3 @@
-mono_title: true
-
 # str
 
     str(x: num) -> str

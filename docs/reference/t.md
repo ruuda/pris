@@ -1,5 +1,3 @@
-mono_title: true
-
 # t
 
     t(text: str) -> frame

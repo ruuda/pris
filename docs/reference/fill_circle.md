@@ -1,5 +1,3 @@
-mono_title: true
-
 # fill_circle
 
     fill_circle(radius: len) -> frame

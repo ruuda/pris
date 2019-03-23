@@ -1,5 +1,3 @@
-mono_title: true
-
 # image
 
     image(fname: str) -> frame

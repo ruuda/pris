@@ -1,5 +1,3 @@
-mono_title: true
-
 # glyph
 
     glyph(glyph_index: num) -> frame

@@ -1,5 +1,3 @@
-mono_title: true
-
 # line
 
     line(pos: coord) -> frame

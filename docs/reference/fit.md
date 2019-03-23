@@ -1,5 +1,3 @@
-mono_title: true
-
 # fit
 
     fit(frame: frame, size: coord) -> frame
