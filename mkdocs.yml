@@ -12,6 +12,7 @@ nav:
   - Examples: https://github.com/ruuda/pris/tree/master/examples
   - Reference:
     - at: reference/at.md
+    - canvas_size: reference/canvas_size.md
     - fill_circle: reference/fill_circle.md
     - fill_rectangle: reference/fill_rectangle.md
     - fit: reference/fit.md
