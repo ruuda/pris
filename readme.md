@@ -105,7 +105,7 @@ Pris is free software. It is licensed under the
 [gitter]:     https://gitter.im/ruuda/pris
 [blogpost]:   https://ruudvanasseldonk.com/2017/04/27/a-language-for-designing-slides
 [contact]:    https://ruudvanasseldonk.com/contact
-[docs]:       https://ruuda.github.io/pris/getting-started.html
+[docs]:       https://ruuda.github.io/pris/
 [rust]:       https://rust-lang.org
 [cairo]:      https://cairographics.org
 [harfbuzz]:   https://www.freedesktop.org/wiki/Software/HarfBuzz/
