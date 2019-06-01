@@ -9,6 +9,7 @@ nav:
   - User Guide:
     - Getting started: getting-started.md
     - Building: building.md
+    - The language: language.md
   - Examples: https://github.com/ruuda/pris/tree/master/examples
   - Reference:
     - at: reference/at.md
