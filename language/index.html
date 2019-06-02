@@ -9,7 +9,7 @@
   -->
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>image — Pris</title>
+  <title>The language — Pris</title>
   <link href="https://rsms.me/inter/inter.css?v=3.3" rel="stylesheet">
   <link href="https://fonts.googleapis.com/css?family=Roboto+Mono:400,500" rel="stylesheet">
   <style>
@@ -344,70 +344,176 @@
   <div id="content">
     <div id="main">
       <nav id="breadcrumbs">
-        <a href="../..">Pris</a>
-        › <a href="../..">Reference</a>
-  › <a href="./">image</a>
+        <a href="..">Pris</a>
+        › <a href="..">User Guide</a>
+  › <a href="./">The language</a>
   <a id="repo-link" href="https://github.com/ruuda/pris/">GitHub</a>
       </nav>
       <article>
-        <h1 id="image">image</h1>
-<pre><code>image(fname: str) -&gt; frame
+        <h1 id="the-language">The language</h1>
+<p>This chapter characterizes the Pris domain specific language in various ways. It
+may help to determine where Pris is positioned relative to other languages. If
+you want to get your hands dirty, the <a href="https://github.com/ruuda/pris/tree/master/examples">examples</a> may be a better way
+to get started.</p>
+<h2 id="paradigm">Paradigm</h2>
+<p><strong>Pris is purely functional</strong>, in the following sense:</p>
+<ul>
+<li>Pris has first-class functions: functions can be passed around as values.</li>
+<li>Functions in Pris are pure: they have no side effects.</li>
+<li>Values in Pris are immutable, there are no mutable objects.</li>
+</ul>
+<p><strong>Pris is imperative</strong>,
+in the sense that blocks consist of statements that are executed sequentially.
+A statement is either assignment to a variable, a <code>put</code> statement that places a
+frame, or a <code>return</code> from a block. Although assignments mutate the bindings in
+the current scope, and <code>put</code> statements mutate the current frame, these
+mutations are only visible to current block, and do not affect the surrounding
+scope.</p>
+<pre><code>x = 1
+y =
+{
+  x = 2
+  return x
+}
+// At this point, x = 1 and y = 2.
 </code></pre>
-<p>Load a <abbr>PNG</abbr> or <abbr>SVG</abbr> graphic from the file with path
-<code>fname</code>. Currently the path is relative to the working directory, but it should
-be made relative to the source file.</p>
-<p>The origin of the returned frame is in the top-left corner.</p>
-<p>The size of the image relative to the canvas depends on the input image, and is
-often not meaningful. To resize the image, use the <a href="../fit/"><code>fit</code></a> function.</p>
+<p><strong>Pris is dynamically scoped</strong>,
+in the sense that the variables that are in scope when a function is evaluated,
+depend on the call site, not on the site where the function was defined. When
+used carelessly, this can make make programs intractable quickly.  But when used
+with care, dynamic scoping is a powerful tool for a graphics language,
+reminiscent of the cascading properties of <abbr>CSS</abbr>. For example, we
+can write a <code>title</code> function that makes no particular choice of color, so the
+surrounding scope can control the color.</p>
+<pre><code>title = function(text)
+{
+    font_size = 0.2h
+    text_align = "center"
+    put t(title) at (0.5w, 0.5h)
+}
+
+{
+  // This title will be red.
+  color = #ff0000
+  put title("Slide 1")
+}
+
+{
+  // This title will be blue.
+  color = #0000ff
+  put title("Slide 2")
+}
+</code></pre>
+<p>Due to dynamic scoping, there are two ways to provide a value to a function:</p>
+<ul>
+<li>By setting a particular variable in the calling scope.</li>
+<li>By passing the value as a function argument.</li>
+</ul>
+<p>Variables are useful for values that do not change often, to avoid having to
+pass them all the time. For example, the <a href="../reference/t/"><code>t</code></a> function uses
+the <code>font_family</code> and <code>font_style</code> from the surrounding scope, but accepts the
+text as argument.</p>
+<h2 id="type-system">Type system</h2>
+<p><strong>Pris is strongly typed</strong>,
+in the sense that it reports a type error for nonsensical operations,
+rather than implicitly coercing values.
+Number types have units:
+a length is different from a dimensionless number.</p>
+<p><strong>Pris is dynamically typed</strong>,
+in the sense that type errors in unreachable code
+do not cause compilation to fail.</p>
+<pre><code>// Calling this function will trigger a type error,
+// but defining it does not.
+trigger_error = function()
+{
+  return "wrong" + 0
+}
+</code></pre>
+<p>Dynamic typing is not a deep design choice, it is simply easier to implement.
+Pris may acquire static type checking in the future.</p>
+<h2 id="semantics">Semantics</h2>
+<p><strong>Evaluation in Pris is strict</strong>.
+Function arguments are reduced to values before evaluating the function body,
+and the right-hand side of an assignment is evaluated fully before continuing to
+the next statement.</p>
+<p><strong>Suffixes are resolved eagerly</strong>.
+Relative lengths are converted into absolute lengths as soon as they are
+evaluated, and the conversion depends on the meaning of the suffix at that time.
+Arithmetic with lenghts does <em>not</em> operate on symbolic suffixes.</p>
+<pre><code>font_size = 0.1h
+x = 1em
+// At this point, x = 0.1h.
+
+font_size = 0.2h
+// At this point, x = 0.1h still.
+</code></pre>
+<h2 id="syntax">Syntax</h2>
+<p><strong>Pris is whitespace-insensitive</strong>.
+Whitespace separates tokens, but the amount, and the distinction between spaces
+and newlines, are irrelevant. Tabs and carriage returns are rejected by the
+parser.</p>
+<p><strong>Pris does not have a statement separator</strong>.
+Rather, the grammar is constructed in such a way that statement boundaries are
+unambiguous.</p>
+<pre><code>// You can put multiple statements on a line.
+// That doesn't mean it's a good idea though.
+x = 10 y = 12 put t("12") z = 1 + 2 w = z
+</code></pre>
       </article>
       <nav id="nav-prev-next">
-        <a id="nav-prev" href="../hyperlink/" title="hyperlink">Previous</a>
-        <a id="nav-next" href="../line/" title="line">Next</a>
+        <a id="nav-prev" href="../building/" title="Building">Previous</a>
+        <a id="nav-next" href="../reference/at/" title="at">Next</a>
         </nav>
       </div>
     <aside>
       <nav>
         <ul>
-        <li class="toc-section"><a href="../..">Overview</a></li>
-          <li class="toc-section"><a href="../../getting-started/">User Guide</a></li>
+        <li class="toc-section"><a href="..">Overview</a></li>
+          <li class="toc-section"><a href="../getting-started/">User Guide</a></li>
           <li class="toc-chapter
-              "><a href="../../getting-started/">Getting started</a></li>
+              "><a href="../getting-started/">Getting started</a></li>
             <li class="toc-chapter
-              "><a href="../../building/">Building</a></li>
+              "><a href="../building/">Building</a></li>
             <li class="toc-chapter
-              "><a href="../../language/">The language</a></li>
-            <li class="toc-section"><a href="https://github.com/ruuda/pris/tree/master/examples">Examples</a></li>
-          <li class="toc-section"><a href="../at/">Reference</a></li>
+               current"><a href="./">The language</a></li>
+            <li><ul>
+                <li class="toc-heading"><a href="#paradigm">Paradigm</a></li>
+                <li class="toc-heading"><a href="#type-system">Type system</a></li>
+                <li class="toc-heading"><a href="#semantics">Semantics</a></li>
+                <li class="toc-heading"><a href="#syntax">Syntax</a></li>
+                </ul></li>
+               <li class="toc-section"><a href="https://github.com/ruuda/pris/tree/master/examples">Examples</a></li>
+          <li class="toc-section"><a href="../reference/at/">Reference</a></li>
           <li class="toc-chapter
-              "><a href="../at/">at</a></li>
+              "><a href="../reference/at/">at</a></li>
             <li class="toc-chapter
-              "><a href="../canvas_size/">canvas_size</a></li>
+              "><a href="../reference/canvas_size/">canvas_size</a></li>
             <li class="toc-chapter
-              "><a href="../fill_circle/">fill_circle</a></li>
+              "><a href="../reference/fill_circle/">fill_circle</a></li>
             <li class="toc-chapter
-              "><a href="../fill_rectangle/">fill_rectangle</a></li>
+              "><a href="../reference/fill_rectangle/">fill_rectangle</a></li>
             <li class="toc-chapter
-              "><a href="../fit/">fit</a></li>
+              "><a href="../reference/fit/">fit</a></li>
             <li class="toc-chapter
-              "><a href="../glyph/">glyph</a></li>
+              "><a href="../reference/glyph/">glyph</a></li>
             <li class="toc-chapter
-              "><a href="../hyperlink/">hyperlink</a></li>
+              "><a href="../reference/hyperlink/">hyperlink</a></li>
             <li class="toc-chapter
-               current"><a href="./">image</a></li>
+              "><a href="../reference/image/">image</a></li>
             <li class="toc-chapter
-              "><a href="../line/">line</a></li>
+              "><a href="../reference/line/">line</a></li>
             <li class="toc-chapter
-              "><a href="../str/">str</a></li>
+              "><a href="../reference/str/">str</a></li>
             <li class="toc-chapter
-              "><a href="../t/">t</a></li>
-            <li class="toc-section"><a href="../../background/">About</a></li>
+              "><a href="../reference/t/">t</a></li>
+            <li class="toc-section"><a href="../background/">About</a></li>
           <li class="toc-chapter
-              "><a href="../../background/">Background</a></li>
+              "><a href="../background/">Background</a></li>
             <li class="toc-chapter
-              "><a href="../../name/">Name</a></li>
-            <li class="toc-section"><a href="../../parser/">Internals</a></li>
+              "><a href="../name/">Name</a></li>
+            <li class="toc-section"><a href="../parser/">Internals</a></li>
           <li class="toc-chapter
-              "><a href="../../parser/">Parser</a></li>
+              "><a href="../parser/">Parser</a></li>
             </ul>
       </nav>
     </aside>

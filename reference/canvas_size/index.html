@@ -9,7 +9,7 @@
   -->
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>image — Pris</title>
+  <title>canvas_size — Pris</title>
   <link href="https://rsms.me/inter/inter.css?v=3.3" rel="stylesheet">
   <link href="https://fonts.googleapis.com/css?family=Roboto+Mono:400,500" rel="stylesheet">
   <style>
@@ -346,23 +346,29 @@
       <nav id="breadcrumbs">
         <a href="../..">Pris</a>
         › <a href="../..">Reference</a>
-  › <a href="./">image</a>
+  › <a href="./">canvas_size</a>
   <a id="repo-link" href="https://github.com/ruuda/pris/">GitHub</a>
       </nav>
       <article>
-        <h1 id="image">image</h1>
-<pre><code>image(fname: str) -&gt; frame
+        <h1 id="canvas_size">canvas_size</h1>
+<pre><code>canvas_size: vec2
 </code></pre>
-<p>Load a <abbr>PNG</abbr> or <abbr>SVG</abbr> graphic from the file with path
-<code>fname</code>. Currently the path is relative to the working directory, but it should
-be made relative to the source file.</p>
-<p>The origin of the returned frame is in the top-left corner.</p>
-<p>The size of the image relative to the canvas depends on the input image, and is
-often not meaningful. To resize the image, use the <a href="../fit/"><code>fit</code></a> function.</p>
+<p>A variable that sets the aspect ratio of the canvas. Must be assigned in the
+global scope. The last assignment to this variable determines the canvas size
+for all slides in the document, it is currently not possible to have slides of
+different sizes in a single document.</p>
+<p>Note that after changing the canvas size, variables that had been assigned a
+value relative to the canvas size, continue to hold their absolute value, which
+may no longer make sense for the new canvas size. For example:</p>
+<pre><code>canvas_size = (1, 1)
+half = 0.5w
+canvas_size = (2, 2)
+// "half" is now effectively 0.25w, no longer half the canvas width.
+</code></pre>
       </article>
       <nav id="nav-prev-next">
-        <a id="nav-prev" href="../hyperlink/" title="hyperlink">Previous</a>
-        <a id="nav-next" href="../line/" title="line">Next</a>
+        <a id="nav-prev" href="../at/" title="at">Previous</a>
+        <a id="nav-next" href="../fill_circle/" title="fill_circle">Next</a>
         </nav>
       </div>
     <aside>
@@ -381,7 +387,7 @@ often not meaningful. To resize the image, use the <a href="../fit/"><code>fit</
           <li class="toc-chapter
               "><a href="../at/">at</a></li>
             <li class="toc-chapter
-              "><a href="../canvas_size/">canvas_size</a></li>
+               current"><a href="./">canvas_size</a></li>
             <li class="toc-chapter
               "><a href="../fill_circle/">fill_circle</a></li>
             <li class="toc-chapter
@@ -393,7 +399,7 @@ often not meaningful. To resize the image, use the <a href="../fit/"><code>fit</
             <li class="toc-chapter
               "><a href="../hyperlink/">hyperlink</a></li>
             <li class="toc-chapter
-               current"><a href="./">image</a></li>
+              "><a href="../image/">image</a></li>
             <li class="toc-chapter
               "><a href="../line/">line</a></li>
             <li class="toc-chapter
