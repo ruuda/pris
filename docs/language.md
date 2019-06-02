@@ -18,9 +18,10 @@ to get started.
 **Pris is imperative**,
 in the sense that blocks consist of statements that are executed sequentially.
 A statement is either assignment to a variable, a `put` statement that places a
-frame, or a `return` from a block. Although statements mutate the current scope,
-these mutations are only visible to current scope, and do not affect the
-surrounding scope.
+frame, or a `return` from a block. Although assignments mutate the bindings in
+the current scope, and `put` statements mutate the current frame, these
+mutations are only visible to current block, and do not affect the surrounding
+scope.
 
     x = 1
     y =
@@ -37,7 +38,7 @@ used carelessly, this can make make programs intractable quickly.  But when used
 with care, dynamic scoping is a powerful tool for a graphics language,
 reminiscent of the cascading properties of <abbr>CSS</abbr>. For example, we
 can write a `title` function that makes no particular choice of color, so the
-surrounding scope can determine it.
+surrounding scope can control the color.
 
     title = function(text)
     {
@@ -58,10 +59,10 @@ surrounding scope can determine it.
       put title("Slide 2")
     }
 
-Due to dynamic scoping, there are two ways to get a value into a function:
+Due to dynamic scoping, there are two ways to provide a value to a function:
 
  * By setting a particular variable in the calling scope.
- * By passing it as a function argument.
+ * By passing the value as a function argument.
 
 Variables are useful for values that do not change often, to avoid having to
 pass them all the time. For example, the [`t`](reference/t.md) function uses
@@ -92,16 +93,33 @@ Pris may acquire static type checking in the future.
 
 ## Semantics
 
-TODO
+**Evaluation in Pris is strict**.
+Function arguments are reduced to values before evaluating the function body,
+and the right-hand side of an assignment is evaluated fully before continuing to
+the next statement.
+
+**Suffixes are resolved eagerly**.
+Relative lengths are converted into absolute lengths as soon as they are
+evaluated, and the conversion depends on the meaning of the suffix at that time.
+Arithmetic with lenghts does _not_ operate on symbolic suffixes.
+
+    font_size = 0.1h
+    x = 1em
+    // At this point, x = 0.1h.
+
+    font_size = 0.2h
+    // At this point, x = 0.1h still.
 
 ## Syntax
 
-**Pris is whitespace-insensitive**. Whitespace separates tokens, but the amount,
-and the distinction between spaces and newlines, are irrelevant. Tabs and
-carriage returns are rejected by the parser.
+**Pris is whitespace-insensitive**.
+Whitespace separates tokens, but the amount, and the distinction between spaces
+and newlines, are irrelevant. Tabs and carriage returns are rejected by the
+parser.
 
-**Pris does not have a statement separator**. Rather, the grammar is constructed
-in such a way that statement boundaries are unambiguous.
+**Pris does not have a statement separator**.
+Rather, the grammar is constructed in such a way that statement boundaries are
+unambiguous.
 
     // You can put multiple statements on a line.
     // That doesn't mean it's a good idea though.
