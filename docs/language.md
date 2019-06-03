@@ -17,11 +17,11 @@ to get started.
 
 **Pris is imperative**,
 in the sense that blocks consist of statements that are executed sequentially.
-A statement is either assignment to a variable, a `put` statement that places a
-frame, or a `return` from a block. Although assignments mutate the bindings in
-the current scope, and `put` statements mutate the current frame, these
-mutations are only visible to current block, and do not affect the surrounding
-scope.
+A statement is either assignment to a variable, a `put` statement that places
+a frame, or a `return` from a block. Although assignments mutate the bindings
+in the current scope, and `put` statements mutate the current frame, these
+mutations are only visible to the current block, and do not affect the
+surrounding scope.
 
     x = 1
     y =
