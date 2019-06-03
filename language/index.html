@@ -364,11 +364,11 @@ to get started.</p>
 </ul>
 <p><strong>Pris is imperative</strong>,
 in the sense that blocks consist of statements that are executed sequentially.
-A statement is either assignment to a variable, a <code>put</code> statement that places a
-frame, or a <code>return</code> from a block. Although assignments mutate the bindings in
-the current scope, and <code>put</code> statements mutate the current frame, these
-mutations are only visible to current block, and do not affect the surrounding
-scope.</p>
+A statement is either assignment to a variable, a <code>put</code> statement that places
+a frame, or a <code>return</code> from a block. Although assignments mutate the bindings
+in the current scope, and <code>put</code> statements mutate the current frame, these
+mutations are only visible to the current block, and do not affect the
+surrounding scope.</p>
 <pre><code>x = 1
 y =
 {
