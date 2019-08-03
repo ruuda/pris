@@ -25,6 +25,9 @@ pub struct Import<'a>(pub Idents<'a>);
 pub struct Idents<'a>(pub Vec<&'a str>);
 
 #[derive(PartialEq)]
+pub struct List<'a>(pub Vec<Term<'a>>);
+
+#[derive(PartialEq)]
 pub struct Assign<'a>(pub &'a str, pub Term<'a>);
 
 #[derive(PartialEq)]
@@ -39,6 +42,7 @@ pub enum Term<'a> {
     FnCall(Box<FnCall<'a>>),
     FnDef(FnDef<'a>),
     Block(Block<'a>),
+    List(List<'a>),
 }
 
 impl<'a> Term<'a> {
@@ -191,6 +195,7 @@ impl<'a> Print for Term<'a> {
             Term::FnCall(ref fc) => f.print(fc),
             Term::FnDef(ref fdf) => f.print(fdf),
             Term::Block(ref blk) => f.print(blk),
+            Term::List(ref list) => f.print(list),
         }
     }
 }
@@ -316,6 +321,23 @@ impl<'a> Print for Block<'a> {
         }
         f.indent_less();
         f.println("}");
+    }
+}
+
+impl<'a> Print for List<'a> {
+    fn print(&self, f: &mut Formatter) {
+        if self.0.len() == 0 {
+            f.print("[]");
+        } else {
+            f.print("[\n");
+            f.indent_more();
+            for element in &self.0 {
+                f.print(element);
+                f.print(";\n");
+            }
+            f.indent_less();
+            f.print("]");
+        }
     }
 }
 
