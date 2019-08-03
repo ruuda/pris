@@ -179,6 +179,21 @@ impl Error {
         Error::Type(type_error)
     }
 
+    pub fn list_type(expected_element_type: ValType, actual_element_type: ValType) -> Error {
+        let mut f = Formatter::new();
+        f.print("Encountered elements of type '");
+        f.print(expected_element_type);
+        f.print("' as well as '");
+        f.print(actual_element_type);
+        f.print("' in one list, but all elements must have the same type.");
+        let type_error = TypeError {
+            expected: expected_element_type,
+            actual: actual_element_type,
+            message: f.into_string(),
+        };
+        Error::Type(type_error)
+    }
+
     pub fn value(message: String) -> Error {
         let err = ValueError {
             message: message,

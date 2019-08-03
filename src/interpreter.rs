@@ -9,7 +9,7 @@ use std::rc::Rc;
 
 use ast;
 use ast::{Assign, BinOp, BinTerm, Block, Coord, FnCall, FnDef, Idents};
-use ast::{Num, Put, Return, Stmt, Term, UnOp, UnTerm, Unit};
+use ast::{List, Num, Put, Return, Stmt, Term, UnOp, UnTerm, Unit};
 use error::{Error, Result};
 use elements::Color;
 use pretty::Formatter;
@@ -38,7 +38,7 @@ impl<'i, 'a> ExprInterpreter<'i, 'a> {
             Term::FnCall(ref f) => self.eval_call(f),
             Term::FnDef(ref fd) => Ok(Val::FnExtrin(fd)),
             Term::Block(ref bk) => self.eval_block(bk),
-            Term::List(ref _lst) => panic!("TODO: Implement lists."),
+            Term::List(ref lst) => self.eval_list(lst),
         }
     }
 
@@ -92,6 +92,32 @@ impl<'i, 'a> ExprInterpreter<'i, 'a> {
                 Err(Error::Other(String::from(msg)))
             }
         }
+    }
+
+    fn eval_list(&mut self, list: &'a List<'a>) -> Result<Val<'a>> {
+        let mut elements = Vec::with_capacity(list.0.len());
+        let mut list_element_type = None;
+
+
+        for term in &list.0 {
+            let element = self.eval_expr(term)?;
+            let term_type = element.get_type();
+
+            // Enforce a bit of type safety, even though there is no requirement
+            // to do so from a runtime point of view, and even though the type
+            // system is limited. This will ease the transition to static
+            // typing (if that will ever happen) by preventing some overly
+            // dynamic constructs such as heterogeneous lists.
+            match list_element_type {
+                None => list_element_type = Some(term_type),
+                Some(t) if t != term_type => return Err(Error::list_type(t, term_type)),
+                _ => { /* Okay, the list is homogeneous. */ }
+            }
+
+            elements.push(element);
+        }
+
+        Ok(Val::List(elements))
     }
 
     fn eval_binop(&mut self, binop: &'a BinTerm<'a>) -> Result<Val<'a>> {
