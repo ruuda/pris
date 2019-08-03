@@ -253,6 +253,53 @@ pub fn fill_rectangle<'i, 'a>(interpreter: &mut ExprInterpreter<'i, 'a>,
     Ok(Val::Frame(Rc::new(frame)))
 }
 
+pub fn fill_polygon<'i, 'a>(interpreter: &mut ExprInterpreter<'i, 'a>,
+                            mut args: Vec<Val<'a>>)
+                            -> Result<Val<'a>> {
+    validate_args(names::fill_polygon, &[ValType::List], &args)?;
+    let coords = match args.remove(0) {
+        Val::List(vs) => vs,
+        _ => unreachable!(),
+    };
+
+    let mut vertices = Vec::with_capacity(coords.len());
+    let mut bounding_box = BoundingBox::empty();
+    let mut anchor = Vec2::zero();
+
+    // Collect the vertices, ensuring that they have the right type.
+    for vertex in &coords {
+        match vertex {
+            &Val::Coord(x, y, 1) => {
+                let v = Vec2::new(x, y);
+                let bb = BoundingBox::empty().offset(v);
+                bounding_box = bounding_box.union(&bb);
+                anchor = v;
+                vertices.push(v);
+            }
+            not_coord_of_len => {
+                let arg_num = 0;
+                let actual_type = not_coord_of_len.get_type();
+                let err = Error::arg_type(names::fill_polygon, ValType::Coord(1), actual_type, arg_num);
+                return Err(err);
+            }
+        }
+    }
+
+    // TODO: Deduplicate env logic for different shapes.
+    let rect = FillPolygon {
+        color: interpreter.env.lookup_color(&Idents(vec![names::color]))?,
+        vertices: vertices,
+        kind: PolygonKind::Lines,
+    };
+
+    let mut frame = Frame::new();
+    frame.place_element_on_last_subframe(Vec2::zero(), Element::FillPolygon(rect));
+    frame.set_anchor(anchor);
+    frame.union_bounding_box(&bounding_box);
+
+    Ok(Val::Frame(Rc::new(frame)))
+}
+
 pub fn hyperlink<'i, 'a>(_interpreter: &mut ExprInterpreter<'i, 'a>,
                          mut args: Vec<Val<'a>>)
                          -> Result<Val<'a>> {

@@ -228,6 +228,7 @@ impl<'a> Env<'a> {
         bindings.insert(names::font_family, Val::Str("sans".to_string()));
         bindings.insert(names::font_style, Val::Str("roman".to_string()));
         bindings.insert(names::fill_circle, Val::FnIntrin(Builtin(builtins::fill_circle)));
+        bindings.insert(names::fill_polygon, Val::FnIntrin(Builtin(builtins::fill_polygon)));
         bindings.insert(names::fill_rectangle, Val::FnIntrin(Builtin(builtins::fill_rectangle)));
         bindings.insert(names::text_align, Val::Str("left".to_string()));
         bindings.insert(names::line_height, Val::Num(128.0, 1));
