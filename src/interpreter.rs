@@ -38,6 +38,7 @@ impl<'i, 'a> ExprInterpreter<'i, 'a> {
             Term::FnCall(ref f) => self.eval_call(f),
             Term::FnDef(ref fd) => Ok(Val::FnExtrin(fd)),
             Term::Block(ref bk) => self.eval_block(bk),
+            Term::List(ref _lst) => panic!("TODO: Implement lists."),
         }
     }
 
