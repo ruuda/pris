@@ -72,6 +72,7 @@ term
   | coord
   | fn_def
   | block
+  | list
   | '(' expr ')'
   ;
 
@@ -96,6 +97,14 @@ fn_def
   ;
 
 fn_def_args: IDENT | fn_def_args ',' IDENT;
+
+list
+  : '[' ']'
+  | '[' list_elems ']'
+  | '[' list_elems ';' ']' /* Allow but do not require a trailing semicolon. */
+  ;
+
+list_elems : expr | list_elems ';' expr;
 
 block
   : '{' '}'
