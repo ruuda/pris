@@ -1,0 +1,14 @@
+{
+  font_size = 0.1h
+
+  vertices =
+  [
+    (-1em,  1em);
+    ( 1em,  1em);
+    ( 1em, -1em);
+    ( 0em, -2em);
+    (-1em, -1em);
+  ]
+
+  put fill_polygon(vertices) at (0.5w, 0.5h)
+}
