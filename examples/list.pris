@@ -1,0 +1,20 @@
+// Lists are wrapped in []. Elements are terminated with a semicolon.
+xs = [1; 2; 3;]
+
+lines =
+[
+  "Hello";
+  "World";
+]
+
+// Elements are expressions.
+mid = (0.5w, 0.5h)
+ys =
+[
+  (1em, 1em) + mid;
+  (2em, 2em) + mid;
+]
+
+{
+  put t("Foo") at mid
+}
