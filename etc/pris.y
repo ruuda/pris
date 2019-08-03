@@ -87,6 +87,7 @@ coord: '(' expr ',' expr ')';
 fn_call
   : term '(' ')'
   | term '(' fn_call_args ')'
+  | term '(' fn_call_args ',' ')'
   ;
 
 fn_call_args: expr | fn_call_args ',' expr;
@@ -94,6 +95,7 @@ fn_call_args: expr | fn_call_args ',' expr;
 fn_def
   : "function" '(' ')'
   | "function" '(' fn_def_args ')'
+  | "function" '(' fn_def_args ',' ')'
   ;
 
 fn_def_args: IDENT | fn_def_args ',' IDENT;
