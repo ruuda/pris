@@ -70,6 +70,7 @@ pub enum Token<'a> {
 
     Comma,
     Dot,
+    Semicolon,
     Equals,
     Hat,
     Minus,
@@ -82,6 +83,8 @@ pub enum Token<'a> {
     RParen,
     LBrace,
     RBrace,
+    LBracket,
+    RBracket,
 }
 
 /// Lexes a UTF-8 input file into tokens with source location.
@@ -229,6 +232,7 @@ impl<'a> Lexer<'a> {
                 // counter.
                 b',' => self.push_single(i, Token::Comma),
                 b'.' => self.push_single(i, Token::Dot),
+                b';' => self.push_single(i, Token::Semicolon),
                 b'=' => self.push_single(i, Token::Equals),
                 b'^' => self.push_single(i, Token::Hat),
                 b'-' => self.push_single(i, Token::Minus),
@@ -240,6 +244,8 @@ impl<'a> Lexer<'a> {
                 b')' => self.push_single(i, Token::RParen),
                 b'{' => self.push_single(i, Token::LBrace),
                 b'}' => self.push_single(i, Token::RBrace),
+                b'[' => self.push_single(i, Token::LBracket),
+                b']' => self.push_single(i, Token::RBracket),
 
                 // If we detect the start of a byte order mark, complain about a
                 // wrong encoding. (No BOMs for UTF-8 either, please.)
@@ -712,6 +718,31 @@ fn lex_handles_braces() {
     assert_eq!(tokens.len(), 2);
     assert_eq!(tokens[0], (Token::LBrace, Span::new(0, 1)));
     assert_eq!(tokens[1], (Token::RBrace, Span::new(2, 3)));
+}
+
+#[test]
+fn lex_handles_brackets() {
+    let input = b"[ ]\n";
+    let tokens = lex(input).unwrap();
+    assert_eq!(tokens.len(), 2);
+    assert_eq!(tokens[0], (Token::LBracket, Span::new(0, 1)));
+    assert_eq!(tokens[1], (Token::RBracket, Span::new(2, 3)));
+}
+
+#[test]
+fn lex_handles_punctuation() {
+    let input = b"foo.bar; (x, y)\n";
+    let tokens = lex(input).unwrap();
+    assert_eq!(tokens.len(), 9);
+    assert_eq!(tokens[0], (Token::Ident("foo"), Span::new(0, 3)));
+    assert_eq!(tokens[1], (Token::Dot, Span::new(3, 4)));
+    assert_eq!(tokens[2], (Token::Ident("bar"), Span::new(4, 7)));
+    assert_eq!(tokens[3], (Token::Semicolon, Span::new(7, 8)));
+    assert_eq!(tokens[4], (Token::LParen, Span::new(9, 10)));
+    assert_eq!(tokens[5], (Token::Ident("x"), Span::new(10, 11)));
+    assert_eq!(tokens[6], (Token::Comma, Span::new(11, 12)));
+    assert_eq!(tokens[7], (Token::Ident("y"), Span::new(13, 14)));
+    assert_eq!(tokens[8], (Token::RParen, Span::new(14, 15)));
 }
 
 #[test]
