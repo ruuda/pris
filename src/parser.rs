@@ -1136,4 +1136,63 @@ mod test {
         assert_preq!(args[1], Term::Number(Num(2.0, None)));
         assert_eq!(parser.cursor, 5);
     }
+
+    #[test]
+    fn parse_parses_empty_list() {
+        let tokens = lex(b"[]").unwrap();
+        let mut parser = Parser::new(&tokens);
+        let term = parser.parse_term().unwrap();
+        let list = Term::List(List(Vec::new()));
+        assert_preq!(term, list);
+        assert_eq!(parser.cursor, 2);
+    }
+
+    #[test]
+    fn parse_parses_singleton_list() {
+        let one = Term::Number(Num(1.0, None));
+        let list = Term::List(List(vec![one]));
+
+        // Without trailing semicolon.
+        let tokens = lex(b"[1]").unwrap();
+        let mut parser = Parser::new(&tokens);
+        let term = parser.parse_term().unwrap();
+        assert_preq!(term, list);
+        assert_eq!(parser.cursor, 3);
+
+        // With trailing semicolon.
+        let tokens = lex(b"[1;]").unwrap();
+        let mut parser = Parser::new(&tokens);
+        let term = parser.parse_term().unwrap();
+        assert_preq!(term, list);
+        assert_eq!(parser.cursor, 4);
+    }
+
+    #[test]
+    fn parse_parses_list_with_two_elements() {
+        let one = Term::Number(Num(1.0, None));
+        let two = Term::Number(Num(2.0, None));
+        let list = Term::List(List(vec![one, two]));
+
+        // Without trailing semicolon.
+        let tokens = lex(b"[1; 2]").unwrap();
+        let mut parser = Parser::new(&tokens);
+        let term = parser.parse_term().unwrap();
+        assert_preq!(term, list);
+        assert_eq!(parser.cursor, 5);
+
+        // With trailing semicolon.
+        let tokens = lex(b"[1; 2;]").unwrap();
+        let mut parser = Parser::new(&tokens);
+        let term = parser.parse_term().unwrap();
+        assert_preq!(term, list);
+        assert_eq!(parser.cursor, 6);
+    }
+
+    #[test]
+    fn parse_fails_on_empty_list_with_semicolon() {
+        let tokens = lex(b"[;]").unwrap();
+        let mut parser = Parser::new(&tokens);
+        let result = parser.parse_term();
+        assert_eq!(result.err().unwrap().token_index, 1);
+    }
 }
