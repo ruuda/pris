@@ -1,5 +1,7 @@
 {
   font_size = 0.1h
+  background_color = #575D90
+  color = #E6F14A
 
   vertices =
   [
