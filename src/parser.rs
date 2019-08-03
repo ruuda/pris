@@ -529,16 +529,22 @@ impl<'t, 'a: 't> Parser<'t, 'a> {
 
             // After the element, either we immediately close the list with a
             // bracket, or there is a separator and more may follow.
-            match self.take() {
-                Some(Token::RBracket) => return Ok(List(elements)),
-                Some(Token::Semicolon) => continue,
+            match self.peek() {
+                Some(Token::RBracket) => {
+                    self.consume();
+                    return Ok(List(elements));
+                }
+                Some(Token::Semicolon) => {
+                    self.consume();
+                    continue;
+                }
                 Some(Token::Comma) => {
                     // Trying to use a comma as list separator is likely going
                     // to be a common mistake, as it is common from other
                     // languages. (Perhaps I should use comma after all for that
                     // reason.) Add a hint about that.
                     let msg = "Parse error in list: expected ';' or ']'. \
-                               Note: rather than ',' use ';' to separate elements.";
+                               Note: use ';' to separate elements.";
                     return self.error(msg)
                }
                 _ => {
