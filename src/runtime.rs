@@ -230,6 +230,9 @@ impl<'a> Env<'a> {
         bindings.insert(names::fill_circle, Val::FnIntrin(Builtin(builtins::fill_circle)));
         bindings.insert(names::fill_polygon, Val::FnIntrin(Builtin(builtins::fill_polygon)));
         bindings.insert(names::fill_rectangle, Val::FnIntrin(Builtin(builtins::fill_rectangle)));
+        bindings.insert(names::stroke_circle, Val::FnIntrin(Builtin(builtins::stroke_circle)));
+        bindings.insert(names::stroke_polygon, Val::FnIntrin(Builtin(builtins::stroke_polygon)));
+        bindings.insert(names::stroke_rectangle, Val::FnIntrin(Builtin(builtins::stroke_rectangle)));
         bindings.insert(names::text_align, Val::Str("left".to_string()));
         bindings.insert(names::line_height, Val::Num(128.0, 1));
         bindings.insert(names::line_width, Val::Num(10.8, 1));
