@@ -24,6 +24,7 @@ Highlights:
  * The bounding box offset is now exposed, enabling proper centering.
  * A `glyph()` function has been added to select a single glyph by glyph id.
  * A `fill_circle()` function has been added to draw solid circles.
+ * A `fill_polygon()` function has been added to draw solid polygons.
  * Subframe support (not finished).
  * There now is basic hosted documentation.
  * Support for loading png images, in addition to svg.
@@ -32,6 +33,7 @@ Highlights:
    called with infix syntax: `frame at pos` is the same as `at(frame, pos)`.
    Support for infix calls is not limited to `at`, it works for any function.
    See also the new [infix example](examples/infix_call.pris).
+ * Support for lists. See also the [polygon example](examples/polygon.pris).
 
 Bugs fixed:
 
