@@ -335,6 +335,7 @@ fn draw_polygon<'i, 'a>(
     interpreter: &mut ExprInterpreter<'i, 'a>,
     mut args: Vec<Val<'a>>,
     name: &'static str,
+    polygon_kind: PolygonKind,
     draw_kind: DrawKind,
 ) -> Result<Val<'a>> {
     validate_args(name, &[ValType::List], &args)?;
@@ -364,7 +365,7 @@ fn draw_polygon<'i, 'a>(
 
     // TODO: Demand at least two coords.
     let anchor = vertices.last().cloned().unwrap_or(Vec2::zero());
-    let mut frame = make_polygon_element(interpreter, vertices, PolygonKind::Lines, draw_kind)?;
+    let mut frame = make_polygon_element(interpreter, vertices, polygon_kind, draw_kind)?;
     frame.set_anchor(anchor);
 
     Ok(Val::Frame(Rc::new(frame)))
@@ -374,7 +375,7 @@ pub fn fill_polygon<'i, 'a>(
     interpreter: &mut ExprInterpreter<'i, 'a>,
     args: Vec<Val<'a>>,
 ) -> Result<Val<'a>> {
-    draw_polygon(interpreter, args, names::fill_polygon, DrawKind::Fill)
+    draw_polygon(interpreter, args, names::fill_polygon, PolygonKind::Lines, DrawKind::Fill)
 }
 
 pub fn stroke_polygon<'i, 'a>(
@@ -385,7 +386,25 @@ pub fn stroke_polygon<'i, 'a>(
         // TODO: Make this a variable.
         close: false,
     };
-    draw_polygon(interpreter, args, names::stroke_polygon, kind)
+    draw_polygon(interpreter, args, names::stroke_polygon, PolygonKind::Lines, kind)
+}
+
+pub fn fill_curve<'i, 'a>(
+    interpreter: &mut ExprInterpreter<'i, 'a>,
+    args: Vec<Val<'a>>,
+) -> Result<Val<'a>> {
+    draw_polygon(interpreter, args, names::fill_curve, PolygonKind::Curves, DrawKind::Fill)
+}
+
+pub fn stroke_curve<'i, 'a>(
+    interpreter: &mut ExprInterpreter<'i, 'a>,
+    args: Vec<Val<'a>>,
+) -> Result<Val<'a>> {
+    let kind = DrawKind::Stroke {
+        // TODO: Make this a variable.
+        close: false,
+    };
+    draw_polygon(interpreter, args, names::stroke_curve, PolygonKind::Curves, kind)
 }
 
 pub fn hyperlink<'i, 'a>(_interpreter: &mut ExprInterpreter<'i, 'a>,
