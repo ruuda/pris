@@ -1,9 +1,17 @@
 {
   background_color = #efcb68
   color = #5c415d
+  line_width = 0.1em
+
   put fill_rectangle((1em, 1em)) at (1em, 1em)
   put fill_rectangle((1em, 1em)) at (1em, 3em)
 
+  put stroke_rectangle((1em, 1em)) at (1em, 1h - 2em)
+  put stroke_rectangle((1em, 1em)) at (1em, 1h - 4em)
+
   put fill_circle(0.5em) at (1w - 1.5em, 1.5em)
   put fill_circle(0.5em) at (1w - 1.5em, 3.5em)
+
+  put stroke_circle(0.5em) at (1w - 1.5em, 1h - 1.5em)
+  put stroke_circle(0.5em) at (1w - 1.5em, 1h - 3.5em)
 }
