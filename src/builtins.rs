@@ -384,7 +384,7 @@ pub fn stroke_polygon<'i, 'a>(
 ) -> Result<Val<'a>> {
     let kind = DrawKind::Stroke {
         // TODO: Make this a variable.
-        close: false,
+        close: true,
     };
     draw_polygon(interpreter, args, names::stroke_polygon, PolygonKind::Lines, kind)
 }
@@ -402,7 +402,7 @@ pub fn stroke_curve<'i, 'a>(
 ) -> Result<Val<'a>> {
     let kind = DrawKind::Stroke {
         // TODO: Make this a variable.
-        close: false,
+        close: true,
     };
     draw_polygon(interpreter, args, names::stroke_curve, PolygonKind::Curves, kind)
 }

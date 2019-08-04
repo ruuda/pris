@@ -1,0 +1,63 @@
+roundrect_vertices = function(size, radius)
+{
+    // See also http://spencermortensen.com/articles/bezier-circle/.
+    r = radius
+    c = 0.551915024494 * r
+    // Compensate for the sudden curvature change if we would take circle
+    // segments. I should look up that squircle article.
+    c = c * 0.75
+    z = 0em
+    w = size.x
+    h = size.y
+
+    return
+    [
+      (r, z); // Top left, top edge.
+      (c, z);
+      (z, c);
+      (z, r); // Top left, left edge.
+      (z, r);
+      (z, h - r);
+      (z, h - r); // Bottom left, left edge.
+      (z, h - c);
+      (c, h);
+      (r, h); // Bottom left, bottom edge.
+      (r, h);
+      (w - r, h);
+      (w - r, h); // Bottom right, bottom edge.
+      (w - c, h);
+      (w, h - c);
+      (w, h - r); // Bottom right, right edge.
+      (w, h - r);
+      (w, r);
+      (w, r); // Top right, right edge;
+      (w, c);
+      (w - c, z);
+      (w - r, z); // Top right, top edge.
+      (w - r, z);
+      (r, z);
+    ]
+}
+
+fill_roundrect = function(size, radius)
+{
+  return fill_curve(roundrect_vertices(size, radius))
+}
+
+stroke_roundrect = function(size, radius)
+{
+  return stroke_curve(roundrect_vertices(size, radius))
+}
+
+{
+  font_size = 0.1h
+  background_color = #575D90
+  color = #E6F14A
+
+  put fill_roundrect((3em, 3em), 0.2em) at (1em, 1em)
+
+  color = background_color
+  line_width = 0.5em
+
+  put stroke_roundrect((3em, 3em), 1em) at (2em, 2em)
+}
