@@ -9,7 +9,7 @@
   -->
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>Building — Pris</title>
+  <title>fill_polygon — Pris</title>
   <link href="https://rsms.me/inter/inter.css?v=3.3" rel="stylesheet">
   <link href="https://fonts.googleapis.com/css?family=Roboto+Mono:400,500" rel="stylesheet">
   <style>
@@ -344,95 +344,72 @@
   <div id="content">
     <div id="main">
       <nav id="breadcrumbs">
-        <a href="..">Pris</a>
-        › <a href="..">User Guide</a>
-  › <a href="./">Building</a>
+        <a href="../..">Pris</a>
+        › <a href="../..">Reference</a>
+  › <a href="./">fill_polygon</a>
   <a id="repo-link" href="https://github.com/ruuda/pris/">GitHub</a>
       </nav>
       <article>
-        <h1 id="building">Building</h1>
-<p>Pris is written in <a href="https://www.rust-lang.org/">Rust</a> and builds with Cargo, the build tool bundled
-with Rust. When system dependencies are installed, <code>cargo build</code> is sufficient.</p>
-<pre><code>git clone https://github.com/ruuda/pris
-cd pris
-cargo build --release
-target/release/pris --help
-target/release/pris examples/lines.pris
-evince examples/lines.pdf
+        <h1 id="fill_polygon">fill_polygon</h1>
+<pre><code>fill_polygon(vertices: list of coord) -&gt; frame
 </code></pre>
-<p>If building does not succeed at first, some system dependencies might not be
-installed. See below.</p>
-<h2 id="linux">Linux</h2>
-<p>To install system dependencies on Ubuntu:</p>
-<pre><code>apt install libcairo2-dev libharfbuzz-dev librsvg2-dev
+<p>Draw a solid polygon.</p>
+<p>The fill color is taken from the <code>color</code> variable.</p>
+<p>For example, drawing a rectangle with 2em sides:</p>
+<pre><code>vertices = [(-1em, 1em); (1em, 1em); (1em, -1em); (-1em, -1em)]
+fill_polygon(vertices)
 </code></pre>
-<p>To install system dependencies on Arch Linux:</p>
-<pre><code>pacman -S --needed cairo harfbuzz librsvg fontconfig freetype2
-</code></pre>
-<h2 id="mac">Mac</h2>
-<p>On Mac, system dependencies can be installed through Homebrew:</p>
-<pre><code>brew install cairo harfbuzz librsvg fontconfig
-</code></pre>
-<h2 id="windows">Windows</h2>
-<p>On Windows, system dependencies can be installed inside an <a href="http://www.msys2.org/">MSYS2</a>
-environment. More information will follow soon. For now, check out the <code>windows</code>
-branch for more information.</p>
       </article>
       <nav id="nav-prev-next">
-        <a id="nav-prev" href="../getting-started/" title="Getting started">Previous</a>
-        <a id="nav-next" href="../language/" title="The language">Next</a>
+        <a id="nav-prev" href="../fill_circle/" title="fill_circle">Previous</a>
+        <a id="nav-next" href="../fill_rectangle/" title="fill_rectangle">Next</a>
         </nav>
       </div>
     <aside>
       <nav>
         <ul>
-        <li class="toc-section"><a href="..">Overview</a></li>
-          <li class="toc-section"><a href="../getting-started/">User Guide</a></li>
+        <li class="toc-section"><a href="../..">Overview</a></li>
+          <li class="toc-section"><a href="../../getting-started/">User Guide</a></li>
           <li class="toc-chapter
-              "><a href="../getting-started/">Getting started</a></li>
+              "><a href="../../getting-started/">Getting started</a></li>
             <li class="toc-chapter
-               current"><a href="./">Building</a></li>
-            <li><ul>
-                <li class="toc-heading"><a href="#linux">Linux</a></li>
-                <li class="toc-heading"><a href="#mac">Mac</a></li>
-                <li class="toc-heading"><a href="#windows">Windows</a></li>
-                </ul></li>
-               <li class="toc-chapter
-              "><a href="../language/">The language</a></li>
+              "><a href="../../building/">Building</a></li>
+            <li class="toc-chapter
+              "><a href="../../language/">The language</a></li>
             <li class="toc-section"><a href="https://github.com/ruuda/pris/tree/master/examples">Examples</a></li>
-          <li class="toc-section"><a href="../reference/at/">Reference</a></li>
+          <li class="toc-section"><a href="../at/">Reference</a></li>
           <li class="toc-chapter
-              "><a href="../reference/at/">at</a></li>
+              "><a href="../at/">at</a></li>
             <li class="toc-chapter
-              "><a href="../reference/canvas_size/">canvas_size</a></li>
+              "><a href="../canvas_size/">canvas_size</a></li>
             <li class="toc-chapter
-              "><a href="../reference/fill_circle/">fill_circle</a></li>
+              "><a href="../fill_circle/">fill_circle</a></li>
             <li class="toc-chapter
-              "><a href="../reference/fill_polygon/">fill_polygon</a></li>
+               current"><a href="./">fill_polygon</a></li>
             <li class="toc-chapter
-              "><a href="../reference/fill_rectangle/">fill_rectangle</a></li>
+              "><a href="../fill_rectangle/">fill_rectangle</a></li>
             <li class="toc-chapter
-              "><a href="../reference/fit/">fit</a></li>
+              "><a href="../fit/">fit</a></li>
             <li class="toc-chapter
-              "><a href="../reference/glyph/">glyph</a></li>
+              "><a href="../glyph/">glyph</a></li>
             <li class="toc-chapter
-              "><a href="../reference/hyperlink/">hyperlink</a></li>
+              "><a href="../hyperlink/">hyperlink</a></li>
             <li class="toc-chapter
-              "><a href="../reference/image/">image</a></li>
+              "><a href="../image/">image</a></li>
             <li class="toc-chapter
-              "><a href="../reference/line/">line</a></li>
+              "><a href="../line/">line</a></li>
             <li class="toc-chapter
-              "><a href="../reference/str/">str</a></li>
+              "><a href="../str/">str</a></li>
             <li class="toc-chapter
-              "><a href="../reference/t/">t</a></li>
-            <li class="toc-section"><a href="../background/">About</a></li>
+              "><a href="../t/">t</a></li>
+            <li class="toc-section"><a href="../../background/">About</a></li>
           <li class="toc-chapter
-              "><a href="../background/">Background</a></li>
+              "><a href="../../background/">Background</a></li>
             <li class="toc-chapter
-              "><a href="../name/">Name</a></li>
-            <li class="toc-section"><a href="../parser/">Internals</a></li>
+              "><a href="../../name/">Name</a></li>
+            <li class="toc-section"><a href="../../parser/">Internals</a></li>
           <li class="toc-chapter
-              "><a href="../parser/">Parser</a></li>
+              "><a href="../../parser/">Parser</a></li>
             </ul>
       </nav>
     </aside>
