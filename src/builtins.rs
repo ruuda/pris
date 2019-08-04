@@ -181,6 +181,31 @@ pub fn line<'i, 'a>(interpreter: &mut ExprInterpreter<'i, 'a>,
     Ok(Val::Frame(Rc::new(frame)))
 }
 
+fn fill_polygon_impl<'i, 'a>(
+    interpreter: &mut ExprInterpreter<'i, 'a>,
+    vertices: Vec<Vec2>,
+    kind: PolygonKind,
+) -> Result<Frame<'a>> {
+    // TODO: Better idents type for non-ast use?
+    let color = interpreter.env.lookup_color(&Idents(vec![names::color]))?;
+
+    let mut frame = Frame::new();
+
+    for v in &vertices {
+        frame.union_bounding_box(&BoundingBox::empty().offset(*v));
+    }
+
+    let polygon = FillPolygon {
+        color: color,
+        vertices: vertices,
+        kind: kind,
+    };
+
+    frame.place_element_on_last_subframe(Vec2::zero(), Element::FillPolygon(polygon));
+
+    Ok(frame)
+}
+
 pub fn fill_circle<'i, 'a>(interpreter: &mut ExprInterpreter<'i, 'a>,
                            mut args: Vec<Val<'a>>)
                            -> Result<Val<'a>> {
@@ -194,31 +219,24 @@ pub fn fill_circle<'i, 'a>(interpreter: &mut ExprInterpreter<'i, 'a>,
     let c = 0.551915024494 * r;
     let z = 0.0;
 
-    let circle = FillPolygon {
-        // TODO: Better idents type for non-ast use?
-        color: interpreter.env.lookup_color(&Idents(vec![names::color]))?,
-        vertices: vec![
-            Vec2::new( r,  z), // Right
-            Vec2::new( r, -c),
-            Vec2::new( c, -r),
-            Vec2::new( z, -r), // Top
-            Vec2::new(-c, -r),
-            Vec2::new(-r, -c),
-            Vec2::new(-r,  z), // Left
-            Vec2::new(-r,  c),
-            Vec2::new(-c,  r),
-            Vec2::new( z,  r), // Bottom
-            Vec2::new( c,  r),
-            Vec2::new( r,  c),
-        ],
-        kind: PolygonKind::Curves,
-    };
+    let vertices = vec![
+        Vec2::new( r,  z), // Right
+        Vec2::new( r, -c),
+        Vec2::new( c, -r),
+        Vec2::new( z, -r), // Top
+        Vec2::new(-c, -r),
+        Vec2::new(-r, -c),
+        Vec2::new(-r,  z), // Left
+        Vec2::new(-r,  c),
+        Vec2::new(-c,  r),
+        Vec2::new( z,  r), // Bottom
+        Vec2::new( c,  r),
+        Vec2::new( r,  c),
+    ];
 
-    let mut frame = Frame::new();
-    frame.place_element_on_last_subframe(Vec2::zero(), Element::FillPolygon(circle));
+    let mut frame = fill_polygon_impl(interpreter, vertices, PolygonKind::Curves)?;
+
     frame.set_anchor(Vec2::zero());
-    let rr = Vec2::new(r, r);
-    frame.union_bounding_box(&BoundingBox::new(-rr, rr * 2.0));
 
     Ok(Val::Frame(Rc::new(frame)))
 }
@@ -232,23 +250,51 @@ pub fn fill_rectangle<'i, 'a>(interpreter: &mut ExprInterpreter<'i, 'a>,
         _ => unreachable!(),
     };
 
-    let rect = FillPolygon {
-        // TODO: Better idents type for non-ast use?
-        color: interpreter.env.lookup_color(&Idents(vec![names::color]))?,
-        vertices: vec![
-            Vec2::zero(),
-            Vec2::new(0.0, h),
-            Vec2::new(w, h),
-            Vec2::new(w, 0.0),
-        ],
-        kind: PolygonKind::Lines,
+    let vertices = vec![
+        Vec2::zero(),
+        Vec2::new(0.0, h),
+        Vec2::new(w, h),
+        Vec2::new(w, 0.0),
+    ];
+
+    let mut frame = fill_polygon_impl(interpreter, vertices, PolygonKind::Lines)?;
+
+    frame.set_anchor(Vec2::new(w, h));
+
+    Ok(Val::Frame(Rc::new(frame)))
+}
+
+pub fn fill_polygon<'i, 'a>(interpreter: &mut ExprInterpreter<'i, 'a>,
+                            mut args: Vec<Val<'a>>)
+                            -> Result<Val<'a>> {
+    validate_args(names::fill_polygon, &[ValType::List], &args)?;
+    let coords = match args.remove(0) {
+        Val::List(vs) => vs,
+        _ => unreachable!(),
     };
 
-    let mut frame = Frame::new();
-    frame.place_element_on_last_subframe(Vec2::zero(), Element::FillPolygon(rect));
-    frame.set_anchor(Vec2::new(w, h));
-    // TODO: Make bounding box take Vec2.
-    frame.union_bounding_box(&BoundingBox::sized(w, h));
+    let mut vertices = Vec::with_capacity(coords.len());
+
+    // Collect the vertices, ensuring that they have the right type.
+    for vertex in &coords {
+        match vertex {
+            &Val::Coord(x, y, 1) => {
+                let v = Vec2::new(x, y);
+                vertices.push(v);
+            }
+            not_coord_of_len => {
+                let arg_num = 0;
+                let actual_type = not_coord_of_len.get_type();
+                let err = Error::arg_type(names::fill_polygon, ValType::Coord(1), actual_type, arg_num);
+                return Err(err);
+            }
+        }
+    }
+
+    // TODO: Demand at least two coords.
+    let anchor = vertices.last().cloned().unwrap_or(Vec2::zero());
+    let mut frame = fill_polygon_impl(interpreter, vertices, PolygonKind::Lines)?;
+    frame.set_anchor(anchor);
 
     Ok(Val::Frame(Rc::new(frame)))
 }

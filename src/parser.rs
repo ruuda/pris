@@ -21,7 +21,7 @@
 use std::result;
 
 use ast::{Assign, BinOp, BinTerm, Block, Coord, Document, FnCall, FnDef};
-use ast::{Idents, Import, Num, Put, Return, Stmt, Term, UnOp, UnTerm, Unit};
+use ast::{Idents, Import, Num, List, Put, Return, Stmt, Term, UnOp, UnTerm, Unit};
 use error::{Error, Result};
 use lexer::{Span, Token};
 
@@ -402,6 +402,7 @@ impl<'t, 'a: 't> Parser<'t, 'a> {
             Token::Ident(..) => self.parse_idents().map(Term::Idents),
             Token::KwFunction => self.parse_fn_def().map(Term::FnDef),
             Token::LBrace => self.parse_block().map(Term::Block),
+            Token::LBracket => self.parse_list().map(Term::List),
             // Only in the case of an opening paren, it is ambiguous what to
             // parse: it could become a coord or an expression between parens.
             Token::LParen => self.parse_coord_or_parens(),
@@ -508,6 +509,53 @@ impl<'t, 'a: 't> Parser<'t, 'a> {
         Ok(Term::coord(Coord(expr_x, expr_y)))
     }
 
+    fn parse_list(&mut self) -> PResult<List<'a>> {
+        debug_assert!(self.peek() == Some(Token::LBracket));
+
+        // Step over the opening bracket.
+        self.consume();
+
+        let mut elements = Vec::new();
+
+        loop {
+            // If we find a closing bracket, then we are done here.
+            if let Some(Token::RBracket) = self.peek() {
+                self.consume();
+                return Ok(List(elements));
+            }
+
+            // Otherwise, there must be an expression for the next element.
+            elements.push(self.parse_expr()?);
+
+            // After the element, either we immediately close the list with a
+            // bracket, or there is a separator and more may follow.
+            match self.peek() {
+                Some(Token::RBracket) => {
+                    self.consume();
+                    return Ok(List(elements));
+                }
+                Some(Token::Semicolon) => {
+                    self.consume();
+                    continue;
+                }
+                Some(Token::Comma) => {
+                    // Trying to use a comma as list separator is likely going
+                    // to be a common mistake, as it is common from other
+                    // languages. (Perhaps I should use comma after all for that
+                    // reason.) Add a hint about that.
+                    let msg = "Parse error in list: expected ';' or ']'. \
+                               Note: use ';' to separate elements.";
+                    return self.error(msg)
+               }
+                _ => {
+                    let msg = "Parse error in list: expected ';' or ']'.";
+                    return self.error(msg)
+                }
+            }
+        }
+    }
+
+
     /// Return the token under the cursor, if there is one.
     fn peek(&self) -> Option<Token<'a>> {
         self.tokens.get(self.cursor).map(|t| t.0)
@@ -571,7 +619,7 @@ mod test {
     use parser::Parser;
     use lexer::lex;
     use ast::{Assign, BinOp, BinTerm, Coord, Color, FnCall};
-    use ast::{Idents, Num, Put, Stmt, Term, UnOp, UnTerm, Unit};
+    use ast::{Idents, List, Num, Put, Stmt, Term, UnOp, UnTerm, Unit};
 
     #[test]
     fn parse_parses_import() {
@@ -1087,5 +1135,64 @@ mod test {
         assert_preq!(args[0], Term::Number(Num(1.0, None)));
         assert_preq!(args[1], Term::Number(Num(2.0, None)));
         assert_eq!(parser.cursor, 5);
+    }
+
+    #[test]
+    fn parse_parses_empty_list() {
+        let tokens = lex(b"[]").unwrap();
+        let mut parser = Parser::new(&tokens);
+        let term = parser.parse_term().unwrap();
+        let list = Term::List(List(Vec::new()));
+        assert_preq!(term, list);
+        assert_eq!(parser.cursor, 2);
+    }
+
+    #[test]
+    fn parse_parses_singleton_list() {
+        let one = Term::Number(Num(1.0, None));
+        let list = Term::List(List(vec![one]));
+
+        // Without trailing semicolon.
+        let tokens = lex(b"[1]").unwrap();
+        let mut parser = Parser::new(&tokens);
+        let term = parser.parse_term().unwrap();
+        assert_preq!(term, list);
+        assert_eq!(parser.cursor, 3);
+
+        // With trailing semicolon.
+        let tokens = lex(b"[1;]").unwrap();
+        let mut parser = Parser::new(&tokens);
+        let term = parser.parse_term().unwrap();
+        assert_preq!(term, list);
+        assert_eq!(parser.cursor, 4);
+    }
+
+    #[test]
+    fn parse_parses_list_with_two_elements() {
+        let one = Term::Number(Num(1.0, None));
+        let two = Term::Number(Num(2.0, None));
+        let list = Term::List(List(vec![one, two]));
+
+        // Without trailing semicolon.
+        let tokens = lex(b"[1; 2]").unwrap();
+        let mut parser = Parser::new(&tokens);
+        let term = parser.parse_term().unwrap();
+        assert_preq!(term, list);
+        assert_eq!(parser.cursor, 5);
+
+        // With trailing semicolon.
+        let tokens = lex(b"[1; 2;]").unwrap();
+        let mut parser = Parser::new(&tokens);
+        let term = parser.parse_term().unwrap();
+        assert_preq!(term, list);
+        assert_eq!(parser.cursor, 6);
+    }
+
+    #[test]
+    fn parse_fails_on_empty_list_with_semicolon() {
+        let tokens = lex(b"[;]").unwrap();
+        let mut parser = Parser::new(&tokens);
+        let result = parser.parse_term();
+        assert_eq!(result.err().unwrap().token_index, 1);
     }
 }

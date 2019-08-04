@@ -72,6 +72,7 @@ term
   | coord
   | fn_def
   | block
+  | list
   | '(' expr ')'
   ;
 
@@ -86,6 +87,7 @@ coord: '(' expr ',' expr ')';
 fn_call
   : term '(' ')'
   | term '(' fn_call_args ')'
+  | term '(' fn_call_args ',' ')'
   ;
 
 fn_call_args: expr | fn_call_args ',' expr;
@@ -93,9 +95,18 @@ fn_call_args: expr | fn_call_args ',' expr;
 fn_def
   : "function" '(' ')'
   | "function" '(' fn_def_args ')'
+  | "function" '(' fn_def_args ',' ')'
   ;
 
 fn_def_args: IDENT | fn_def_args ',' IDENT;
+
+list
+  : '[' ']'
+  | '[' list_elems ']'
+  | '[' list_elems ';' ']' /* Allow but do not require a trailing semicolon. */
+  ;
+
+list_elems : expr | list_elems ';' expr;
 
 block
   : '{' '}'

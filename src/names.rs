@@ -14,6 +14,7 @@ pub const at: &'static str = "at";
 pub const canvas_size: &'static str = "canvas_size";
 pub const color: &'static str = "color";
 pub const fill_circle: &'static str = "fill_circle";
+pub const fill_polygon: &'static str = "fill_polygon";
 pub const fill_rectangle: &'static str = "fill_rectangle";
 pub const fit: &'static str = "fit";
 pub const font_family: &'static str = "font_family";

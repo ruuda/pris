@@ -15,6 +15,7 @@ nav:
     - at: reference/at.md
     - canvas_size: reference/canvas_size.md
     - fill_circle: reference/fill_circle.md
+    - fill_polygon: reference/fill_polygon.md
     - fill_rectangle: reference/fill_rectangle.md
     - fit: reference/fit.md
     - glyph: reference/glyph.md

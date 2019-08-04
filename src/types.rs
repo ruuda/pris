@@ -11,6 +11,8 @@ pub enum ValType {
     Str,
     Color,
     Coord(LenDim),
+    // TODO: Make list homogeneous, and carry an element type?
+    List,
     Frame,
     Fn
 }

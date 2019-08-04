@@ -28,6 +28,7 @@ pub enum Val<'a> {
     Str(String),
     Col(Color),
     Coord(f64, f64, LenDim),
+    List(Vec<Val<'a>>),
     Frame(Rc<Frame<'a>>),
     FnExtrin(&'a FnDef<'a>),
     FnIntrin(Builtin),
@@ -86,6 +87,7 @@ impl<'a> Val<'a> {
             Val::Str(..) => ValType::Str,
             Val::Col(..) => ValType::Color,
             Val::Coord(_, _, d) => ValType::Coord(d),
+            Val::List(..) => ValType::List,
             Val::Frame(..) => ValType::Frame,
             Val::FnExtrin(..) => ValType::Fn,
             Val::FnIntrin(..) => ValType::Fn,
@@ -226,6 +228,7 @@ impl<'a> Env<'a> {
         bindings.insert(names::font_family, Val::Str("sans".to_string()));
         bindings.insert(names::font_style, Val::Str("roman".to_string()));
         bindings.insert(names::fill_circle, Val::FnIntrin(Builtin(builtins::fill_circle)));
+        bindings.insert(names::fill_polygon, Val::FnIntrin(Builtin(builtins::fill_polygon)));
         bindings.insert(names::fill_rectangle, Val::FnIntrin(Builtin(builtins::fill_rectangle)));
         bindings.insert(names::text_align, Val::Str("left".to_string()));
         bindings.insert(names::line_height, Val::Num(128.0, 1));
@@ -462,6 +465,14 @@ impl<'a> Print for Val<'a> {
                 f.print(col.b);
                 f.print(") : color");
             }
+            Val::List(ref elements) => {
+                f.print("[");
+                for element in elements {
+                    f.print(element);
+                    f.print("; ");
+                }
+                f.print("]");
+            }
             Val::Coord(x, y, d) => {
                 f.print("(");
                 f.print(x);
@@ -490,6 +501,7 @@ impl Print for ValType {
             ValType::Str => f.print("str"),
             ValType::Color => f.print("color"),
             ValType::Coord(d) => { f.print("coord of "); print_unit(f, d); }
+            ValType::List => f.print("list"),
             ValType::Frame => f.print("frame"),
             ValType::Fn => f.print("function"),
         }

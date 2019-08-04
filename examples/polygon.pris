@@ -1,0 +1,16 @@
+{
+  font_size = 0.1h
+  background_color = #575D90
+  color = #E6F14A
+
+  vertices =
+  [
+    (-1em,  1em);
+    ( 1em,  1em);
+    ( 1em, -1em);
+    ( 0em, -2em);
+    (-1em, -1em);
+  ]
+
+  put fill_polygon(vertices) at (0.5w, 0.5h)
+}
