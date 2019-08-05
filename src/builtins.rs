@@ -447,6 +447,34 @@ pub fn str<'i, 'a>(_interpreter: &mut ExprInterpreter<'i, 'a>,
     Ok(Val::Str(format!("{}", num)))
 }
 
+pub fn sqrt<'i, 'a>(
+    _interpreter: &mut ExprInterpreter<'i, 'a>,
+    args: Vec<Val<'a>>
+) -> Result<Val<'a>> {
+    // Slight hack: we want sqrt to be generic over the dimension. That means
+    // that the regular `validat_args` does not work, because it takes a fixed
+    // type. Therefore, inspect the first argument first, and report the error
+    // later. The expected type will be 'num', in case you pass in something
+    // else, but that is okay for now.
+    let (num, dim): (f64, i32) = match args.first() {
+        Some(&Val::Num(x, n)) => (x, n),
+        _ => {
+            validate_args(names::sqrt, &[ValType::Num(0)], &args)?;
+            unreachable!("First argument would have matched.");
+        }
+    };
+
+    // Now that we now the dimension, validate args for this dimension
+    // specifically. The first argument is going to pass, but there could
+    // be an arity mismatch still.
+    validate_args(names::sqrt, &[ValType::Num(dim)], &args)?;
+
+    // TODO: Do proper error reporting.
+    assert!(dim % 2 == 0, "Dimension must be multiple of 2.");
+
+    Ok(Val::Num(num.sqrt(), dim / 2))
+}
+
 /// Typesets a single line of text.
 ///
 /// Returns the glyphs as well as the width of the line.

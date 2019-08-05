@@ -246,6 +246,7 @@ impl<'a> Env<'a> {
         bindings.insert(names::hyperlink, Val::FnIntrin(Builtin(builtins::hyperlink)));
         bindings.insert(names::image, Val::FnIntrin(Builtin(builtins::image)));
         bindings.insert(names::line, Val::FnIntrin(Builtin(builtins::line)));
+        bindings.insert(names::sqrt, Val::FnIntrin(Builtin(builtins::sqrt)));
         bindings.insert(names::str, Val::FnIntrin(Builtin(builtins::str)));
         bindings.insert(names::t, Val::FnIntrin(Builtin(builtins::t)));
         Env { bindings: bindings }

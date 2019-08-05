@@ -31,6 +31,7 @@ pub const line_width: &'static str = "line_width";
 pub const offset: &'static str = "offset";
 pub const size: &'static str = "size";
 pub const str: &'static str = "str";
+pub const sqrt: &'static str = "sqrt";
 pub const stroke_circle: &'static str = "stroke_circle";
 pub const stroke_curve: &'static str = "stroke_curve";
 pub const stroke_polygon: &'static str = "stroke_polygon";
