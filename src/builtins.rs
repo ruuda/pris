@@ -181,10 +181,16 @@ pub fn line<'i, 'a>(interpreter: &mut ExprInterpreter<'i, 'a>,
     Ok(Val::Frame(Rc::new(frame)))
 }
 
-fn fill_polygon_impl<'i, 'a>(
+enum DrawKind {
+    Fill,
+    Stroke { close: bool },
+}
+
+fn make_polygon_element<'i, 'a>(
     interpreter: &mut ExprInterpreter<'i, 'a>,
     vertices: Vec<Vec2>,
-    kind: PolygonKind,
+    polygon_kind: PolygonKind,
+    draw_kind: DrawKind,
 ) -> Result<Frame<'a>> {
     // TODO: Better idents type for non-ast use?
     let color = interpreter.env.lookup_color(&Idents(vec![names::color]))?;
@@ -195,21 +201,44 @@ fn fill_polygon_impl<'i, 'a>(
         frame.union_bounding_box(&BoundingBox::empty().offset(*v));
     }
 
-    let polygon = FillPolygon {
-        color: color,
-        vertices: vertices,
-        kind: kind,
+    let element = match draw_kind {
+        DrawKind::Stroke { close } => {
+            let line_width = interpreter.env.lookup_len(&Idents(vec![names::line_width]))?;
+
+            let polygon = StrokePolygon {
+                color: color,
+                line_width: line_width,
+                close: close,
+                vertices: vertices,
+                kind: polygon_kind,
+            };
+
+            Element::StrokePolygon(polygon)
+        }
+        DrawKind::Fill => {
+            let polygon = FillPolygon {
+                color: color,
+                vertices: vertices,
+                kind: polygon_kind,
+            };
+
+            Element::FillPolygon(polygon)
+        }
     };
 
-    frame.place_element_on_last_subframe(Vec2::zero(), Element::FillPolygon(polygon));
+    frame.place_element_on_last_subframe(Vec2::zero(), element);
 
     Ok(frame)
 }
 
-pub fn fill_circle<'i, 'a>(interpreter: &mut ExprInterpreter<'i, 'a>,
-                           mut args: Vec<Val<'a>>)
-                           -> Result<Val<'a>> {
-    validate_args(names::fill_circle, &[ValType::Num(1)], &args)?;
+fn draw_circle<'i, 'a>(
+    interpreter: &mut ExprInterpreter<'i, 'a>,
+    mut args: Vec<Val<'a>>,
+    name: &'static str,
+    kind: DrawKind,
+) -> Result<Val<'a>> {
+
+    validate_args(name, &[ValType::Num(1)], &args)?;
     let r = match args.remove(0) {
         Val::Num(r, 1) => r,
         _ => unreachable!(),
@@ -234,17 +263,38 @@ pub fn fill_circle<'i, 'a>(interpreter: &mut ExprInterpreter<'i, 'a>,
         Vec2::new( r,  c),
     ];
 
-    let mut frame = fill_polygon_impl(interpreter, vertices, PolygonKind::Curves)?;
+    let mut frame = make_polygon_element(interpreter, vertices, PolygonKind::Curves, kind)?;
 
     frame.set_anchor(Vec2::zero());
 
     Ok(Val::Frame(Rc::new(frame)))
 }
 
-pub fn fill_rectangle<'i, 'a>(interpreter: &mut ExprInterpreter<'i, 'a>,
-                              mut args: Vec<Val<'a>>)
-                              -> Result<Val<'a>> {
-    validate_args(names::fill_rectangle, &[ValType::Coord(1)], &args)?;
+pub fn fill_circle<'i, 'a>(
+    interpreter: &mut ExprInterpreter<'i, 'a>,
+    args: Vec<Val<'a>>
+) -> Result<Val<'a>> {
+    draw_circle(interpreter, args, names::fill_circle, DrawKind::Fill)
+}
+
+pub fn stroke_circle<'i, 'a>(
+    interpreter: &mut ExprInterpreter<'i, 'a>,
+    args: Vec<Val<'a>>
+) -> Result<Val<'a>> {
+    let kind = DrawKind::Stroke {
+        close: true,
+    };
+    draw_circle(interpreter, args, names::stroke_circle, kind)
+}
+
+fn draw_rectangle<'i, 'a>(
+    interpreter: &mut ExprInterpreter<'i, 'a>,
+    mut args: Vec<Val<'a>>,
+    name: &'static str,
+    kind: DrawKind,
+) -> Result<Val<'a>> {
+    validate_args(name, &[ValType::Coord(1)], &args)?;
+
     let (w, h) = match args.remove(0) {
         Val::Coord(x, y, 1) => (x, y),
         _ => unreachable!(),
@@ -257,17 +307,39 @@ pub fn fill_rectangle<'i, 'a>(interpreter: &mut ExprInterpreter<'i, 'a>,
         Vec2::new(w, 0.0),
     ];
 
-    let mut frame = fill_polygon_impl(interpreter, vertices, PolygonKind::Lines)?;
+    let mut frame = make_polygon_element(interpreter, vertices, PolygonKind::Lines, kind)?;
 
     frame.set_anchor(Vec2::new(w, h));
 
     Ok(Val::Frame(Rc::new(frame)))
 }
 
-pub fn fill_polygon<'i, 'a>(interpreter: &mut ExprInterpreter<'i, 'a>,
-                            mut args: Vec<Val<'a>>)
-                            -> Result<Val<'a>> {
-    validate_args(names::fill_polygon, &[ValType::List], &args)?;
+pub fn fill_rectangle<'i, 'a>(
+    interpreter: &mut ExprInterpreter<'i, 'a>,
+    args: Vec<Val<'a>>,
+) -> Result<Val<'a>> {
+    draw_rectangle(interpreter, args, names::fill_rectangle, DrawKind::Fill)
+}
+
+pub fn stroke_rectangle<'i, 'a>(
+    interpreter: &mut ExprInterpreter<'i, 'a>,
+    args: Vec<Val<'a>>,
+) -> Result<Val<'a>> {
+    let kind = DrawKind::Stroke {
+        close: true,
+    };
+    draw_rectangle(interpreter, args, names::stroke_rectangle, kind)
+}
+
+fn draw_polygon<'i, 'a>(
+    interpreter: &mut ExprInterpreter<'i, 'a>,
+    mut args: Vec<Val<'a>>,
+    name: &'static str,
+    polygon_kind: PolygonKind,
+    draw_kind: DrawKind,
+) -> Result<Val<'a>> {
+    validate_args(name, &[ValType::List], &args)?;
+
     let coords = match args.remove(0) {
         Val::List(vs) => vs,
         _ => unreachable!(),
@@ -285,7 +357,7 @@ pub fn fill_polygon<'i, 'a>(interpreter: &mut ExprInterpreter<'i, 'a>,
             not_coord_of_len => {
                 let arg_num = 0;
                 let actual_type = not_coord_of_len.get_type();
-                let err = Error::arg_type(names::fill_polygon, ValType::Coord(1), actual_type, arg_num);
+                let err = Error::arg_type(name, ValType::Coord(1), actual_type, arg_num);
                 return Err(err);
             }
         }
@@ -293,10 +365,46 @@ pub fn fill_polygon<'i, 'a>(interpreter: &mut ExprInterpreter<'i, 'a>,
 
     // TODO: Demand at least two coords.
     let anchor = vertices.last().cloned().unwrap_or(Vec2::zero());
-    let mut frame = fill_polygon_impl(interpreter, vertices, PolygonKind::Lines)?;
+    let mut frame = make_polygon_element(interpreter, vertices, polygon_kind, draw_kind)?;
     frame.set_anchor(anchor);
 
     Ok(Val::Frame(Rc::new(frame)))
+}
+
+pub fn fill_polygon<'i, 'a>(
+    interpreter: &mut ExprInterpreter<'i, 'a>,
+    args: Vec<Val<'a>>,
+) -> Result<Val<'a>> {
+    draw_polygon(interpreter, args, names::fill_polygon, PolygonKind::Lines, DrawKind::Fill)
+}
+
+pub fn stroke_polygon<'i, 'a>(
+    interpreter: &mut ExprInterpreter<'i, 'a>,
+    args: Vec<Val<'a>>,
+) -> Result<Val<'a>> {
+    let kind = DrawKind::Stroke {
+        // TODO: Make this a variable.
+        close: true,
+    };
+    draw_polygon(interpreter, args, names::stroke_polygon, PolygonKind::Lines, kind)
+}
+
+pub fn fill_curve<'i, 'a>(
+    interpreter: &mut ExprInterpreter<'i, 'a>,
+    args: Vec<Val<'a>>,
+) -> Result<Val<'a>> {
+    draw_polygon(interpreter, args, names::fill_curve, PolygonKind::Curves, DrawKind::Fill)
+}
+
+pub fn stroke_curve<'i, 'a>(
+    interpreter: &mut ExprInterpreter<'i, 'a>,
+    args: Vec<Val<'a>>,
+) -> Result<Val<'a>> {
+    let kind = DrawKind::Stroke {
+        // TODO: Make this a variable.
+        close: true,
+    };
+    draw_polygon(interpreter, args, names::stroke_curve, PolygonKind::Curves, kind)
 }
 
 pub fn hyperlink<'i, 'a>(_interpreter: &mut ExprInterpreter<'i, 'a>,
