@@ -22,6 +22,7 @@ nav:
     - hyperlink: reference/hyperlink.md
     - image: reference/image.md
     - line: reference/line.md
+    - sqrt: reference/sqrt.md
     - str: reference/str.md
     - t: reference/t.md
   - About:
