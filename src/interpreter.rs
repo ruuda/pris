@@ -215,10 +215,14 @@ impl<'i, 'a> ExprInterpreter<'i, 'a> {
             (Val::Num(x, d), Val::Num(y, e)) => Ok(Val::Num(x * y, d + e)),
             (Val::Coord(x, y, d), Val::Num(z, e)) => Ok(Val::Coord(x * z, y * z, d + e)),
             (Val::Num(z, e), Val::Coord(x, y, d)) => Ok(Val::Coord(x * z, y * z, d + e)),
-            _ => {
-                let msg = "Type error: '*' expects num or len operands, \
-                           but found <TODO> and <TODO> instead.";
-                Err(Error::Other(String::from(msg)))
+            (lhs, rhs) => {
+                let err = Error::binop_type(
+                    "*",
+                    ValType::Num(0), // TODO: Report overloads / polymorphic type error.
+                    lhs.get_type(),
+                    rhs.get_type(),
+                );
+                Err(err)
             }
         }
     }
@@ -226,10 +230,18 @@ impl<'i, 'a> ExprInterpreter<'i, 'a> {
     fn eval_div(lhs: Val<'a>, rhs: Val<'a>) -> Result<Val<'a>> {
         match (lhs, rhs) {
             (Val::Num(x, d), Val::Num(y, e)) => Ok(Val::Num(x / y, d - e)),
-            _ => {
-                let msg = "Type error: '/' expects num or len operands, \
-                           but found <TODO> and <TODO> instead.";
-                Err(Error::Other(String::from(msg)))
+            (Val::Coord(x, y, d), Val::Num(z, e)) => Ok(Val::Coord(x / z, y / z, d - e)),
+            // NOTE: We don't have num/coord, because although nonzero real
+            // numbers have multiplicative inverses, vectors in R² do not.
+            // (We are not interpreting them as complex numbers.)
+            (lhs, rhs) => {
+                let err = Error::binop_type(
+                    "/",
+                    ValType::Num(0), // TODO: Report overloads / polymorphic type error.
+                    lhs.get_type(),
+                    rhs.get_type(),
+                );
+                Err(err)
             }
         }
     }
