@@ -1,0 +1,45 @@
+arrow = function(to)
+{
+  length = 0.4em
+  width  = 0.35em
+
+  norm = to.x * to.x + to.y * to.y
+  dir  = to / sqrt(norm)
+  orth = (dir.y, -dir.x)
+
+  arrowhead =
+  [
+    orth * width *  0.5 - dir * length;
+    (0em, 0em);
+    orth * width * -0.5 - dir * length;
+  ]
+
+  put line(to - dir * length * 0.99)
+  put fill_polygon(arrowhead) at to
+}
+
+arrow_to = function(from, to)
+{
+  return arrow(to - from) at from
+}
+
+{
+  z = 0em
+  u = 2em
+  v = u * sqrt(2) * 0.5
+
+  k = (0.6em, -0.4em)
+
+  put
+  {
+    put k arrow_to ( u,  z)
+    put k arrow_to ( v, -v)
+    put k arrow_to ( z, -u)
+    put k arrow_to (-v, -v)
+    put k arrow_to (-u,  z)
+    put k arrow_to (-v,  v)
+    put k arrow_to ( z,  u)
+    put k arrow_to ( v,  v)
+  }
+  at (0.5w, 0.5h)
+}
