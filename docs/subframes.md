@@ -245,21 +245,22 @@ With `move`, we could write it as follows:
 
 This raises the question: should there be two variants of `put`? One that places
 an element without moving the anchor or advancing the time, and one that does?
-For example, we may add a `@put` (syntax just an idea) and have:
+For example, we may add a `@put` (syntax just an idea, better names or sigils
+are welcome) and have:
 
-  {
-    // Play sequentially.
-    @put a1
-    @put a2
-  }
+    {
+      // Play sequentially.
+      @put a1
+      @put a2
+    }
 
-  {
-    // Place lines below one another.
-    move (1em, 1em)
-    @put t"(Line 1\n")
-    @put t"(Line 2\n")
-    @put t"(Line 3\n")
-  }
+    {
+      // Place lines below one another.
+      move (1em, 1em)
+      @put t"(Line 1\n")
+      @put t"(Line 2\n")
+      @put t"(Line 3\n")
+    }
 
 That again raises the question then, should `delay` and `at` be the same
 function, with coords having a time component in addition to space? And should
