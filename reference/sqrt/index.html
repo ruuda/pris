@@ -9,7 +9,7 @@
   -->
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>at — Pris</title>
+  <title>sqrt — Pris</title>
   <link href="https://rsms.me/inter/inter.css?v=3.3" rel="stylesheet">
   <link href="https://fonts.googleapis.com/css?family=Roboto+Mono:400,500" rel="stylesheet">
   <style>
@@ -346,23 +346,22 @@
       <nav id="breadcrumbs">
         <a href="../..">Pris</a>
         › <a href="../..">Reference</a>
-  › <a href="./">at</a>
+  › <a href="./">sqrt</a>
   <a id="repo-link" href="https://github.com/ruuda/pris/">GitHub</a>
       </nav>
       <article>
-        <h1 id="at">at</h1>
-<pre><code>at(frame: frame, offset: coord) -&gt; frame
+        <h1 id="sqrt">sqrt</h1>
+<pre><code>sqrt(x: num)   -&gt; num
+sqrt(x: len²)  -&gt; len
+sqrt(x: len⁴)  -&gt; len²
+...
+sqrt(x: len²ⁿ) -&gt; lenⁿ
 </code></pre>
-<p>Move a frame by the given offset. This is used to position elements on the
-canvas, or relative to a scope, and the function is usually called with infix
-notation. Example:</p>
-<pre><code>// Place an image in the top-left corner of the canvas.
-put image("logo.png") at (1em, 1em)
-</code></pre>
+<p>Return the square root of a number or length.</p>
       </article>
       <nav id="nav-prev-next">
-        <a id="nav-prev" href="../../language/" title="The language">Previous</a>
-        <a id="nav-next" href="../canvas_size/" title="canvas_size">Next</a>
+        <a id="nav-prev" href="../line/" title="line">Previous</a>
+        <a id="nav-next" href="../str/" title="str">Next</a>
         </nav>
       </div>
     <aside>
@@ -377,9 +376,9 @@ put image("logo.png") at (1em, 1em)
             <li class="toc-chapter
               "><a href="../../language/">The language</a></li>
             <li class="toc-section"><a href="https://github.com/ruuda/pris/tree/master/examples">Examples</a></li>
-          <li class="toc-section"><a href="./">Reference</a></li>
+          <li class="toc-section"><a href="../at/">Reference</a></li>
           <li class="toc-chapter
-               current"><a href="./">at</a></li>
+              "><a href="../at/">at</a></li>
             <li class="toc-chapter
               "><a href="../canvas_size/">canvas_size</a></li>
             <li class="toc-chapter
@@ -399,7 +398,7 @@ put image("logo.png") at (1em, 1em)
             <li class="toc-chapter
               "><a href="../line/">line</a></li>
             <li class="toc-chapter
-              "><a href="../sqrt/">sqrt</a></li>
+               current"><a href="./">sqrt</a></li>
             <li class="toc-chapter
               "><a href="../str/">str</a></li>
             <li class="toc-chapter
