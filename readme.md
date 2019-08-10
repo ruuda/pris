@@ -56,6 +56,15 @@ horizontal line. The first slide contains text in dark purple.
    in LaTeX. It has a more modern syntax, and it has first class support for
    computation. For instance, arithmetic with coordinates is supported out of
    the box, and Pris has proper functions, rather than TeX macros.
+ * Pris is similar to [Fran][fran], in having first-class, composable graphics
+   (although implementation is a work in progress). Pris differs from Fran in
+   not being embedded in Haskell. Pris differs from Fran in placing emphasis on
+   graphics rather than animation.
+ * Pris is similar to [Diagrams][diagrams] in being a domain-specific language
+   with first-class composable graphics, giving complete control over layout.
+   Pris differs from Diagrams in not being embedded in Haskell. Pris differs
+   from Diagrams in its styling system. Customization in Pris resembles CSS due
+   to dynamic scoping, whereas in Diagrams functions pass around a style value.
  * Pris is vaguely similar to Powerpoint and graphical editors like Illustrator
    or Inkscape in providing complete control over where elements are placed. It
    differs in being a text-based format intended to be edited with a text
@@ -111,3 +120,5 @@ Pris is free software. It is licensed under the
 [harfbuzz]:   https://www.freedesktop.org/wiki/Software/HarfBuzz/
 [rsvg]:       https://wiki.gnome.org/Projects/LibRsvg
 [gplv3]:      https://www.gnu.org/licenses/gpl-3.0.html
+[fran]:       http://conal.net/fran/
+[diagrams]:   https://archives.haskell.org/projects.haskell.org/diagrams/
