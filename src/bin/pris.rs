@@ -5,9 +5,6 @@
 // it under the terms of the GNU General Public License version 3. A copy
 // of the License is available in the root of the repository.
 
-#[macro_use]
-extern crate serde_derive;
-extern crate docopt;
 extern crate pris;
 
 use std::cmp;
@@ -16,8 +13,6 @@ use std::io::BufReader;
 use std::io::Read;
 use std::io;
 use std::path::{Path, PathBuf};
-
-use docopt::Docopt;
 
 use pris::ast;
 use pris::cairo;
@@ -32,49 +27,60 @@ const USAGE: &'static str = "
 Pris, a language for designing slides.
 
 Usage:
-  pris [--output=<outfile>] [--] <infile>
+  pris [--] <infile> [<outfile>]
   pris (-h | --help)
 
 Options:
-  -h --help              Show this screen.
-  -o --output <outfile>  Write to the specified file, instead of infile.pdf.
+  -h --help  Show this screen.
+
+If the output file is not specified, it defaults to the input file, with
+the extension replaced with '.pdf'. The input file name can optionally
+be '-' to read from stdin. In that case the output file is mandatory.
 ";
 
-#[derive(Debug, Deserialize)]
-struct Args {
-    arg_infile: String,
-    flag_output: Option<String>,
+fn print_help_and_exit(code: i32) {
+    println!("{}", USAGE);
+    std::process::exit(code);
 }
 
 fn main() {
-    let args: Args = Docopt::new(USAGE)
-                            .and_then(|d| d.deserialize())
-                            .unwrap_or_else(|e| e.exit());
+    let mut fnames = Vec::new();
+
+    for arg in std::env::args().skip(1) {
+        match &arg[..] {
+            "--" => continue,
+            "-h" | "--help" => print_help_and_exit(0),
+            _ => {},
+        }
+        fnames.push(arg);
+    }
+
+    if fnames.len() < 1 || fnames.len() > 2 {
+        print_help_and_exit(1);
+    }
+
+    if fnames.len() == 1 && fnames[0] == "-" {
+        println!("Specifiying an output file is required when reading from stdin.");
+        std::process::exit(1);
+    }
+
+    let infile = Path::new(&fnames[0]);
+    let outfile = if fnames.len() == 2 {
+        PathBuf::from(&fnames[1])
+    } else {
+        infile.with_extension("pdf")
+    };
 
     let mut input = Vec::new();
-    let outfile;
 
     // Allow reading from stdin by passing "-" as the input filename.
-    if &args.arg_infile == "-" {
+    if fnames[0] == "-" {
         io::stdin().read_to_end(&mut input).unwrap();
-
-        if let Some(fname) = args.flag_output {
-            outfile = PathBuf::from(fname);
-        } else {
-            panic!("Specifying --output is required when reading from stdin.");
-        }
     } else {
-        let infile = Path::new(&args.arg_infile);
         let f = File::open(infile)
             .expect("Failed to open input file");
         BufReader::new(f).read_to_end(&mut input)
             .expect("Failed to read input file");
-
-        outfile = if let Some(fname) = args.flag_output {
-            PathBuf::from(fname)
-        } else {
-            infile.with_extension("pdf")
-        };
     }
 
     let doc = parse_or_abort(&input);
