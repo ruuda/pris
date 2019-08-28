@@ -1,0 +1,32 @@
+{
+  "name": "Rust",
+  "on": [
+    "push"
+  ],
+  "jobs": {
+    "build": {
+      "runs-on": "ubuntu-18.04",
+      "steps": [
+        {
+          "uses": "actions/checkout@v1"
+        },
+        {
+          "name": "Build",
+          "run": "cargo build"
+        },
+        {
+          "name": "Run tests",
+          "run": "cargo test"
+        },
+        {
+          "name": "Compile examples",
+          "run": "tests/compile_examples.py"
+        },
+        {
+          "name": "Print reproducibility info",
+          "run": "sha256sum examples/*.pdf"
+        }
+      ]
+    }
+  }
+}
