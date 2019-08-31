@@ -2,7 +2,7 @@
 notifications:
   email: false
 
-dist: xenial
+dist: bionic
 
 language: rust
 cache: cargo
