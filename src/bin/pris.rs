@@ -85,8 +85,6 @@ fn main() {
 
     let doc = parse_or_abort(&input);
 
-    println!("Evaluating document ...");
-
     let mut frames = Vec::new();
     let mut fm = runtime::FontMap::new();
     let canvas_size: pris::Vec2;
@@ -115,14 +113,11 @@ fn main() {
     cr.set_source_rgb(0.0, 0.0, 0.0);
     cr.set_line_width(6.0);
 
-    for (i, frame) in frames.iter().enumerate() {
-        println!("[{}/{}] Painting frame ...", i + 1, frames.len());
+    for frame in frames.iter() {
         driver::render_frame(&mut fm, &mut cr, canvas_size, frame);
     }
 
     drop(cr);
-
-    println!("Document written to {}.", outfile.to_str().unwrap());
 }
 
 fn report_error(input: &[u8], location: usize, len: usize) {
