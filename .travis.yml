@@ -2,10 +2,7 @@
 notifications:
   email: false
 
-# Apparently there is no libharfbuzz-dev package for ancient Ubuntu 12.04, opt
-# for the slightly less ancient 14.04 image.
-dist: trusty
-sudo: false
+dist: xenial
 
 language: rust
 cache: cargo
@@ -51,7 +48,7 @@ script:
   # rust-toolchain file. This way we can still check out an old commit and get
   # it to build, but CI can also test against more recent Rust versions.
   - rm rust-toolchain
-  - cargo build
-  - cargo test
+  - cargo build --features hyperlink
+  - cargo test --features hyperlink
   - tests/compile_examples.py
   - shasum examples/*.pdf
