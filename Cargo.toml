@@ -4,7 +4,7 @@ version = "0.1.0"
 authors = ["Ruud van Asseldonk <dev@veniogames.com>"]
 
 [dependencies]
-freetype-rs = "0.18"
+freetype-rs = "0.23"
 
 [features]
 # Support for hyperlinks is a recent addition to Cairo, and is disabled by
