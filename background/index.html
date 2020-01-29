@@ -10,7 +10,6 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>Background — Pris</title>
-  <link href="https://rsms.me/inter/inter.css?v=3.3" rel="stylesheet">
   <link href="https://fonts.googleapis.com/css?family=Roboto+Mono:400,500" rel="stylesheet">
   <style>
   /* The Inter font family, see https://rsms.me/inter.
@@ -20,53 +19,62 @@
     font-family: Inter;
     font-style:  normal;
     font-weight: 400;
-    src: url("https://rsms.me/inter/font-files/Inter-Regular.woff2?v=3.3") format("woff2"),
-         url("https://rsms.me/inter/font-files/Inter-Regular.woff?v=3.3") format("woff");
+    src: url("https://rsms.me/inter/font-files/Inter-Regular.woff2?v=3.11") format("woff2"),
+         url("https://rsms.me/inter/font-files/Inter-Regular.woff?v=3.11") format("woff");
   }
   @font-face {
     font-family: Inter;
     font-style:  italic;
     font-weight: 400;
-    src: url("https://rsms.me/inter/font-files/Inter-Italic.woff2?v=3.3") format("woff2"),
-         url("https://rsms.me/inter/font-files/Inter-Italic.woff?v=3.3") format("woff");
+    src: url("https://rsms.me/inter/font-files/Inter-Italic.woff2?v=3.11") format("woff2"),
+         url("https://rsms.me/inter/font-files/Inter-Italic.woff?v=3.11") format("woff");
   }
   @font-face {
     font-family: Inter;
     font-style:  normal;
     font-weight: 500;
-    src: url("https://rsms.me/inter/font-files/Inter-Medium.woff2?v=3.3") format("woff2"),
-         url("https://rsms.me/inter/font-files/Inter-Medium.woff?v=3.3") format("woff");
+    src: url("https://rsms.me/inter/font-files/Inter-Medium.woff2?v=3.11") format("woff2"),
+         url("https://rsms.me/inter/font-files/Inter-Medium.woff?v=3.11") format("woff");
   }
   @font-face {
     font-family: Inter;
     font-style:  normal;
     font-weight: 600;
-    src: url("https://rsms.me/inter/font-files/Inter-SemiBold.woff2?v=3.3") format("woff2"),
-         url("https://rsms.me/inter/font-files/Inter-SemiBold.woff?v=3.3") format("woff");
+    src: url("https://rsms.me/inter/font-files/Inter-SemiBold.woff2?v=3.11") format("woff2"),
+         url("https://rsms.me/inter/font-files/Inter-SemiBold.woff?v=3.11") format("woff");
   }
   @font-face {
     font-family: Inter;
     font-style:  normal;
     font-weight: 700;
-    src: url("https://rsms.me/inter/font-files/Inter-Bold.woff2?v=3.3") format("woff2"),
-         url("https://rsms.me/inter/font-files/Inter-Bold.woff?v=3.3") format("woff");
+    src: url("https://rsms.me/inter/font-files/Inter-Bold.woff2?v=3.11") format("woff2"),
+         url("https://rsms.me/inter/font-files/Inter-Bold.woff?v=3.11") format("woff");
   }
-  /* Modular scale with exponent 1.26, about 2^(1/3), so we get 2em in there,
-     which is convenient. 1.26 is also close to (golden ratio)^0.5.
-     0.63em
-     0.80em
+  /* Modular scale with exponent 1.7^(1/3). The 1.7 was chosen as the line hight
+     that goes well with Inter. Previously I used 1.59, but it was just too tight.
+     0.59em
+     0.70em
      1.00em
-     1.26em
-     1.59em
-     2.00em
+     1.19em
+     1.42em
+     1.70em
+     2.02em
+     2.42em
   */
   * { margin: 0; padding: 0; border-spacing: 0; }
   html {
     font-family: Inter, Roboto, sans-serif;
-    /* Turn on character variant 8 for Inter, which puts serifs on the uppercase I. */
-    font-feature-settings: 'cv08' 1;
+    /*
+    Turn on character variant 8 for Inter, which puts serifs on the uppercase I.
+    Also turn on variant 1, which has a curved 1.
+    Disable contextual alternates for now. There is a bug, either in Inter or
+    in Chrome (https://crbug.com/1046095) that causes colons after a <strong> to
+    be raised above the baseline.
+    */
+    font-feature-settings: 'cv01' 1, 'cv08' 1, 'calt' 0;
+
     font-size: 16px;
-    line-height: 1.59em;
+    line-height: 1.7em;
     background-color: #fff;
     height: 100%;
   }
@@ -81,13 +89,13 @@
   }
   #main {
     grid-area: 1 / 3 / 2 / 4;
-    padding: 2rem;
+    padding: 2.2rem;
     padding-left: 4rem;
     padding-right: 4rem;
     overflow: hidden;
   }
   #breadcrumbs {
-    margin-bottom: 2.85rem;
+    margin-bottom: 3rem;
     word-spacing: 0.3em;
     color: #78a;
   }
@@ -102,21 +110,23 @@
     font-weight: 600;
     font-size: 1rem;
     color: #444;
-    margin-bottom: 1.59rem;
   }
   h1 {
     font-size: 2rem;
-    margin-bottom: 1.9rem;
+    margin-bottom: 2.1rem;
   }
   h2 {
-    font-size: 1.59rem;
-    margin-top: 3.38rem;
-    margin-bottom: 1.39rem;
+    font-size: 1.42rem;
+    margin-top: 3.5rem;
+    margin-bottom: 1.6rem;
+  }
+  h3 {
+    margin-bottom: 1.42rem;
   }
   code {
     font-family: 'Roboto Mono', monospace;
     font-size: 0.84rem;
-    line-height: 1.59rem;
+    line-height: 1.5rem;
   }
   h3 > code {
     /* Roboto Mono 500 is about as heavy as Inter semibold (600). */
@@ -128,6 +138,8 @@
     font-size: 0.78rem;
     font-weight: 500;
     letter-spacing: 0.05rem;
+    /* Prevent abbrs from changing the line height of lines in which they occur. */
+    line-height: 0;
   }
   sub, sup {
     /* Don't disturb the line height of normal text. */
@@ -160,10 +172,12 @@
   }
   p, ul, ol, pre, table {
     /* Same space as line height, leave exactly one line blank. */
-    margin-bottom: 1.59em;
+    margin-bottom: 1.7rem;
   }
   pre {
-    padding: 1.41rem;
+    padding-top: 0.8rem;
+    padding-bottom: 0.9rem;
+    padding-left: 1.19rem;
     padding-right: 0;
     background-color: #f8f8f8;
     border-radius: 0 0.2rem 0.2rem 0;
@@ -186,6 +200,11 @@
   }
   th {
     text-align: left;
+  }
+  td > img {
+    display: block;
+    padding-top: 1em;
+    padding-bottom: 1em;
   }
   #main ul li:before {
     color: #555;
@@ -211,8 +230,8 @@
     counter-increment: item;
   }
   #nav-prev-next {
-    margin-top: 3.18rem;
-    padding-bottom: 3.18rem;
+    margin-top: 3.4rem;
+    padding-bottom: 3.3rem;
   }
   #nav-prev, #nav-next, #repo-link {
     display: inline-block;
@@ -238,8 +257,8 @@
     background-color: #fafafa;
   }
   aside nav {
-    margin-top: 8.4rem;
-    padding-bottom: 3rem;
+    margin-top: 9rem;
+    padding-bottom: 3.4rem;
     width: 14rem;
     float: right;
     /* Put the active chapter border over the sidebar border. */
@@ -255,13 +274,11 @@
     margin-bottom: 0;
   }
   aside li ul {
-    /* This padding destroys the vertical rhythm,
-       but I somehow feel it is necessary. */
-    padding-top: 0.3rem;
-    padding-bottom: 0.4rem;
+    padding-top: 0.6rem;
+    padding-bottom: 1.1rem;
   }
   aside li.toc-section {
-    padding-top: 1.59rem;
+    padding-top: 1.7rem;
   }
   aside li.toc-section a {
     color: #36d;
@@ -278,7 +295,7 @@
     padding-left: 1em;
   }
 
-  @media(max-width: 59.5rem)
+  @media(max-width: 63rem)
   {
     #content {
       /* Manual implementation of max-width: on narrower viewports,
@@ -304,11 +321,11 @@
     }
     aside nav {
       margin-left: 4em;
-      margin-top: 1.59em;
+      margin-top: 1.7em;
       float: none;
     }
     #main {
-      padding-bottom: 1.59em;
+      padding-bottom: 1.7em;
     }
     aside li.current, aside li ul {
       border-right: 0px none;
@@ -331,11 +348,11 @@
   @media(max-width: 450px)
   {
     #main {
-      padding-left: 1.59em;
-      padding-right: 1.59em;
+      padding-left: 1.7em;
+      padding-right: 1.7em;
     }
     aside nav {
-      margin-left: 1.59em;
+      margin-left: 1.7em;
     }
   }
   </style>
