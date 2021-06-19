@@ -227,6 +227,7 @@ impl<'a> Env<'a> {
         // The default font is "sans roman", which is usually DejaVu Sans Book.
         bindings.insert(names::font_family, Val::Str("sans".to_string()));
         bindings.insert(names::font_style, Val::Str("roman".to_string()));
+        bindings.insert(names::font_features, Val::List(Vec::new()));
         bindings.insert(names::fill_circle, Val::FnIntrin(Builtin(builtins::fill_circle)));
         bindings.insert(names::fill_curve, Val::FnIntrin(Builtin(builtins::fill_curve)));
         bindings.insert(names::fill_polygon, Val::FnIntrin(Builtin(builtins::fill_polygon)));
@@ -306,6 +307,13 @@ impl<'a> Env<'a> {
         match self.lookup(idents)? {
             Val::Str(s) => Ok(s),
             other => Err(Error::var_type(idents, ValType::Str, other.get_type())),
+        }
+    }
+
+    pub fn lookup_list(&self, idents: &Idents<'a>) -> Result<Vec<Val<'a>>> {
+        match self.lookup(idents)? {
+            Val::List(elems) => Ok(elems),
+            other => Err(Error::var_type(idents, ValType::List, other.get_type())),
         }
     }
 

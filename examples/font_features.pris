@@ -1,0 +1,47 @@
+showcase = function(caption, feature)
+{
+  specimen = "agfi 22/7 ATo0"
+  put t(specimen) at (0em, 0.9em)
+
+  font_size = 0.5em
+  font_style = "Medium"
+  put
+  {
+    color = #888888
+    return t(caption) ~ t("  ")
+  } ~
+  {
+    color = #aa4444
+    return t(feature)
+  }
+  at (0em, -0.3em)
+}
+
+{
+  font_family = "IBM Plex Sans"
+  font_style = "Regular"
+  font_size = 0.07h
+
+  put showcase("REGULAR", "") at (1.5em, 2em)
+
+  font_features = ["frac"]
+  put showcase("FRACTIONS", "frac") at (1.5em, 5em)
+
+  font_features = ["-liga"]
+  put showcase("LIGATURES DISABLED", "-liga") at (1.5em, 8em)
+
+  font_features = ["-kern"]
+  put showcase("KERNING DISABLED", "-kern") at (1.5em, 11em)
+
+  font_features = ["ss01"]
+  put showcase("STYLISTIC SET 1", "ss01") at (10em, 2em)
+
+  font_features = ["ss02"]
+  put showcase("STYLISTIC SET 2", "ss02") at (10em, 5em)
+
+  font_features = ["ss03"]
+  put showcase("STYLISTIC SET 3", "ss03") at (10em, 8em)
+
+  font_features = ["ss04"]
+  put showcase("STYLISTIC SET 3", "ss04") at (10em, 11em)
+}

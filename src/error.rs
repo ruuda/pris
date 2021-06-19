@@ -179,6 +179,30 @@ impl Error {
         Error::Type(type_error)
     }
 
+    pub fn list_elem_type(
+        var_name: &Idents,
+        index: usize,
+        expected: ValType,
+        actual: ValType
+    ) -> Error {
+        let mut f = Formatter::new();
+        f.print("Expected elements of '");
+        f.print(var_name);
+        f.print("' to have type '");
+        f.print(expected);
+        f.print("', but found '");
+        f.print(actual);
+        f.print("' at index ");
+        f.print(index);
+        f.print(".");
+        let type_error = TypeError {
+            expected: expected,
+            actual: actual,
+            message: f.into_string(),
+        };
+        Error::Type(type_error)
+    }
+
     pub fn list_type(expected_element_type: ValType, actual_element_type: ValType) -> Error {
         let mut f = Formatter::new();
         f.print("Encountered elements of type '");

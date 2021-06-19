@@ -56,9 +56,9 @@ struct hb_glyph_position_t {
     _var1: u32,
 }
 
+/// Rust representation of `hb_feature_t`.
 #[repr(C)]
-#[allow(non_camel_case_types)]
-struct hb_feature_t {
+pub struct FontFeature {
     // The tag is a hb_tag_t, typedef for uint32_t. It contains the name of an
     // OpenType feature as ASCII bytes, the first character in the most
     // significant byte.
@@ -66,6 +66,32 @@ struct hb_feature_t {
     value: u32,
     start: c_uint,
     end: c_uint,
+}
+
+#[allow(non_camel_case_types)]
+type hb_feature_t = FontFeature;
+
+impl FontFeature {
+    pub fn from_str(feature_description: &str) -> Option<FontFeature> {
+        let mut feature = FontFeature {
+            tag: 0,
+            value: 0,
+            start: 0,
+            end: 0,
+        };
+        let parsed_ok = unsafe {
+            hb_feature_from_string(
+                mem::transmute(feature_description.as_ptr()),
+                feature_description.len() as c_int,
+                &mut feature,
+            )
+        };
+        if parsed_ok == 1 {
+            Some(feature)
+        } else {
+            None
+        }
+    }
 }
 
 // Note: this is an enum in C. We can define one in Rust, but the underlying
@@ -180,23 +206,7 @@ impl Buffer {
         unsafe { hb_buffer_add_utf8(self.ptr, chars, count, 0, count) }
     }
 
-    pub fn shape(&mut self, font: &mut Font) {
-        // Enable default features (proper kerning).
-        // TODO: This does not appear to do anything; "Yellow" still looks awful
-        // in Cantarell (see background_color example). How do I do kerning with
-        // Harfbuzz?
-        // For now, enable old-style numerals by default instead.
-        let features = unsafe {
-            let mut fs = [mem::uninitialized()];
-            let feature = b"onum";
-            let parsed_ok = hb_feature_from_string(
-                mem::transmute(feature.as_ptr()),
-                feature.len() as c_int,
-                &mut fs[0]);
-            assert!(parsed_ok == 1);
-            fs
-        };
-
+    pub fn shape(&mut self, font: &mut Font, features: &[FontFeature]) {
         unsafe { hb_shape(font.ptr, self.ptr, features.as_ptr(), features.len() as c_uint) }
     }
 

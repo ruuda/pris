@@ -478,17 +478,19 @@ pub fn sqrt<'i, 'a>(
 /// Typesets a single line of text.
 ///
 /// Returns the glyphs as well as the width of the line.
-fn typeset_line(ft_face: &mut freetype::Face,
-                font_size: f64,
-                text: &str)
-                -> (Vec<cairo::Glyph>, f64) {
+fn typeset_line(
+    ft_face: &mut freetype::Face,
+    font_size: f64,
+    features: &[harfbuzz::FontFeature],
+    text: &str
+) -> (Vec<cairo::Glyph>, f64) {
     // Shape the text using Harfbuzz: convert the UTF-8 string and input font
     // into a list of glyphs with offsets.
     let mut hb_font = harfbuzz::Font::from_ft_face(ft_face);
 
     let mut hb_buffer = harfbuzz::Buffer::new(harfbuzz::Direction::LeftToRight);
     hb_buffer.add_str(&text);
-    hb_buffer.shape(&mut hb_font);
+    hb_buffer.shape(&mut hb_font, features);
 
     // Position all the glyphs: Harfbuzz gives offsets, but we need absolute
     // locations. Store them in the representation that Cairo expects.
@@ -558,13 +560,14 @@ pub fn t<'i, 'a>(interpreter: &mut ExprInterpreter<'i, 'a>,
     let font_family = interpreter.env.lookup_str(&Idents(vec![names::font_family]))?;
     let font_style = interpreter.env.lookup_str(&Idents(vec![names::font_style]))?;
     let font_size = interpreter.env.lookup_len(&Idents(vec![names::font_size]))?;
+    let font_features_list = interpreter.env.lookup_list(&Idents(vec![names::font_features]))?;
     let line_height = interpreter.env.lookup_len(&Idents(vec![names::line_height]))?;
     let text_align = interpreter.env.lookup_str(&Idents(vec![names::text_align]))?;
     let ft_face = match interpreter.font_map.get(&font_family, &font_style) {
         Some(face) => face,
         None => return Err(Error::missing_font(font_family, font_style)),
     };
-    let ta = match text_align.as_ref() {
+    let text_align = match text_align.as_ref() {
         "left" => TextAlign::Left,
         "center" => TextAlign::Center,
         "right" => TextAlign::Right,
@@ -580,6 +583,35 @@ pub fn t<'i, 'a>(interpreter: &mut ExprInterpreter<'i, 'a>,
         }
     };
 
+    // Parse the font features into Harfbuzz font feature specifiers.
+    // Unfortunately this does not tell us whether the font actually supports
+    // these features, it only instructs Harfbuzz to use it. It would be nice
+    // if we could warn when a feature does not exist in the font.
+    let mut font_features: Vec<harfbuzz::FontFeature> = Vec::new();
+    for (i, value) in font_features_list.iter().enumerate() {
+        match value {
+            Val::Str(desc) => match harfbuzz::FontFeature::from_str(desc) {
+                Some(feat) => font_features.push(feat),
+                None => return Err(
+                    Error::value(format!(
+                        "'{}' is not a valid font feature. \
+                        Note: Font features must follow hb_feature_from_string syntax, \
+                        which includes support for CSS font-feature-settings syntax.",
+                        desc
+                    ))
+                ),
+            }
+            not_str => return Err(
+                Error::list_elem_type(
+                    &Idents(vec![names::font_features]),
+                    i,
+                    ValType::Str,
+                    not_str.get_type(),
+                )
+            ),
+        }
+    }
+
     // TODO: Extract this, warn properly.
     if ft_face.family_name().as_ref() != Some(&font_family) {
         println!("Warning: requested font family '{}', but loaded '{}'.",
@@ -590,16 +622,18 @@ pub fn t<'i, 'a>(interpreter: &mut ExprInterpreter<'i, 'a>,
                  font_style, ft_face.style_name().unwrap_or("?".into()));
     }
 
+    // TODO: Validate that the font features exist.
+
     let mut glyphs = Vec::new();
     let mut max_width: f64 = 0.0;
     let mut min_offset: f64 = 0.0;
     let mut cur_x = 0.0;
     let mut cur_y = 0.0;
     for line in text_lines {
-        let (line_glyphs, width) = typeset_line(ft_face, font_size, line);
+        let (line_glyphs, width) = typeset_line(ft_face, font_size, &font_features, line);
 
         // Apply x offset to enforce text alignment.
-        let offset = match ta {
+        let offset = match text_align {
             TextAlign::Left => 0.0,
             TextAlign::Center => width * -0.5,
             TextAlign::Right => width * -1.0,

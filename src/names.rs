@@ -19,6 +19,7 @@ pub const fill_polygon: &'static str = "fill_polygon";
 pub const fill_rectangle: &'static str = "fill_rectangle";
 pub const fit: &'static str = "fit";
 pub const font_family: &'static str = "font_family";
+pub const font_features: &'static str = "font_features";
 pub const font_size: &'static str = "font_size";
 pub const font_style: &'static str = "font_style";
 pub const glyph: &'static str = "glyph";
