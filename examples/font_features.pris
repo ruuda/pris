@@ -43,5 +43,5 @@ showcase = function(caption, feature)
   put showcase("STYLISTIC SET 3", "ss03") at (10em, 8em)
 
   font_features = ["ss04"]
-  put showcase("STYLISTIC SET 3", "ss04") at (10em, 11em)
+  put showcase("STYLISTIC SET 4", "ss04") at (10em, 11em)
 }
