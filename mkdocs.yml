@@ -1,9 +1,16 @@
 site_name: Pris
 repo_url: https://github.com/ruuda/pris
 strict: true
+
 theme:
   name: null
   custom_dir: theme
+
+markdown_extensions:
+  - toc:
+      permalink: true
+      permalink_title: null
+
 nav:
   - Overview: index.md
   - User Guide:
