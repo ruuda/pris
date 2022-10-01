@@ -1,5 +1,5 @@
 let
-  pkgs = import (import ./nixpkgs-pinned.nix) {};
+  pkgs = import ./nixpkgs-pinned.nix {};
 in
   pkgs.buildEnv {
     name = "pris-devenv";
