@@ -1,4 +1,5 @@
 site_name: Pris
+site_url: https://docs.ruuda.nl/pris/
 repo_url: https://github.com/ruuda/pris
 strict: true
 
