@@ -1,108 +1,108 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
     <url>
-         <loc>None</loc>
-         <lastmod>2022-10-01</lastmod>
+         <loc>https://docs.ruuda.nl/pris/</loc>
+         <lastmod>1980-01-01</lastmod>
          <changefreq>daily</changefreq>
     </url>
     <url>
-         <loc>None</loc>
-         <lastmod>2022-10-01</lastmod>
+         <loc>https://docs.ruuda.nl/pris/background/</loc>
+         <lastmod>1980-01-01</lastmod>
          <changefreq>daily</changefreq>
     </url>
     <url>
-         <loc>None</loc>
-         <lastmod>2022-10-01</lastmod>
+         <loc>https://docs.ruuda.nl/pris/building/</loc>
+         <lastmod>1980-01-01</lastmod>
          <changefreq>daily</changefreq>
     </url>
     <url>
-         <loc>None</loc>
-         <lastmod>2022-10-01</lastmod>
+         <loc>https://docs.ruuda.nl/pris/getting-started/</loc>
+         <lastmod>1980-01-01</lastmod>
          <changefreq>daily</changefreq>
     </url>
     <url>
-         <loc>None</loc>
-         <lastmod>2022-10-01</lastmod>
+         <loc>https://docs.ruuda.nl/pris/language/</loc>
+         <lastmod>1980-01-01</lastmod>
          <changefreq>daily</changefreq>
     </url>
     <url>
-         <loc>None</loc>
-         <lastmod>2022-10-01</lastmod>
+         <loc>https://docs.ruuda.nl/pris/name/</loc>
+         <lastmod>1980-01-01</lastmod>
          <changefreq>daily</changefreq>
     </url>
     <url>
-         <loc>None</loc>
-         <lastmod>2022-10-01</lastmod>
+         <loc>https://docs.ruuda.nl/pris/parser/</loc>
+         <lastmod>1980-01-01</lastmod>
          <changefreq>daily</changefreq>
     </url>
     <url>
-         <loc>None</loc>
-         <lastmod>2022-10-01</lastmod>
+         <loc>https://docs.ruuda.nl/pris/subframes/</loc>
+         <lastmod>1980-01-01</lastmod>
          <changefreq>daily</changefreq>
     </url>
     <url>
-         <loc>None</loc>
-         <lastmod>2022-10-01</lastmod>
+         <loc>https://docs.ruuda.nl/pris/reference/at/</loc>
+         <lastmod>1980-01-01</lastmod>
          <changefreq>daily</changefreq>
     </url>
     <url>
-         <loc>None</loc>
-         <lastmod>2022-10-01</lastmod>
+         <loc>https://docs.ruuda.nl/pris/reference/canvas_size/</loc>
+         <lastmod>1980-01-01</lastmod>
          <changefreq>daily</changefreq>
     </url>
     <url>
-         <loc>None</loc>
-         <lastmod>2022-10-01</lastmod>
+         <loc>https://docs.ruuda.nl/pris/reference/fill_circle/</loc>
+         <lastmod>1980-01-01</lastmod>
          <changefreq>daily</changefreq>
     </url>
     <url>
-         <loc>None</loc>
-         <lastmod>2022-10-01</lastmod>
+         <loc>https://docs.ruuda.nl/pris/reference/fill_polygon/</loc>
+         <lastmod>1980-01-01</lastmod>
          <changefreq>daily</changefreq>
     </url>
     <url>
-         <loc>None</loc>
-         <lastmod>2022-10-01</lastmod>
+         <loc>https://docs.ruuda.nl/pris/reference/fill_rectangle/</loc>
+         <lastmod>1980-01-01</lastmod>
          <changefreq>daily</changefreq>
     </url>
     <url>
-         <loc>None</loc>
-         <lastmod>2022-10-01</lastmod>
+         <loc>https://docs.ruuda.nl/pris/reference/fit/</loc>
+         <lastmod>1980-01-01</lastmod>
          <changefreq>daily</changefreq>
     </url>
     <url>
-         <loc>None</loc>
-         <lastmod>2022-10-01</lastmod>
+         <loc>https://docs.ruuda.nl/pris/reference/glyph/</loc>
+         <lastmod>1980-01-01</lastmod>
          <changefreq>daily</changefreq>
     </url>
     <url>
-         <loc>None</loc>
-         <lastmod>2022-10-01</lastmod>
+         <loc>https://docs.ruuda.nl/pris/reference/hyperlink/</loc>
+         <lastmod>1980-01-01</lastmod>
          <changefreq>daily</changefreq>
     </url>
     <url>
-         <loc>None</loc>
-         <lastmod>2022-10-01</lastmod>
+         <loc>https://docs.ruuda.nl/pris/reference/image/</loc>
+         <lastmod>1980-01-01</lastmod>
          <changefreq>daily</changefreq>
     </url>
     <url>
-         <loc>None</loc>
-         <lastmod>2022-10-01</lastmod>
+         <loc>https://docs.ruuda.nl/pris/reference/line/</loc>
+         <lastmod>1980-01-01</lastmod>
          <changefreq>daily</changefreq>
     </url>
     <url>
-         <loc>None</loc>
-         <lastmod>2022-10-01</lastmod>
+         <loc>https://docs.ruuda.nl/pris/reference/sqrt/</loc>
+         <lastmod>1980-01-01</lastmod>
          <changefreq>daily</changefreq>
     </url>
     <url>
-         <loc>None</loc>
-         <lastmod>2022-10-01</lastmod>
+         <loc>https://docs.ruuda.nl/pris/reference/str/</loc>
+         <lastmod>1980-01-01</lastmod>
          <changefreq>daily</changefreq>
     </url>
     <url>
-         <loc>None</loc>
-         <lastmod>2022-10-01</lastmod>
+         <loc>https://docs.ruuda.nl/pris/reference/t/</loc>
+         <lastmod>1980-01-01</lastmod>
          <changefreq>daily</changefreq>
     </url>
 </urlset>
